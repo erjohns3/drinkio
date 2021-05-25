@@ -1,0 +1,35 @@
+vodka
+white rum
+dark rum
+gin
+whiskey
+tequila
+bourbon
+wine
+brandy
+absinthe
+everclear
+champagne
+fireball
+cognac
+vermouth
+triple sec
+kahlua
+irish cream
+sprite
+coke
+root beer
+cider
+gingerale
+club soda
+ginger beer
+fruit punch
+orange juice
+lime juice
+lemon juice
+apple juice
+simple syrup
+grenadine
+coconut juice
+bitters
+coutraine
