@@ -1,0 +1,35 @@
+{
+    "drinks": {
+        "Screwdriver": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Margarita": {
+            "tequila": 1.27,
+            "triple sec": 0.63,
+            "lime juice": 0.63
+        }
+    },
+    "ports": [
+        160000,
+        486000,
+        815000
+    ],
+    "ingredients": {
+        "tequila": {
+            "port": 0,
+            "empty": false,
+            "abv": 0.4
+        },
+        "triple sec": {
+            "port": 1,
+            "empty": false,
+            "abv": 0.30
+        },
+        "lime juice": {
+            "port": 2,
+            "empty": false,
+            "abv": 0
+        }
+    }
+}
