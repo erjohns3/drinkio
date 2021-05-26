@@ -25,7 +25,7 @@ pan_pin = 12
 tilt_pin = 13
 
 tilt_up = 450000
-tilt_down = 485000
+tilt_down = 490000
 
 #####################################
 
@@ -50,7 +50,7 @@ flow_pin = 17
 flow_tick = 0
 flow_mult = 0.00007514222
 
-def flow_rise(channel):
+def flow_rise(pin, level, tick):
     global flow_tick
     flow_lock.acquire()
     flow_tick = flow_tick + 1
