@@ -6,33 +6,34 @@ import datetime
 import os
 import sys
 import json
+import signal
 import pathlib
 
 pi = pigpio.pi()
 
-single = 0.6
+PAN_PIN = 12
+TILT_PIN = 13
+PUMP_PIN = 27
+FLOW_PIN = 17
 
-#####################################
+FLOW_MULT = 0.00007514222
+FLOW_PERIOD = 0.01
+FLOW_TIMEOUT = 5
 
-pump_pin = 27
+TILT_UP = 450000
+TILT_DOWN = 490000
 
-pi.set_mode(pump_pin, pigpio.OUTPUT)
-pi.write(pump_pin, 1)
+def signal_handler(sig, frame):
+    print('Ctrl+C', flush=True)
+    pi.write(PUMP_PIN, 1)
+    pi.stop()
+    sys.exit(0)
 
-#####################################
-
-pan_pin = 12
-tilt_pin = 13
-
-tilt_up = 450000
-tilt_down = 490000
+signal.signal(signal.SIGINT, signal_handler)
 
 #####################################
 
 loc = pathlib.Path(__file__).parent.absolute()
-print(loc)
-print(os.path.dirname(__file__))
-
 f = open(str(loc)+"/config.json", "r")
 config = json.loads(f.read())
 f.close()
@@ -41,50 +42,51 @@ drinks = config["drinks"]
 ports = config["ports"]
 ingredients = config["ingredients"]
 
+#####################################
+
+pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
+pi.write(PUMP_PIN, 1)
+
 #################################### gpio signals
 
-FLOW_PERIOD = 0.01
-FLOW_TIMEOUT = 5
 flow_lock = threading.Lock()
-flow_pin = 17
 flow_tick = 0
-flow_mult = 0.00007514222
 
 def flow_rise(pin, level, tick):
     global flow_tick
     flow_lock.acquire()
     flow_tick = flow_tick + 1
+    print("flow: {}".format(flow_tick), flush=True)
     flow_lock.release()
 
-pi.set_mode(flow_pin, pigpio.INPUT)
-pi.set_pull_up_down(flow_pin, pigpio.PUD_DOWN)
-pi.callback(flow_pin, pigpio.RISING_EDGE, flow_rise)
+pi.set_mode(FLOW_PIN, pigpio.INPUT)
+pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
+pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
 
 ####################################
-
 
 while True:
     drink = input("Enter drink: ")
 
     if drink in drinks:
-        for ingredient in drinks[drink]:
-            print("{}, {}".format(ingredient, ports[ingredients[ingredient]["port"]]))
-            pi.hardware_PWM(tilt_pin, 333, tilt_up)
-            time.sleep(2)
-            duty = ports[ingredients[ingredient]["port"]]
-            
-            if duty < 500000:
-                pi.hardware_PWM(pan_pin, 333, 750000)
-            else:
-                pi.hardware_PWM(pan_pin, 333, 250000)
+        pi.write(PUMP_PIN, 0)
 
-            time.sleep(1)
-            pi.hardware_PWM(pan_pin, 333, duty)
-            time.sleep(3)
-            pi.hardware_PWM(tilt_pin, 333, tilt_down)
+        for ingredient in drinks[drink]:
+            print("{}, {}".format(ingredient, ports[ingredients[ingredient]["port"]]), flush=True)
+            pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
             time.sleep(2)
-            
-            pi.write(pump_pin, 0)
+
+            angle = ports[ingredients[ingredient]["port"]]
+            if angle < 500000:
+                pi.hardware_PWM(PAN_PIN, 333, 750000)
+            else:
+                pi.hardware_PWM(PAN_PIN, 333, 250000)
+            time.sleep(2)
+
+            pi.hardware_PWM(PAN_PIN, 333, angle)
+            time.sleep(4)
+            pi.hardware_PWM(TILT_PIN, 333, TILT_DOWN)
+            time.sleep(2)
 
             flow_lock.acquire
             flow_tick = 0
@@ -95,12 +97,14 @@ while True:
 
             while True:
                 flow_lock.acquire
-                if flow_tick * flow_mult > drinks[drink][ingredient]:
+                if flow_tick * FLOW_MULT > drinks[drink][ingredient]:
+                    print("----done", flush=True)
                     break
                 
                 if elapsed > 5:
                     if flow_tick - flow_prev <= 3:
                         ingredients[ingredient]["empty"] = True
+                        print("----empty", flush=True)
                         break
                     flow_prev = flow_tick
                     elapsed = 4
@@ -110,9 +114,7 @@ while True:
                 time.sleep(FLOW_PERIOD)
 
             flow_lock.release
-            pi.hardware_PWM(tilt_pin, 333, tilt_up)
-            time.sleep(1)
 
-        time.sleep(4)
-        pi.write(pump_pin, 1)
-        time.sleep(2)
+        pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+        time.sleep(5)
+        pi.write(PUMP_PIN, 1)
