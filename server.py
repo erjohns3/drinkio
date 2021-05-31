@@ -16,7 +16,7 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 12
+FLOW_BIAS = 10
 FLOW_MULT = 0.073
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
@@ -88,7 +88,6 @@ while True:
             pi.hardware_PWM(PAN_PIN, 333, angle)
             time.sleep(4)
             pi.hardware_PWM(TILT_PIN, 333, TILT_DOWN)
-            time.sleep(2)
 
             flow_lock.acquire
             flow_tick = 0
