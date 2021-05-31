@@ -16,7 +16,7 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_MULT = 0.00007514222
+FLOW_MULT = 0.073
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
@@ -72,15 +72,15 @@ while True:
         pi.write(PUMP_PIN, 0)
 
         for ingredient in drinks[drink]:
-            print("{}, {}".format(ingredient, ports[ingredients[ingredient]["port"]]), flush=True)
+            print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drinks[drink][ingredient]), flush=True)
             pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
             time.sleep(2)
 
             angle = ports[ingredients[ingredient]["port"]]
             if angle < 500000:
-                pi.hardware_PWM(PAN_PIN, 333, 750000)
+                pi.hardware_PWM(PAN_PIN, 333, 650000)
             else:
-                pi.hardware_PWM(PAN_PIN, 333, 250000)
+                pi.hardware_PWM(PAN_PIN, 333, 350000)
             time.sleep(2)
 
             pi.hardware_PWM(PAN_PIN, 333, angle)
