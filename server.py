@@ -16,6 +16,7 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
+FLOW_BIAS = 0.8
 FLOW_MULT = 0.073
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
@@ -56,7 +57,6 @@ def flow_rise(pin, level, tick):
     global flow_tick
     flow_lock.acquire()
     flow_tick = flow_tick + 1
-    print("flow: {}".format(flow_tick), flush=True)
     flow_lock.release()
 
 pi.set_mode(FLOW_PIN, pigpio.INPUT)
@@ -98,7 +98,7 @@ while True:
 
             while True:
                 flow_lock.acquire
-                if flow_tick * FLOW_MULT > drinks[drink][ingredient]:
+                if flow_tick * FLOW_MULT > drinks[drink][ingredient] - FLOW_BIAS:
                     print("----done", flush=True)
                     break
                 
