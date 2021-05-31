@@ -16,7 +16,7 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.8
+FLOW_BIAS = 12
 FLOW_MULT = 0.073
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
@@ -99,7 +99,7 @@ while True:
 
             while True:
                 flow_lock.acquire
-                if flow_tick * FLOW_MULT > drinks[drink][ingredient] - FLOW_BIAS:
+                if (flow_tick + FLOW_BIAS) * FLOW_MULT > drinks[drink][ingredient]:
                     print("----done", flush=True)
                     break
                 
