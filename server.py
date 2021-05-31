@@ -58,6 +58,7 @@ def flow_rise(pin, level, tick):
     flow_lock.acquire()
     flow_tick = flow_tick + 1
     flow_lock.release()
+    print("flow: {}".format(flow_tick), flush=True)
 
 pi.set_mode(FLOW_PIN, pigpio.INPUT)
 pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
