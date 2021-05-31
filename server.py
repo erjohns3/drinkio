@@ -69,12 +69,13 @@ while True:
     drink = input("Enter drink: ")
 
     if drink in drinks:
-        pi.write(PUMP_PIN, 0)
+        #pi.write(PUMP_PIN, 0)
 
         for ingredient in drinks[drink]:
             print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drinks[drink][ingredient]), flush=True)
             pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-            time.sleep(2)
+            time.sleep(4)
+            pi.write(PUMP_PIN, 0)
 
             angle = ports[ingredients[ingredient]["port"]]
             if angle < 500000:
@@ -114,6 +115,7 @@ while True:
                 time.sleep(FLOW_PERIOD)
 
             flow_lock.release
+            pi.write(PUMP_PIN, 1)
 
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
         time.sleep(5)
