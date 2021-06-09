@@ -16,12 +16,12 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 2
+FLOW_BIAS = 0
 FLOW_MULT = 0.073
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
-TILT_UP = 460000
+TILT_UP = 400000
 TILT_DOWN = 500000
 
 def signal_handler(sig, frame):
@@ -73,20 +73,12 @@ while True:
         pi.write(PUMP_PIN, 0)
 
         for ingredient in drinks[drink]:
-            print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drinks[drink][ingredient]), flush=True)
             pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-            time.sleep(4)
+            print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drinks[drink][ingredient]), flush=True)
+            time.sleep(10)
             #pi.write(PUMP_PIN, 0)
-
-            angle = ports[ingredients[ingredient]["port"]]
-            if angle < 500000:
-                pi.hardware_PWM(PAN_PIN, 333, 650000)
-            else:
-                pi.hardware_PWM(PAN_PIN, 333, 350000)
+            pi.hardware_PWM(PAN_PIN, 333, ports[ingredients[ingredient]["port"]])
             time.sleep(2)
-
-            pi.hardware_PWM(PAN_PIN, 333, angle)
-            time.sleep(4)
             pi.hardware_PWM(TILT_PIN, 333, TILT_DOWN)
 
             flow_lock.acquire
@@ -102,7 +94,7 @@ while True:
                     print("----done", flush=True)
                     break
                 
-                if elapsed > 5:
+                if elapsed > 8:
                     if flow_tick - flow_prev <= 3:
                         ingredients[ingredient]["empty"] = True
                         print("----empty", flush=True)
@@ -118,5 +110,5 @@ while True:
             #pi.write(PUMP_PIN, 1)
 
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-        time.sleep(5)
+        time.sleep(10)
         pi.write(PUMP_PIN, 1)

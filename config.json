@@ -5,14 +5,14 @@
             "orange juice": 3
         },
         "Margarita": {
-            "tequila": 1.27,
-            "triple sec": 0.63,
-            "lime juice": 0.63
+            "tequila": 1.5,
+            "triple sec": 3,
+            "lime juice": 1
         }
     },
     "ports": [
         160000,
-        485000,
+        495000,
         815000
     ],
     "ingredients": {
