@@ -16,15 +16,19 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0
-FLOW_MULT = 0.073
+FLOW_BIAS = 0.783
+FLOW_MULT = 0.0389
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
 TILT_DOWN = 500000
+TILT_SPEED = 50000 # pwm change per second
+TILT_PERIOD = 0.01
+
 PAN_SPEED = 100000 # pwm change per second
 PAN_PERIOD = 0.01
+
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
@@ -92,7 +96,12 @@ while True:
                 pause = pause - PAN_PERIOD
 
             time.sleep(3 + max(pause, 0))
-            pi.hardware_PWM(TILT_PIN, 333, TILT_DOWN)
+
+            tilt_curr = TILT_UP
+            while tilt_curr != TILT_DOWN:
+                tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+                pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+                time.sleep(TILT_PERIOD)
 
             flow_lock.acquire
             flow_tick = 0
@@ -103,7 +112,7 @@ while True:
 
             while True:
                 flow_lock.acquire
-                if (flow_tick + FLOW_BIAS) * FLOW_MULT > drinks[drink][ingredient]:
+                if flow_tick >= max((drinks[drink][ingredient] - FLOW_BIAS) / FLOW_MULT, 2):
                     print("----done", flush=True)
                     break
                 
@@ -123,5 +132,17 @@ while True:
             #pi.write(PUMP_PIN, 1)
 
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-        time.sleep(10)
+        time.sleep(2)
+        pause = 7
+        pan_goal = 500000
+        while pan_curr != pan_goal:
+            if pan_goal > pan_curr:
+                pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
+            else:
+                pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
+            pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+            time.sleep(PAN_PERIOD)
+            pause = pause - PAN_PERIOD
+
+        time.sleep(3 + max(pause, 0))
         pi.write(PUMP_PIN, 1)
