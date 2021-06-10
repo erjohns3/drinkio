@@ -5,9 +5,30 @@
     <meta charset="utf-8">
     <title>drink.io</title>
     <link rel="icon" href="static/favicon.ico">
-    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-    <script src="main.js"></script>
+    <script type="module">
+        import { h, Component, render } from 'https://unpkg.com/preact?module';
+        import htm from 'https://unpkg.com/htm?module';
+
+        const html = htm.bind(h);
+
+        var socket = new WebSocket("ws://127.0.0.1:8765");
+
+        socket.onopen = function () {
+            console.log("opened");
+            socket.send("Hello server");
+        }
+
+        socket.onmessage = function (event) {
+            //var msg = JSON.parse(event.data);
+        }
+
+        render(
+            html`<h1>Hello, world!</h1>`,
+            document.getElementById('root')
+        );
+
+        console.log("loaded");
+    </script>
     <style>
         
     </style>
@@ -15,7 +36,6 @@
 
 <body>
     <div id="root"></div>
-    
 </body>
 
 </html>
