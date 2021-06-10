@@ -87,7 +87,7 @@ while True:
                     pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
                 else:
                     pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-                pi.hardware_PWM(PAN_PIN, 333, pan_curr)
+                pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
                 time.sleep(PAN_PERIOD)
                 pause = pause - PAN_PERIOD
 
