@@ -4,20 +4,21 @@ import http.server
 import socketserver
 import threading
 import json
+import pathlib
 
+loc = pathlib.Path(__file__).parent.absolute()
+f = open(str(loc)+"/config.json", "r")
+config = f.read()
+f.close()
 
 #################################################
 
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
-Handler.extensions_map.update({
-      ".js": "text/javascript",
-})
 
 def http_server():
     httpd = socketserver.TCPServer(("", PORT), Handler)
     print("serving at port", PORT)
-    print(Handler.extensions_map[".js"])
     httpd.serve_forever()
 
 http_thread = threading.Thread(target=http_server, args=(), daemon=True)
@@ -31,8 +32,7 @@ http_thread.start()
 
 async def init(websocket, path):
     #name = await websocket.recv()
-    msg = "hello"
-    await websocket.send(msg)
+    await websocket.send(config)
     print("socket init")
 
 start_server = websockets.serve(init, "127.0.0.1", 8765)

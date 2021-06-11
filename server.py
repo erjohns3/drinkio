@@ -1,9 +1,6 @@
 import threading
-import subprocess
 import pigpio
 import time
-import datetime
-import os
 import sys
 import json
 import signal
