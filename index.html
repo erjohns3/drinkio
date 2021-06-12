@@ -10,41 +10,33 @@
     <script type="module">
         const e = React.createElement;
 
-        class Drink extends React.Component {
+        class DrinkItem extends React.Component {
             constructor(props){
                 super(props);
-                console.log("new drink");
-                console.log(props);
             }
             render() {
-                console.log("new drink render");
-                return (e('h2', null, props.name));
+                return (e('h2', null, this.props.name));
             }
         }
 
-        class List extends React.Component {
+        class DrinkList extends React.Component {
             render() {
-                var tmp = "";
+                this.list = []
                 for(var drink in drinks){
-                    console.log(drink);
-                    //console.log(e(Drink, null, drink));
+                    this.list.push(e(DrinkItem, {key: drink, name: drink}, null));
                 }
-                console.log("list render");
-                return e('div', null, drink);
+                return e('div', null, this.list);
             }
         }
 
         ///////////////////////////////////////////////////////////////
 
         var drinks = {};
-        //var list = new e(List, null, e(Drink, null, "eric"));
-        ReactDOM.render(e(Drink, {name: "eric"}, "children"), document.getElementById('root'));
 
-        function tick() {
-            ReactDOM.render(list, document.getElementById('root'));
-        }
-
-        //setInterval(tick, 1000);
+        ReactDOM.render(
+            e(DrinkList, {name: "eric"}, "children"), 
+            document.getElementById('root')
+        );
 
         ////////////////////////////////////////////////////////////////
 
