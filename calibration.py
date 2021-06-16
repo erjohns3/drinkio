@@ -27,9 +27,7 @@ PAN_SPEED = 100000 # pwm change per second
 PAN_PERIOD = 0.01
 
 port = int(sys.argv[1])
-tick_start = int(sys.argv[2])
-tick_end = int(sys.argv[3])
-tick_increment = int(sys.argv[4])
+tick_target = int(sys.argv[2])
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
@@ -74,73 +72,46 @@ pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
 
 ####################################
 
+print("Drink: {}, Angle: {}, Amount: {}".format(port, ports[port], tick_target), flush=True)
 pi.write(PUMP_PIN, 0)
-
 pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
 time.sleep(2)
+pi.hardware_PWM(PAN_PIN, 333, ports[port])
+time.sleep(2)
 
-pause = 7
-pan_goal = ports[port]
-while pan_curr != pan_goal:
-    if pan_goal > pan_curr:
-        pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
-    else:
-        pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-    pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-    time.sleep(PAN_PERIOD)
-    pause = pause - PAN_PERIOD
+flow_lock.acquire
+flow_tick = 0
+flow_lock.release
 
-time.sleep(3 + max(pause, 0))
+elapsed = 0
+flow_prev = 0
 
-for tick_target in range(tick_start, tick_end, tick_increment):
-    pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-    print("Drink: {}, Angle: {}, Amount: {}".format(port, ports[port], tick_target), flush=True)
-    time.sleep(5)
+tilt_curr = TILT_UP
+while tilt_curr != TILT_DOWN:
+    tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+    pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+    time.sleep(TILT_PERIOD)
 
+while True:
     flow_lock.acquire
-    flow_tick = 0
-    flow_lock.release
-
-    elapsed = 0
-    flow_prev = 0
-
-    tilt_curr = TILT_UP
-    while tilt_curr != TILT_DOWN:
-        tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
-        pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-        time.sleep(TILT_PERIOD)
-
-    while True:
-        flow_lock.acquire
-        if flow_tick >= tick_target:
-            print("----done", flush=True)
+    if flow_tick >= tick_target:
+        print("----done", flush=True)
+        break
+    
+    if elapsed > 8:
+        if flow_tick - flow_prev <= 3:
+            print("----empty", flush=True)
             break
-        
-        if elapsed > 8:
-            if flow_tick - flow_prev <= 3:
-                print("----empty", flush=True)
-                break
-            flow_prev = flow_tick
-            elapsed = 4
+        flow_prev = flow_tick
+        elapsed = 4
 
-        elapsed = elapsed + FLOW_PERIOD
-        flow_lock.release
-        time.sleep(FLOW_PERIOD)
-
+    elapsed = elapsed + FLOW_PERIOD
     flow_lock.release
+    time.sleep(FLOW_PERIOD)
+
+flow_lock.release
 
 pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-time.sleep(2)
-pause = 7
-pan_goal = 500000
-while pan_curr != pan_goal:
-    if pan_goal > pan_curr:
-        pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
-    else:
-        pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-    pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-    time.sleep(PAN_PERIOD)
-    pause = pause - PAN_PERIOD
+time.sleep(7)
 
-time.sleep(3 + max(pause, 0))
 pi.write(PUMP_PIN, 1)
