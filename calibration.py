@@ -26,10 +26,10 @@ TILT_PERIOD = 0.01
 PAN_SPEED = 100000 # pwm change per second
 PAN_PERIOD = 0.01
 
-port = sys.argv[1]
-tick_start = sys.argv[2]
-tick_end = sys.argv[3]
-tick_increment = sys.argv[4]
+port = int(sys.argv[1])
+tick_start = int(sys.argv[2])
+tick_end = int(sys.argv[3])
+tick_increment = int(sys.argv[4])
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
