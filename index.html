@@ -20,9 +20,13 @@
         }
 
         class DrinkList extends React.Component {
+            constructor(){
+                super();
+                this.state = {drinks: ["a", "b"]};
+            }
             render() {
                 this.list = []
-                for(var drink in drinks){
+                for(var drink in this.state.drinks){
                     this.list.push(e(DrinkItem, {key: drink, name: drink}, null));
                 }
                 return e('div', null, this.list);
@@ -33,8 +37,10 @@
 
         var drinks = {};
 
+        var drinkList = e(DrinkList, null, null);
+
         ReactDOM.render(
-            e(DrinkList, {name: "eric"}, "children"), 
+            drinkList, 
             document.getElementById('root')
         );
 
@@ -54,6 +60,8 @@
                 switch(key){
                     case 'drinks': 
                         drinks = msg.drinks;
+                        console.log(drinkList);
+                        //drinkList.setState({drinks: msg.drinks});
                         break;
                     default:
                         break;

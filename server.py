@@ -94,18 +94,18 @@ while True:
 
             time.sleep(3 + max(pause, 0))
 
-            tilt_curr = TILT_UP
-            while tilt_curr != TILT_DOWN:
-                tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
-                pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-                time.sleep(TILT_PERIOD)
-
             flow_lock.acquire
             flow_tick = 0
             flow_lock.release
 
             elapsed = 0
             flow_prev = 0
+
+            tilt_curr = TILT_UP
+            while tilt_curr != TILT_DOWN:
+                tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+                pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+                time.sleep(TILT_PERIOD)
 
             while True:
                 flow_lock.acquire
