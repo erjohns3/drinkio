@@ -8,68 +8,90 @@
     <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script type="module">
+
+        const socket = new WebSocket("ws://127.0.0.1:8765");
         const e = React.createElement;
 
         class DrinkItem extends React.Component {
-            constructor(props){
-                super(props);
+            constructor(){
+                super();
             }
+
+            state = {
+                expanded: false
+            }
+
+            expand(event){
+                this.setState({expanded: !this.state.expanded});
+                console.log(this.state.expanded);
+            }
+
             render() {
-                return (e('h2', null, this.props.name));
+                return e('h2', {onClick: (event)=>this.expand()}, this.props.name);
             }
         }
 
         class DrinkList extends React.Component {
             constructor(){
                 super();
-                this.state = {drinks: ["a", "b"]};
             }
             render() {
                 this.list = []
-                for(var drink in this.state.drinks){
+                for(var drink in this.props.drinks){
                     this.list.push(e(DrinkItem, {key: drink, name: drink}, null));
                 }
                 return e('div', null, this.list);
             }
         }
 
+        class App extends React.Component {
+            constructor(){
+                super();
+            }
+            
+            state = {
+                drinks: null
+            }
+
+            componentDidMount(){
+                socket.onopen = function () {
+                    socket.send("Hello server");
+                }
+
+                socket.onmessage = (event)=>{
+                    var msg = JSON.parse(event.data);
+                    for(var key in msg){
+                        switch(key){
+                            case 'drinks': 
+                                this.setState({ drinks: msg.drinks })
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    
+                    console.log(msg);
+                }
+            }
+
+            render() {
+                var drinkList = e(DrinkList, {drinks: this.state.drinks}, null);
+                return e('div', null, drinkList);
+            }
+        }
+
         ///////////////////////////////////////////////////////////////
 
-        var drinks = {};
-
-        var drinkList = e(DrinkList, null, null);
+        var app = e(App, null, null);
 
         ReactDOM.render(
-            drinkList, 
+            app, 
             document.getElementById('root')
         );
 
         ////////////////////////////////////////////////////////////////
 
-        const socket = new WebSocket("ws://127.0.0.1:8765");
-
-        socket.onopen = function () {
-            socket.send("Hello server");
-        }
-
-        socket.onmessage = function (event) {
-            var msg = JSON.parse(event.data);
-            //var keys = Object.keys(msg);
-            for(var key in msg){
-                //console.log(key);
-                switch(key){
-                    case 'drinks': 
-                        drinks = msg.drinks;
-                        console.log(drinkList);
-                        //drinkList.setState({drinks: msg.drinks});
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
-            console.log(msg);
-        }
+        
     </script>
     <style>
         
