@@ -35,7 +35,7 @@ async def init(websocket, path):
     await websocket.send(config)
     print("socket init")
 
-start_server = websockets.serve(init, "127.0.0.1", 8765)
+start_server = websockets.serve(init, "192.168.86.42", 8765)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

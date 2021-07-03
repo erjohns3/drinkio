@@ -8,6 +8,22 @@
             "tequila": 2,
             "triple sec": 2,
             "lime juice": 2
+        },
+        "Dark 'N' Stormy": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Moscow Mule": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Martini": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Sidecar": {
+            "vodka": 1.5,
+            "orange juice": 3
         }
     },
     "ports": [

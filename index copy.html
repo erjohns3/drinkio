@@ -34,7 +34,12 @@
         class DrinkItem extends React.Component {
             constructor(props){
                 super(props);
-                
+                this.ingredientDetails = "detail";
+                this.ingredientSummary = "summary";
+                for(var key in drinks[this.props.name]){
+                    this.ingredientDetails += key + ": " + drinks[this.props.name][key] + " oz\n";
+                    this.ingredientSummary += ingredientSummary + ", ";
+                }
             }
 
             state = {
@@ -61,24 +66,11 @@
             }
 
             render() {
-                this.ingredientDetails = [];
-                this.ingredientSummary = "";
-                var i = 6;
-                for(var key in drinks[this.props.name]){
-                    this.ingredientDetails.push(e('div', {key: i, className: "ingredient-detail "+this.getClass(!this.props.active, "collapsed invisible")}, key + ": " + drinks[this.props.name][key] + " oz"));
-                    this.ingredientSummary += key + ", ";
-                    i++;
-                }
-                return e('div', {onClick: (event)=>this.press(), className: "item"}, [
+                return e('div', {onTouchStart: (event)=>this.press(), className: "item"}, [
                     e('div', {key: 0, className: "title"}, this.props.name),
                     e('div', {key: 1, className: "ingredient-summary "+this.getClass(this.props.active, "invisible")}, this.ingredientSummary),
-                    e('div', {key: 2, className: "arrow-wrapper "+this.getClass(this.props.active, "flip")}, 
-                        e('div', {key: 6, className: "arrow"})
-                    ),
-                    e('div', {key: 3, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
-                    this.ingredientDetails,
-                    e('div', {key: 4, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
-                    e('div', {key: 5, className: "queue-add "+this.getClass(!this.props.active, "collapsed invisible")}, "Add to Queue")
+                    e('div', {key: 2, className: "arrow "+this.getClass(!this.props.active, "flip")}, null),
+                    e('div', {key: 3, className: "ingredient-detail "+this.getClass(!this.props.active, "invisible")}, this.ingredientDetails),
                 ]);
             }
         }
@@ -122,8 +114,8 @@
                     for(var key in msg){
                         switch(key){
                             case 'drinks': 
+                                this.setState({ drinks: msg.drinks });
                                 drinks = msg.drinks;
-                                this.setState({ drinks: drinks });
                                 break;
                             default:
                                 break;
@@ -164,87 +156,52 @@
             user-select: none;
         }
         .item{
-            transition: 200ms;
+            transition: all, 0.2s;
             background-color: black;
             opacity: 0.6;
             color: white;
             font-family: arial;
             font-size: 48px;
             margin: 16px;
-            padding: 48px;
+            line-height: 144px;
             border-radius: 16px;
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 80%);
         }
-        .active{
-            height: 352px;
-        }
         .title{
-            width: 50%;
-            height: 48px;
-            line-height: 48px;
+            width: 40%;
+            display: inline-block;
+            margin-left: 48px;
+            vertical-align: top;
+        }
+        .arrow-up{
             display: inline-block;
         }
-        .arrow-wrapper{
+        .arrow-down{
             display: inline-block;
-            width: 6%;
-            height: 48px;
-            transition: 200ms;
-        }
-        .arrow{
-            height: 36px;
-            width: 36px;
-            border-left: solid 5px;
-            border-bottom: solid 5px;
-            transform: rotateZ(-45deg);
-            margin: auto;
         }
         .ingredient-summary{
-            width: 34%;
+            width: 40%;
             display: inline-block;
             text-overflow: clip;
-            height: 48px;
-            line-height: 48px;
             overflow: hidden;
             white-space: nowrap;
+            vertical-align: top;
             font-size: 32px;
-            margin: 0 5%;
+            margin-left: 32px;
             opacity: 0.8;
-            transition: 200ms;
         }
         .ingredient-detail{
             white-space: pre-wrap;
-            line-height: 64px;
+            line-height: 56px;
             font-size: 40px;
             opacity: 0.8;
-            height: 64px;
             margin-left: 48px;
-            overflow: hidden;
-            transition: 200ms;
-        }
-        .queue-add{
-            font-size: 48px;
-            height: 120px;
-            line-height: 120px;
-            opacity: 1;
-            margin: 0 20%;
-            overflow: hidden;
-            background-color: hsl(340deg 100% 25%);
-            border-radius: 16px;
-            text-align: center;
-            transition: 200ms;
-        }
-        .spacer{
-            height: 32px;
-            transition: 200ms;
-        }
-        .collapsed{
-            height: 0;
         }
         .invisible{
-            opacity: 0%;
+            display: none;
         }
         .flip{
-            transform: scaleY(-1);
+            transform: rotateX(180);
         }
     </style>
 </head>
