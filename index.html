@@ -25,12 +25,6 @@
             }
         }
 
-        class Arrow extends React.Component{
-            constructor(props){
-                super(props);
-            }
-        }
-
         class DrinkItem extends React.Component {
             constructor(props){
                 super(props);
@@ -42,6 +36,7 @@
             }
 
             press(event){
+                console.log("press");
                 if(this.props.active){
                     this.props.updateState({selected: null});
                 }else{
@@ -49,8 +44,9 @@
                 }
             }
 
-            expand(){
-                
+            button(event){
+                console.log("button");
+                event.stopPropagation()
             }
 
             getClass(condition, style) {
@@ -69,7 +65,7 @@
                     this.ingredientSummary += key + ", ";
                     i++;
                 }
-                return e('div', {onClick: (event)=>this.press(), className: "item"}, [
+                return e('div', {onClick: (event)=>this.press(event), className: "item"}, [
                     e('div', {key: 0, className: "title"}, this.props.name),
                     e('div', {key: 1, className: "ingredient-summary "+this.getClass(this.props.active, "invisible")}, this.ingredientSummary),
                     e('div', {key: 2, className: "arrow-wrapper "+this.getClass(this.props.active, "flip")}, 
@@ -78,7 +74,7 @@
                     e('div', {key: 3, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
                     this.ingredientDetails,
                     e('div', {key: 4, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
-                    e('div', {key: 5, className: "queue-add "+this.getClass(!this.props.active, "collapsed invisible")}, "Add to Queue")
+                    e('div', {key: 5, onClick: (event)=>this.button(event), className: "queue-add "+this.getClass(!this.props.active, "collapsed invisible")}, "Add to Queue")
                 ]);
             }
         }
@@ -137,7 +133,7 @@
             render() {
                 var header = e(Header, null, null);
                 var drinkList = e(DrinkList, {drinks: this.state.drinks, selected: this.state.selected, updateState: this.state.updateState}, null);
-                var statusbar = e(Status, null, null);
+                var status = e(Status, null, null);
                 return e('div', null, drinkList);
             }
         }
@@ -179,7 +175,7 @@
             height: 352px;
         }
         .title{
-            width: 50%;
+            width: 44%;
             height: 48px;
             line-height: 48px;
             display: inline-block;
@@ -199,7 +195,7 @@
             margin: auto;
         }
         .ingredient-summary{
-            width: 34%;
+            width: 36%;
             display: inline-block;
             text-overflow: clip;
             height: 48px;
@@ -207,7 +203,7 @@
             overflow: hidden;
             white-space: nowrap;
             font-size: 32px;
-            margin: 0 5%;
+            margin: 0 7%;
             opacity: 0.8;
             transition: 200ms;
         }
@@ -228,7 +224,7 @@
             opacity: 1;
             margin: 0 20%;
             overflow: hidden;
-            background-color: hsl(340deg 100% 25%);
+            background-color: hsl(340deg 100% 35%);
             border-radius: 16px;
             text-align: center;
             transition: 200ms;
