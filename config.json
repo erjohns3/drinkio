@@ -24,6 +24,31 @@
         "Sidecar": {
             "vodka": 1.5,
             "orange juice": 3
+        },
+
+        "Mojito": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Gin & Tonic": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Rum & Coke": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Fireball": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Vodka": {
+            "vodka": 1.5,
+            "orange juice": 3
+        },
+        "Rum": {
+            "vodka": 1.5,
+            "orange juice": 3
         }
     },
     "ports": [
