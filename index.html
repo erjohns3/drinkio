@@ -12,7 +12,6 @@
 
         const socket = new WebSocket("ws://192.168.86.42:8765");
         const e = React.createElement;
-        var drinks = {};
 
         class Header extends React.Component{
             constructor(props){
@@ -29,15 +28,15 @@
             }
 
             getPosition(){
-                return 3;
+                return this.props.status.position;
             }
 
             getDrink(){
-                return "None";
+                return this.props.status.drink;
             }
 
             getTime(){
-                return "n/a";
+                return this.props.status.timer;
             }
 
             getButtonClass(){
@@ -48,12 +47,19 @@
                 return "Pour";
             }
 
+            button(event){
+                var msg = {
+                    type: "pour"
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
             render(){
                 return e('div', {className: "status"}, [
                     e('div', {key: 0, className: "status-drink"}, "Queued Drink: "+this.getDrink()),
                     e('div', {key: 1, className: "status-position"}, "Queue Position: "+this.getPosition()),
                     e('div', {key: 2, className: "status-time"}, "Pour Within: "+this.getTime()),
-                    e('div', {key: 3, onClick: (event)=>this.button(event), className: "button-pour "+this.getButtonClass()}, this.getButtonText())
+                    e('div', {key: 3, onClick: (event)=>this.button(event), className: "status-pour "+this.getButtonClass()}, this.getButtonText())
                 ]);
             }
         }
@@ -76,9 +82,32 @@
                 }
             }
 
-            button(event){
-                window.navigator.vibrate(200);
+            queueButton(event){
+                var msg = {
+                    type: "queue",
+                    drink: this.props.name
+                };
+                socket.send(JSON.stringify(msg));
                 event.stopPropagation()
+            }
+
+            pourButton(event){
+                //window.navigator.vibrate(200);
+                var msg = {
+                    type: "pour",
+                    drink: this.props.name
+                };
+                socket.send(JSON.stringify(msg));
+                event.stopPropagation()
+            }
+
+            getQueueTitle(){
+                if(!this.props.status.position){
+                    return "Add to Queue";
+                }else if(this.props.name != this.props.status.drink){
+                    return "Swap in Queue";
+                }
+                return "Remove from Queue";
             }
 
             getClass(condition, style) {
@@ -91,9 +120,9 @@
             render() {
                 this.ingredientDetails = [];
                 this.ingredientSummary = "";
-                var i = 7;
-                for(var key in drinks[this.props.name]){
-                    this.ingredientDetails.push(e('div', {key: i, className: "ingredient-detail "+this.getClass(!this.props.active, "collapsed invisible")}, key + ": " + drinks[this.props.name][key] + " oz"));
+                var i = 9;
+                for(var key in this.props.drink){
+                    this.ingredientDetails.push(e('div', {key: i, className: "ingredient-detail "+this.getClass(!this.props.active, "collapsed invisible")}, key + ": " + this.props.drink[key] + " oz"));
                     this.ingredientSummary += key + ", ";
                     i++;
                 }
@@ -106,7 +135,10 @@
                     e('div', {key: 4, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
                     this.ingredientDetails,
                     e('div', {key: 5, className: "spacer "+this.getClass(!this.props.active, "collapsed")}, null),
-                    e('div', {key: 6, onClick: (event)=>this.button(event), className: "button-add "+this.getClass(!this.props.active, "collapsed invisible")}, "Add to Queue")
+                    e('div', {key: 6}, [
+                        e('div', {key: 7, onClick: (event)=>this.queueButton(event), className: "button-item "+this.getClass(!this.props.active, "collapsed invisible ")+this.getClass(this.props.status.progress, "grey ")}, this.getQueueTitle()),
+                        e('div', {key: 8, onClick: (event)=>this.pourButton(event), className: "button-item "+this.getClass(!this.props.active, "collapsed invisible ")+this.getClass(this.props.status.users > 0, "grey ")}, "Pour Now")
+                    ])
                 ]);
             }
         }
@@ -117,8 +149,8 @@
             }
             render() {
                 this.list = []
-                for(var drink in this.props.drinks){
-                    this.list.push(e(DrinkItem, {key: drink, name: drink, active: drink==this.props.selected, updateState: this.props.updateState}, null));
+                for(var name in this.props.drinks){
+                    this.list.push(e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, active: name==this.props.selected, updateState: this.props.updateState}, null));
                 }
                 return e('div', null, this.list);
             }
@@ -131,6 +163,13 @@
 
             state = {
                 drinks: null,
+                status: {
+                    users: 0,
+                    position: false,
+                    drink: "",
+                    timer: -1,
+                    progress: -1
+                },
                 selected: null,
                 updateState: this.changeState.bind(this)
             }
@@ -141,30 +180,41 @@
 
             componentDidMount(){
                 socket.onopen = function () {
-                    socket.send("Hello server");
+                    var query = {
+                        type: "query"
+                    };
+                    socket.send(JSON.stringify(query));
+                    setInterval(()=>{
+                        socket.send(JSON.stringify(query));
+                    }, 5000);
                 }
 
                 socket.onmessage = (event)=>{
                     var msg = JSON.parse(event.data);
+                    console.log("users: "+msg.status.users);
+                    console.log("position: "+msg.status.position);
+                    console.log("drink: "+msg.status.drink);
+                    console.log("timer: "+msg.status.timer);
+                    console.log("progress: "+msg.status.progress);
+                    console.log("");
                     for(var key in msg){
                         switch(key){
                             case 'drinks': 
-                                drinks = msg.drinks;
-                                this.setState({ drinks: drinks });
+                                this.setState({ drinks: msg.drinks });
                                 break;
+                            case 'status': 
+                                this.setState({ status: msg.status });
                             default:
                                 break;
                         }
                     }
-                    
-                    console.log(msg);
                 }
             }
 
             render() {
                 return [
-                    e(DrinkList, {key: 0, drinks: this.state.drinks, selected: this.state.selected, updateState: this.state.updateState}, null),
-                    e(Status, {key: 1}, null)
+                    e(DrinkList, {key: 0, drinks: this.state.drinks, status: this.state.status, selected: this.state.selected, updateState: this.state.updateState}, null),
+                    e(Status, {key: 1, status: this.state.status}, null)
                 ];
             }
         }
@@ -185,22 +235,23 @@
         body{
             margin: 0;
             background-image: linear-gradient(to bottom right, hsl(180deg 100% 25%), hsl(340deg 100% 25%));
+            background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
             font-family: arial;
-            background-attachment: fixed;
+            font-size: 0;
         }
         .item{
             transition: 200ms;
-            background-color: hsl(0deg 0% 0% / 60%);
-            color: hsl(0deg 0% 100% / 80%);
-            font-size: 18px;
+            background-color: hsl(0deg 0% 0% / 50%);
+            color: hsl(0deg 0% 100% / 70%);
             margin: 6px;
             padding: 18px;
             border-radius: 6px;
             box-shadow: 0 0 16px 4px rgb(0 0 0 / 25%);
         }
         .title{
+            font-size: 18px;
             width: 44%;
             height: 18px;
             line-height: 18px;
@@ -221,7 +272,7 @@
             margin: auto;
         }
         .ingredient-summary{
-            color: hsl(0deg 0% 100% / 60%);
+            color: hsl(0deg 0% 100% / 50%);
             width: 36%;
             display: inline-block;
             text-overflow: clip;
@@ -243,21 +294,23 @@
             overflow: hidden;
             transition: 200ms;
         }
-        .button-add{
-            font-size: 18px;
+        .button-item{
+            font-size: 14px;
             height: 44px;
             line-height: 44px;
-            margin: 0 20%;
+            margin: 0 2%;
+            width: 46%;
+            display: inline-block;
             overflow: hidden;
-            background-image: linear-gradient(to bottom right, hsl(340deg 100% 35%), hsl(180deg 100% 35%));
+            background-image: linear-gradient(to bottom right, hsl(340deg 100% 25%), hsl(180deg 100% 25%));
             background-attachment: fixed;
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 25%);
             border-radius: 6px;
             text-align: center;
             transition: 200ms;
         }
-        .button-pour{
-            font-size: 18px;
+        .status-pour{
+            font-size: 16px;
             position: absolute;
             height: 44px;
             top: 18px;
@@ -265,7 +318,7 @@
             width: 25%;
             line-height: 44px;
             overflow: hidden;
-            background-image: linear-gradient(to bottom right, hsl(340deg 100% 35%), hsl(180deg 100% 35%));
+            background-image: linear-gradient(to bottom right, hsl(340deg 100% 25%), hsl(180deg 100% 25%));
             background-attachment: fixed;
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 25%);
             border-radius: 6px;
@@ -298,7 +351,7 @@
             font-size: 13px;
         }
         .status{
-            background-image: linear-gradient(to bottom right, hsl(180deg 100% 8%), hsl(340deg 100% 8%));
+            background-image: linear-gradient(to bottom right, hsl(180deg 100% 12%), hsl(340deg 100% 12%));
             background-attachment: fixed;
             text-align: center;
             color: hsl(0deg 0% 100% / 80%);
@@ -317,6 +370,9 @@
         }
         .invisible{
             opacity: 0%;
+        }
+        .grey{
+            opacity: 25%;
         }
         .flip{
             transform: scaleY(-1);

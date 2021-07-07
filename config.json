@@ -72,5 +72,33 @@
             "empty": false,
             "abv": 0
         }
+    },
+    "status": {
+        "position": 1,
+        "timeout": 30,
+        "progress": 40
+    },
+    "msg to server":[
+        "query",
+        "add to queue",
+        "pour",
+        "cancel"
+    ],
+    "msg to client":[
+        "config",
+        "queue",
+        "pour"
+    ],
+
+    "drinker_queue": [
+        "192.168.1.2",
+        "192.168.1.3",
+        "192.168.1.4"
+    ],
+    "drinker_drinks": {
+        "192.168.1.2": "Screwdriver",
+        "192.168.1.3": "Screwdriver",
+        "192.168.1.4": "Screwdriver"
     }
 }
+
