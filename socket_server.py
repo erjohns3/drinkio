@@ -22,7 +22,8 @@ f.close()
 
 socket_lock = threading.Lock()
 user_queue = []
-user_drink = {}
+user_drink_name = {}
+user_drink_ingredients = {}
 
 status = {
     "position": -1,
@@ -93,7 +94,7 @@ async def send_status(websocket):
         i = i+1
     if found:
         status["position"] = i
-        status["drink"] = user_drink[user]
+        status["drink"] = user_drink_name[user]
         if state == State.READY and user_queue[0] == websocket.remote_address[0]:
             status["timer"] = max(0, ready_time + ready_wait - time.time())
             status["progress"] = False
@@ -129,7 +130,7 @@ async def init(websocket, path):
             if msg['type'] == "query":
                 await send_status(websocket)
 
-            elif msg['type'] == "queue" and 'drink' in msg:
+            elif msg['type'] == "queue" and 'name' in msg:
                 if state == State.STANDBY:
                     ready_start()
                     state = State.READY
@@ -142,7 +143,8 @@ async def init(websocket, path):
                 if add_user:
                     user_queue.append(websocket.remote_address[0])
                     
-                user_drink[websocket.remote_address[0]] = msg['drink']
+                user_drink_name[websocket.remote_address[0]] = msg['name']
+                user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
                 await send_status(websocket)
             
             elif msg['type'] == "remove":
@@ -162,7 +164,8 @@ async def init(websocket, path):
                     print("pour end 1")
                 elif state == State.STANDBY and 'drink' in msg:
                     user_queue.append(websocket.remote_address[0])
-                    user_drink[websocket.remote_address[0]] = msg['drink']
+                    user_drink_name[websocket.remote_address[0]] = msg['name']
+                    user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
                     state = State.POURING
                     print("pour end 2")
                 print("pour end")
@@ -176,7 +179,7 @@ async def init(websocket, path):
 
         socket_lock.release()
 
-start_server = websockets.serve(init, "192.168.86.42", 8765)
+start_server = websockets.serve(init, "192.168.86.47", 8765)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

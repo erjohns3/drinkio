@@ -25,7 +25,6 @@
             "vodka": 1.5,
             "orange juice": 3
         },
-
         "Mojito": {
             "vodka": 1.5,
             "orange juice": 3
@@ -59,7 +58,7 @@
     "ingredients": {
         "tequila": {
             "port": 0,
-            "empty": false,
+            "empty": true,
             "abv": 0.4
         },
         "triple sec": {
@@ -71,34 +70,17 @@
             "port": 2,
             "empty": false,
             "abv": 0
+        },
+        "vodka": {
+            "port": 3,
+            "empty": false,
+            "abv": 0
+        },
+        "orange juice": {
+            "port": 4,
+            "empty": false,
+            "abv": 0
         }
-    },
-    "status": {
-        "position": 1,
-        "timeout": 30,
-        "progress": 40
-    },
-    "msg to server":[
-        "query",
-        "add to queue",
-        "pour",
-        "cancel"
-    ],
-    "msg to client":[
-        "config",
-        "queue",
-        "pour"
-    ],
-
-    "drinker_queue": [
-        "192.168.1.2",
-        "192.168.1.3",
-        "192.168.1.4"
-    ],
-    "drinker_drinks": {
-        "192.168.1.2": "Screwdriver",
-        "192.168.1.3": "Screwdriver",
-        "192.168.1.4": "Screwdriver"
     }
 }
 
