@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>drink.io</title>
     <link rel="icon" href="static/favicon.ico">
     <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
@@ -83,8 +83,7 @@
         class DrinkItem extends React.Component {
             constructor(props){
                 super(props);
-                this.collapsed = React.createRef();
-                this.expanded = React.createRef();
+                this.item = React.createRef();
             }
 
             state = {
@@ -92,18 +91,24 @@
             }
 
             shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.active != this.props.active){
+                if(nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name)){
                     return true;
                 }
                 return false;
             }
 
-            press(event){
-                if(this.props.active){
-                    this.props.updateState({selected: null});
-                }else{
-                    this.props.updateState({selected: this.props.name});
-                }
+            expand(event){
+                this.props.updateState({selected: this.props.name});
+                var move = Math.round((document.documentElement.clientHeight * 0.01)-(this.item.current.getBoundingClientRect().y));
+                console.log(move);
+                this.item.current.style.transform = "translateY("+move+"px)";
+                console.log("expand: " + this.props.name);
+            }
+
+            collapse(event){
+                this.props.updateState({selected: null});
+                this.item.current.style = {};
+                console.log("collapse: " + this.props.name);
             }
 
             queueButton(event){
@@ -147,71 +152,77 @@
                 console.log("render: " + this.props.name);
                 this.ingredientDetails = [];
                 this.ingredientSummary = "";
-                var i = 9;
+                var i = 10;
                 var empty = false;
-                if(this.props.active){
+                if(this.props.selected == this.props.name){
                     for(var key in this.props.drink){
                         if(this.props.ingredients[key].empty){
                             empty = true;
                         }
-                        this.ingredientDetails.push(e('div', {key: i, className: "ingredient-detail"}, key + ": " + this.props.drink[key] + " oz"+this.addText(this.props.ingredients[key].empty, " ( EMPTY )")));
+                        this.ingredientDetails.push(e('div', {key: i, className: "ingredient"}, key + ": " + this.props.drink[key] + " oz"+this.addText(this.props.ingredients[key].empty, " ( EMPTY )")));
                         this.ingredientSummary += key + ", ";
                         i++;
                     }
-                    return e('div', {onClick: (event)=>this.press(event), className: "item"+this.addText(empty, " empty")}, [
+                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(empty, " empty")}, [
                         e('div', {key: 0, className: "title"}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
-                        e('div', {key: 2, className: "arrow-wrapper flip"}, 
-                            e('div', {key: 3, className: "arrow"})
-                        ),
-                        e('div', {key: 4, className: "spacer"}, null),
-                        this.ingredientDetails,
-                        e('div', {key: 5, className: "spacer"}, null),
-                        e('div', {key: 6}, [
-                            e('div', {key: 7, onClick: (event)=>this.queueButton(event), className: "button-item"+this.addText(this.props.status.progress, " grey")}, this.getQueueTitle()),
-                            e('div', {key: 8, onClick: (event)=>this.pourButton(event), className: "button-item"+this.addText(this.props.status.users > 0, " grey")}, "Pour Now")
+                        e('div', {key: 2, className: "arrow-wrapper"}, [
+                            e('div', {key: 3, className: "line-left line-left-close"}),
+                            e('div', {key: 4, className: "line-right line-right-close"})
+                        ]),
+                        e('div', {key: 5, className: "details-wrapper"},[
+                            e('div', {key: 6, className: "details"}, [
+                                e('div', {key: 7, className: "ingredient-wrapper"},  
+                                    this.ingredientDetails
+                                ),
+                                e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.addText(this.props.status.progress, " grey")}, this.getQueueTitle()),
+                                e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.addText(this.props.status.users > 0, " grey")}, "Pour Now")
+                            ])
+                        ])
+                    ]);
+                }else if(this.props.selected == null){
+                    for(var key in this.props.drink){
+                        if(this.props.ingredients[key].empty){
+                            empty = true;
+                        }
+                        this.ingredientSummary += key + ", ";
+                        i++;
+                    }
+                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(empty, " empty")}, [
+                        e('div', {key: 0, className: "title"}, this.props.name),
+                        e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
+                        e('div', {key: 2, className: "arrow-wrapper"}, [
+                            e('div', {key: 3, className: "line-left"}),
+                            e('div', {key: 4, className: "line-right"})
+                        ]),
+                        e('div', {key: 5, className: "details-wrapper shrunk"}, [
+                            e('div', {key: 6, className: "details"}, null)
                         ])
                     ]);
                 }else{
+                    console.log("----FUCK----");
+                    /*
                     for(var key in this.props.drink){
                         if(this.props.ingredients[key].empty){
                             empty = true;
                         }
-                        this.ingredientDetails.push(e('div', {key: i, className: "ingredient-detail collapsed invisible"}, null));
                         this.ingredientSummary += key + ", ";
                         i++;
                     }
-                    return e('div', {onClick: (event)=>this.press(event), className: "item"+this.addText(empty, " empty")}, [
-                        e('div', {key: 0, className: "title"}, this.props.name),
-                        e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
-                        e('div', {key: 2, className: "arrow-wrapper"}, 
-                            e('div', {key: 3, className: "arrow"})
-                        ),
-                        e('div', {key: 4, className: "spacer collapsed"}, null),
-                        this.ingredientDetails,
-                        e('div', {key: 5, className: "spacer collapsed"}, null),
-                        e('div', {key: 6}, [
-                            e('div', {key: 7, onClick: (event)=>this.queueButton(event), className: "button-item collapsed invisible"+this.addText(this.props.status.progress, "grey")}, this.getQueueTitle()),
-                            e('div', {key: 8, onClick: (event)=>this.pourButton(event), className: "button-item collapsed invisible"+this.addText(this.props.status.users > 0, "grey")}, "Pour Now")
+                    return e('div', {ref: this.item, className: "item"+this.addText(empty, " empty")}, [
+                        e('div', {key: 0, className: "item-header"}, [
+                            e('div', {key: 0, className: "title"}, this.props.name),
+                            e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
+                            e('div', {key: 2, className: "arrow-wrapper"}, 
+                                e('div', {key: 3, className: "arrow"})
+                            ),
+                        ]),
+                        e('div', {key: 4, className: "details-wrapper shrunk"}, [
+                            e('div', {key: 6, className: "details"}, null)
                         ])
                     ]);
+                    */
                 }
-                /*
-                return e('div', {onClick: (event)=>this.press(event), className: "item"}, [
-                    e('div', {key: 0, className: "title"}, this.props.name),
-                    e('div', {key: 1, className: "ingredient-summary "+this.addText(this.props.active, "invisible")}, this.ingredientSummary),
-                    e('div', {key: 2, className: "arrow-wrapper "+this.addText(this.props.active, "flip")}, 
-                        e('div', {key: 3, className: "arrow"})
-                    ),
-                    e('div', {key: 4, className: "spacer "+this.addText(!this.props.active, "collapsed")}, null),
-                    this.ingredientDetails,
-                    e('div', {key: 5, className: "spacer "+this.addText(!this.props.active, "collapsed")}, null),
-                    e('div', {key: 6}, [
-                        e('div', {key: 7, onClick: (event)=>this.queueButton(event), className: "button-item "+this.addText(!this.props.active, "collapsed invisible ")+this.addText(this.props.status.progress, "grey ")}, this.getQueueTitle()),
-                        e('div', {key: 8, onClick: (event)=>this.pourButton(event), className: "button-item "+this.addText(!this.props.active, "collapsed invisible ")+this.addText(this.props.status.users > 0, "grey ")}, "Pour Now")
-                    ])
-                ]);
-                */
             }
         }
 
@@ -219,18 +230,39 @@
             constructor(props){
                 super(props);
             }
-            render() {
-                this.list = []
-                for(var name in this.props.drinks){
-                    this.list.push(e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, active: name==this.props.selected, updateState: this.props.updateState}, null));
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
                 }
-                return e('div', null, this.list);
+                return "";
+            }
+
+            render() {
+                this.list = [];
+                for(var name in this.props.drinks){
+                    if(this.props.selected == null || this.props.selected == name){
+                        this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"},
+                            e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.props.selected, updateState: this.props.updateState}, null))
+                        );
+                    }else{
+                        this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper invisible"},
+                            e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.props.selected, updateState: this.props.updateState}, null))
+                        );
+                    }
+                    
+                }
+                return e('div', {className: "list"+this.addText(this.props.selected != null, " noscroll")}, this.list);
             }
         }
 
         class App extends React.Component {
             constructor(){
                 super();
+                let vh = window.innerHeight * 0.01;
+                // Then we set the value in the --vh custom property to the root of the document
+                document.getElementById('root').style.setProperty('--vh', `${vh}px`);
+                console.log(vh);
             }
 
             state = {
@@ -311,6 +343,7 @@
     <style>
         body{
             margin: 0;
+            padding: 0;
             background-image: linear-gradient(to bottom right, hsl(180deg 100% 25%), hsl(340deg 100% 25%));
             background-attachment: fixed;
             touch-action: manipulation;
@@ -318,87 +351,152 @@
             font-family: arial;
             font-size: 0;
         }
-        .item{
+        #root{
+            height: calc(var(--vh, 1vh) * 100);
+        }
+        .list{
+            height: 87%;
+            overflow-y: auto;
+        }
+        .item-wrapper{
             transition: 200ms;
-            background-color: hsl(0deg 0% 0% / 50%);
+            height: 11%;
+            margin: 1vh;
+        }
+        .item{
+            position: relative;
+            transition-property: transform, opacity;
+            transition-duration: 200ms;
+            background-color: hsla(0, 0%, 0%, 30%);
             color: hsl(0deg 0% 100% / 70%);
-            margin: 6px;
-            padding: 18px;
-            border-radius: 6px;
-            box-shadow: 0 0 16px 4px rgb(0 0 0 / 25%);
+            height: 100%;
+            border-radius: 1vh;
         }
         .title{
-            font-size: 18px;
-            vertical-align: top;
+            position: absolute;
             width: 44%;
-            height: 18px;
-            line-height: 18px;
-            display: inline-block;
+            height: 32%;
+            top: 34%;
+            left: 5%;
+            line-height: 100%;
+            font-size: 3vh;
         }
         .arrow-wrapper{
-            display: inline-block;
-            width: 6%;
-            height: 18px;
+            position: absolute;
+            width: 2.5vh;
+            height: 2.5vh;
+            top: 37%;
+            right: 5%;
+        }
+        .line-left{
+            height: 100%;
+            width: 8%;
+            position: absolute;
+            left: 12%;
+            transform: translateX(0) rotateZ(-45deg);
+            background-color: hsl(0deg 0% 100% / 70%);
             transition: 200ms;
         }
-        .arrow{
-            height: 12px;
-            width: 12px;
-            border-left: solid 2px;
-            border-bottom: solid 2px;
-            transform: rotateZ(-45deg);
-            margin: auto;
+        .line-right{
+            height: 100%;
+            width: 8%;
+            position: absolute;
+            right: 12%;
+            transform: translateX(0) rotateZ(45deg);
+            background-color: hsl(0deg 0% 100% / 70%);
+            transition: 200ms;
+        }
+        .line-left-close{
+            transform: translateX(0.75vh) rotateZ(-45deg);
+        }
+        .line-right-close{
+            transform: translateX(-0.85vh) rotateZ(45deg);
         }
         .ingredient-summary{
-            vertical-align: top;
+            position: absolute;
+            width: 34%;
+            height: 18%;
+            top: 41%;
+            left: 50%;
+            line-height: 100%;
+            font-size: 1.7vh;
             color: hsl(0deg 0% 100% / 50%);
-            width: 36%;
-            display: inline-block;
             text-overflow: clip;
-            height: 18px;
-            line-height: 18px;
             overflow: hidden;
             white-space: nowrap;
-            font-size: 11px;
-            margin: 0 7%;
             transition: 200ms;
         }
-        .ingredient-detail{
-            color: hsl(0deg 0% 100% / 60%);
-            white-space: pre-wrap;
-            line-height: 24px;
-            font-size: 15px;
-            height: 24px;
-            margin-left: 18px;
-            overflow: hidden;
+        .details-wrapper{
+            position: absolute;
+            top: -691%;
+            height: 1582%;
+            width: 100%;
             transition: 200ms;
+        }
+        .details{
+            height: 50%;
+            position: absolute;
+            width: 100%;
+            top: 50%;
+            background-color: hsla(0, 0%, 0%, 30%);
+            border-radius: 0 0 1vh 1vh;
+        }
+        .ingredient-wrapper{
+            color: hsl(0deg 0% 100% / 60%);
+            position: absolute;
+            font-size: 2vh;
+            height: 25%;
+            left: 10%;
+            width: 80%;
+            overflow-y: auto;
+        }
+        .ingredient{
+            line-height: 160%;
+            font-size: 2.2vh;
+            height: 20%;
+            overflow: hidden;
         }
         .button-item{
-            font-size: 14px;
-            height: 44px;
-            line-height: 44px;
-            margin: 0 2%;
-            width: 46%;
-            display: inline-block;
+            position: absolute;
+            font-size: 2vh;
+            height: 10%;
+            bottom: 5%;
+            line-height: 360%;
+            width: 43%;
             overflow: hidden;
-            background-image: linear-gradient(to bottom right, hsl(340deg 100% 25%), hsl(180deg 100% 25%));
-            background-attachment: fixed;
-            box-shadow: 0 0 16px 2px rgb(0 0 0 / 25%);
-            border-radius: 6px;
+            border-radius: 1vh;
             text-align: center;
             transition: 200ms;
+        }
+        .button-add{
+            left: 5%;
+            background-color: hsl(340deg 85% 25%);
+        }
+        .button-pour{
+            right: 5%;
+            background-color: hsl(180deg 85% 25%);
+        }
+
+        .status{
+            background-color: hsla(0, 0%, 0%, 50%);
+            text-align: center;
+            color: hsl(0deg 0% 100% / 80%);
+            font-size: 3vh;
+            height: 13%;
+            position: sticky;
+            bottom: 0;
+            /*box-shadow: 0 0 16px 6px rgb(0 0 0 / 60%);*/
         }
         .status-pour{
             font-size: 16px;
             position: absolute;
             height: 44px;
-            top: 18px;
-            right: 18px;
+            top: 3vh;
+            right: 3vh;
             width: 25%;
             line-height: 44px;
             overflow: hidden;
-            background-image: linear-gradient(to bottom right, hsl(340deg 100% 25%), hsl(180deg 100% 25%));
-            background-attachment: fixed;
+            background-color: hsl(180deg 100% 25%);
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 25%);
             border-radius: 6px;
             text-align: center;
@@ -429,40 +527,24 @@
             left: 16px;
             font-size: 13px;
         }
-        .status{
-            background-image: linear-gradient(to bottom right, hsl(180deg 100% 12%), hsl(340deg 100% 12%));
-            background-attachment: fixed;
-            text-align: center;
-            color: hsl(0deg 0% 100% / 80%);
-            font-size: 18px;
-            height: 80px;
-            position: sticky;
-            bottom: 0;
-            box-shadow: 0 0 16px 6px rgb(0 0 0 / 60%);
-        }
-        .expanded{
-            position: absolute;
-            top: 20px;
-            height: 90%;
-        }
-        .spacer{
-            height: 12px;
-            transition: 200ms;
-        }
-        .collapsed{
-            height: 0;
-        }
-        .invisible{
-            opacity: 0%;
-        }
-        .grey{
-            opacity: 25%;
-        }
         .empty{
             opacity: 40%;
         }
-        .flip{
-            transform: scaleY(-1);
+        .shrunk{
+            transform: scaleY(0);
+        }
+        .border-flat{
+            border-radius: 1vh 1vh 0 0;
+        }
+        .invisible{
+            opacity: 0%;
+            pointer-events: none;
+        }
+        .noscroll{
+            overflow-y: hidden;
+        }
+        .grey{
+            opacity: 25%;
         }
     </style>
 </head>
