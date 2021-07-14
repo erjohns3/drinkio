@@ -15,12 +15,26 @@ class State(Enum):
     CANCELLING = 4
     CLEANING = 5
 
+class AsyncTimer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
 loc = pathlib.Path(__file__).parent.absolute()
 f = open(str(loc)+"/config.json", "r")
 config = f.read()
 f.close()
 
 socket_lock = threading.Lock()
+socket_list = []
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
@@ -30,7 +44,7 @@ status = {
     "users": 0,
     "drink": "",
     "timer": -1,
-    "progress": -1
+    "progress": False
 }
 
 #################################################
@@ -55,21 +69,20 @@ ready_time = 0
 progress = 30
 
 
-def ready_start():
+async def ready_start():
     global ready_timer
     global ready_time
 
-    ready_timer = threading.Timer(ready_wait, ready_end)
-    ready_timer.start()
+    ready_timer = AsyncTimer(ready_wait, ready_end)
     ready_time = time.time()
 
 
-def ready_end():
+async def ready_end():
     socket_lock.acquire()
-    ready_reset()
+    await ready_reset()
     socket_lock.release()
 
-def ready_reset():
+async def ready_reset():
     global state
     global user_queue
 
@@ -77,28 +90,26 @@ def ready_reset():
     if len(user_queue) == 0:
         state = State.STANDBY
     else:
-        ready_start()
+        await ready_start()
+    await broadcast_status()
 
-async def send_status(websocket):
-    global state
-    global user_queue
-    global ready_time
+async def send_status(socket):
     global status
 
     i = 1
     found = False
     for user in user_queue:
-        if user == websocket.remote_address[0]:
+        if user == socket.remote_address[0]:
             found = True
             break
         i = i+1
     if found:
         status["position"] = i
         status["drink"] = user_drink_name[user]
-        if state == State.READY and user_queue[0] == websocket.remote_address[0]:
+        if state == State.READY and user_queue[0] == socket.remote_address[0]:
             status["timer"] = max(0, ready_time + ready_wait - time.time())
             status["progress"] = False
-        elif state == State.POURING and user_queue[0] == websocket.remote_address[0]:
+        elif state == State.POURING and user_queue[0] == socket.remote_address[0]:
             status["timer"] = False
             status["progress"] = progress
         else:
@@ -110,7 +121,19 @@ async def send_status(websocket):
         status["timer"] = False
         status["progress"] = False
     status["users"] = len(user_queue)
-    await websocket.send('{"status":' +json.dumps(status) + '}')
+    print(status)
+    await socket.send('{"status":' +json.dumps(status) + '}')
+
+async def broadcast_status():
+    global socket_list
+    
+    i=0
+    while i < len(socket_list):
+        if socket_list[i].closed:
+            socket_list.pop(i)
+        else:
+            await send_status(socket_list[i])
+            i=i+1
 
 #################################################
 
@@ -119,7 +142,11 @@ async def init(websocket, path):
     global user_queue
     global ready_timer
 
-    print("socket start: " + websocket.remote_address[0])
+    socket_lock.acquire()
+    socket_list.append(websocket)
+    print("add: " + websocket.remote_address[0])
+    socket_lock.release()
+
     await websocket.send(config)
     while True:
         msg_string = await websocket.recv()
@@ -130,52 +157,64 @@ async def init(websocket, path):
             if msg['type'] == "query":
                 await send_status(websocket)
 
-            elif msg['type'] == "queue" and 'name' in msg:
+            elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
+                print("queue add")
                 if state == State.STANDBY:
-                    ready_start()
+                    await ready_start()
                     state = State.READY
+                    print("queue add 1")
                 
                 add_user = True
                 for user in user_queue:
                     if user == websocket.remote_address[0]:
                         add_user = False
+                        print("queue add 2")
                         break
                 if add_user:
                     user_queue.append(websocket.remote_address[0])
+                    print("queue add 3")
                     
                 user_drink_name[websocket.remote_address[0]] = msg['name']
                 user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
-                await send_status(websocket)
+                await broadcast_status()
             
             elif msg['type'] == "remove":
-                if user_queue[0] != websocket.remote_address[0]:
-                    user_queue.remove(websocket.remote_address[0])
-                elif state == State.READY:
-                    ready_timer.cancel()
-                    ready_reset()
+                i = 0
+                for user in user_queue:
+                    if user == websocket.remote_address[0]:
+                        found = True
+                        break
+                    i = i+1
+                if found:
+                    if i > 0:
+                        user_queue.remove(websocket.remote_address[0])
+                    elif state == State.READY:
+                        ready_timer.cancel()
+                        await ready_reset()
                     
-                await send_status(websocket)
+                await broadcast_status()
 
-            elif msg['type'] == "pour":
-                print("pour start")
-                if state == State.READY and user_queue[0] == websocket.remote_address[0]:
-                    ready_timer.cancel()
-                    state = State.POURING
-                    print("pour end 1")
-                elif state == State.STANDBY and 'drink' in msg:
+            elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
+                if state == State.STANDBY:
                     user_queue.append(websocket.remote_address[0])
                     user_drink_name[websocket.remote_address[0]] = msg['name']
                     user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
                     state = State.POURING
-                    print("pour end 2")
-                print("pour end")
-                await send_status(websocket)
-                
+                    print("pour now")
+                    await broadcast_status()
+
+            elif msg['type'] == "pour" :
+                if state == State.READY and user_queue[0] == websocket.remote_address[0]:
+                    ready_timer.cancel()
+                    state = State.POURING
+                    print("pour queue")
+                    await broadcast_status()
 
             elif msg['type'] == "cancel":
                 if state == State.POURING and user_queue[0] == websocket.remote_address[0]:
                     state = State.CANCELLING
-                    await send_status(websocket)
+                    print("pour cancel")
+                    await broadcast_status()
 
         socket_lock.release()
 
