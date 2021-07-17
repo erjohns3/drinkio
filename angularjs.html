@@ -1,0 +1,42 @@
+<html ng-app>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script>
+
+        var drinks = {};
+
+        const socket = new WebSocket("ws://127.0.0.1:8765");
+
+        socket.onopen = function () {
+            socket.send("Hello server");
+        }
+
+        socket.onmessage = function (event) {
+            var msg = JSON.parse(event.data);
+            //var keys = Object.keys(msg);
+            for (var key in msg) {
+                //console.log(key);
+                switch (key) {
+                    case 'drinks':
+                        drinks = msg.drinks;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            console.log(msg);
+        }
+    </script>
+</head>
+
+<body>
+    <div>
+        <div ng-repeat="(key, object) in drinks">
+            {{key}}
+        </div>
+    </div>
+</body>
+
+</html>

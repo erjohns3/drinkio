@@ -40,11 +40,12 @@ user_drink_name = {}
 user_drink_ingredients = {}
 
 status = {
-    "position": -1,
+    "position": False,
     "users": 0,
-    "drink": "",
-    "timer": -1,
-    "progress": False
+    "drink": False,
+    "timer": False,
+    "progress": False,
+    "tick": 0
 }
 
 #################################################
@@ -63,7 +64,7 @@ http_thread.start()
 #################################################
         
 state = State.STANDBY
-ready_wait = 30
+ready_wait = 20
 ready_timer = False
 ready_time = 0
 progress = 30
@@ -120,6 +121,7 @@ async def send_status(socket):
         status["drink"] = False
         status["timer"] = False
         status["progress"] = False
+    status["tick"] = status["tick"] + 1
     status["users"] = len(user_queue)
     print(status)
     await socket.send('{"status":' +json.dumps(status) + '}')
@@ -188,11 +190,10 @@ async def init(websocket, path):
                 if found:
                     if i > 0:
                         user_queue.remove(websocket.remote_address[0])
+                        await broadcast_status()
                     elif state == State.READY:
                         ready_timer.cancel()
                         await ready_reset()
-                    
-                await broadcast_status()
 
             elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
                 if state == State.STANDBY:
