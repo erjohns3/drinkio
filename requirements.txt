@@ -1,0 +1,4 @@
+# add deps here, then if things change run
+# pip install -r requirements.txt
+websockets == 9.1
+pigpio == 1.78
