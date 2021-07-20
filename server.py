@@ -242,7 +242,7 @@ async def init(websocket, path):
 
         state_lock.release()
 
-start_server = websockets.serve(init, "192.168.86.42", 8765)
+start_server = websockets.serve(init, "0.0.0.0", 8765)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
@@ -317,7 +317,7 @@ cancel_lock = threading.Lock()
 cancel_pour = False
 
 clean = {
-    "water"": 5
+    "water": 5
 }
 
 def check_cancel():
