@@ -19,7 +19,21 @@ class State(Enum):
     CANCELLING = 4
     CLEANING = 5
 
+class AsyncTimer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
 state_lock = threading.Lock()
+config_lock = threading.Lock()
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
@@ -48,57 +62,53 @@ http_thread.start()
 #################################################
         
 state = State.STANDBY
-ready_wait = 30
+ready_wait = 20
 ready_timer = False
 ready_time = 0
 progress = 30
 
 
-def ready_start():
+async def ready_start():
     global ready_timer
     global ready_time
 
-    ready_timer = threading.Timer(ready_wait, ready_end)
-    ready_timer.start()
+    ready_timer = AsyncTimer(ready_wait, ready_end)
     ready_time = time.time()
 
 
-def ready_end():
+async def ready_end():
     state_lock.acquire()
-    state_reset()
+    await ready_reset()
     state_lock.release()
 
-def state_reset():
+async def ready_reset():
     global state
     global user_queue
 
-    user_queue.pop()
+    user_queue.pop(0)
     if len(user_queue) == 0:
         state = State.STANDBY
     else:
-        state = State.READY
-        ready_start()
+        await ready_start()
+    await broadcast_status()
 
-async def send_status(websocket):
-    global state
-    global user_queue
-    global ready_time
+async def send_status(socket):
     global status
 
     i = 1
     found = False
     for user in user_queue:
-        if user == websocket.remote_address[0]:
+        if user == socket.remote_address[0]:
             found = True
             break
         i = i+1
     if found:
         status["position"] = i
         status["drink"] = user_drink_name[user]
-        if state == State.READY and user_queue[0] == websocket.remote_address[0]:
+        if state == State.READY and user_queue[0] == socket.remote_address[0]:
             status["timer"] = max(0, ready_time + ready_wait - time.time())
             status["progress"] = False
-        elif state == State.POURING and user_queue[0] == websocket.remote_address[0]:
+        elif state == State.POURING and user_queue[0] == socket.remote_address[0]:
             status["timer"] = False
             status["progress"] = progress
         else:
@@ -109,8 +119,32 @@ async def send_status(websocket):
         status["drink"] = False
         status["timer"] = False
         status["progress"] = False
+    status["tick"] = status["tick"] + 1
     status["users"] = len(user_queue)
-    await websocket.send('{"status":' +json.dumps(status) + '}')
+    print(status)
+    await socket.send('{"status":' +json.dumps(status) + '}')
+
+async def broadcast_status():
+    global socket_list
+    
+    i=0
+    while i < len(socket_list):
+        if socket_list[i].closed:
+            socket_list.pop(i)
+        else:
+            await send_status(socket_list[i])
+            i=i+1
+
+async def broadcast_config():
+    global socket_list
+    
+    i=0
+    while i < len(socket_list):
+        if socket_list[i].closed:
+            socket_list.pop(i)
+        else:
+            await websocket.send(config)
+            i=i+1
 
 #################################################
 
@@ -130,9 +164,10 @@ async def init(websocket, path):
             if msg['type'] == "query":
                 await send_status(websocket)
 
-            elif msg['type'] == "queue" and 'drink' in msg:
+            elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
+                print("queue add")
                 if state == State.STANDBY:
-                    ready_start()
+                    await ready_start()
                     state = State.READY
                 
                 add_user = True
@@ -145,41 +180,65 @@ async def init(websocket, path):
                     
                 user_drink_name[websocket.remote_address[0]] = msg['name']
                 user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
-                await send_status(websocket)
+                await broadcast_status()
             
             elif msg['type'] == "remove":
-                if user_queue[0] != websocket.remote_address[0]:
-                    user_queue.remove(websocket.remote_address[0])
-                elif state == State.READY:
-                    ready_timer.cancel()
-                    state_reset()
-                    
-                await send_status(websocket)
+                i = 0
+                for user in user_queue:
+                    if user == websocket.remote_address[0]:
+                        found = True
+                        break
+                    i = i+1
+                if found:
+                    if i > 0:
+                        user_queue.remove(websocket.remote_address[0])
+                        await broadcast_status()
+                    elif state == State.READY:
+                        ready_timer.cancel()
+                        await ready_reset()
 
-            elif msg['type'] == "pour":
-                print("pour start")
-                if state == State.READY and user_queue[0] == websocket.remote_address[0]:
-                    ready_timer.cancel()
-                    state = State.POURING
-                    pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
-                    pour_thread.start()
-                elif state == State.STANDBY and 'drink' in msg:
-                    user_queue.append(websocket.remote_address[0])
-                    user_drink_name[websocket.remote_address[0]] = msg['name']
-                    user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
-                    state = State.POURING
-                    pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
-                    pour_thread.start()
-                await send_status(websocket)
-                
+            elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
+                if state == State.STANDBY:
+                    full = True
+                    config_lock.acquire()
+                    for ingredient in msg['ingredients']:
+                        if ingredients[ingredient]["empty"]:
+                            full = False
+                    config_lock.release()
+                    if full:
+                        user_queue.append(websocket.remote_address[0])
+                        user_drink_name[websocket.remote_address[0]] = msg['name']
+                        user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
+                        state = State.POURING
+                        print("pour now")
+                        pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
+                        pour_thread.start()
+                        await broadcast_status()
+
+            elif msg['type'] == "pour" :
+                if state == State.READY and user_queue[0] == websocket.remote_address[0] and user_queue[0] in user_drink_ingredients:
+                    full = True
+                    config_lock.acquire()
+                    for ingredient in msg['ingredients']:
+                        if ingredients[ingredient]["empty"]:
+                            full = False
+                    config_lock.release()
+                    if full:
+                        ready_timer.cancel()
+                        state = State.POURING
+                        print("pour queue")
+                        pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
+                        pour_thread.start()
+                        await broadcast_status()
 
             elif msg['type'] == "cancel":
                 if state == State.POURING and user_queue[0] == websocket.remote_address[0]:
                     state = State.CANCELLING
+                    print("pour cancel")
                     cancel_lock.acquire()
                     cancel_pour = True
                     cancel_lock.release()
-                    await send_status(websocket)
+                    await broadcast_status()
 
         state_lock.release()
 
@@ -280,11 +339,15 @@ def pour_drink(drink):
     for ingredient in drink:
         if check_cancel(): return
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+        config_lock.acquire()
         print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
+        config_lock.release()
         #pi.write(PUMP_PIN, 0)
         time.sleep(2)
         pause = 7
+        config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
+        config_lock.release()
         while pan_curr != pan_goal:
             if check_cancel(): return
             if pan_goal > pan_curr:
@@ -320,7 +383,10 @@ def pour_drink(drink):
             
             if elapsed > 8:
                 if flow_tick - flow_prev <= 3:
+                    config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
+                    config_lock.release()
+                    await broadcast_config()
                     print("----empty", flush=True)
                     break
                 flow_prev = flow_tick

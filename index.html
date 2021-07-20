@@ -6,11 +6,14 @@
     <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>drink.io</title>
     <link rel="icon" href="static/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script type="module">
 
-        const socket = new WebSocket("ws://192.168.86.47:8765");
+        const socket = new WebSocket("ws://192.168.86.46:8765");
         const e = React.createElement;
 
         class Header extends React.Component{
@@ -25,36 +28,22 @@
         class Status extends React.Component{
             constructor(props){
                 super(props);
-                this.bar = React.createRef();
             }
 
             state={
-                timer: 0
+                tick: 0
             }
 
             componentDidMount() {
                 this.interval = setInterval(() => {
                     if(this.props.status.timer !== false){
-                        var remaining = Math.max(Math.ceil(this.props.status.timer - Date.now()/1000), 0);
-                        this.setState({timer: remaining});
-                        var scale = remaining * 5;
-                        var translate = (scale - 100) / 2;
-                        this.bar.current.style.transform = "translateX("+translate+"%) scaleX("+scale+"%)";
-                        this.bar.current.style.opacity = "100%";
-                    }else if(this.props.status.progress === false){
-                        this.bar.current.style.transform = "";
-                        this.bar.current.style.opacity = "0%";
+                        this.setState({tick: this.state.tick+1});
                     }
-                   
                 }, 1000);
             }
 
-            componentDidUnmount() {
+            componentWillUnmount() {
                 clearInterval(this.interval);
-            }
-
-            componentDidUpdate(){
-
             }
 
             getPosition(){
@@ -71,12 +60,12 @@
 
             button(event){
                 //window.navigator.vibrate(200);
-                if(this.props.status.timer){
+                if(this.props.status.timer !== false){
                     var msg = {
                         type: "pour"
                     };
                     socket.send(JSON.stringify(msg));
-                }else if(this.props.status.progress){
+                }else if(this.props.status.progress !== false){
                     var msg = {
                         type: "cancel"
                     };
@@ -93,38 +82,47 @@
             }
 
             render(){
-                if(this.props.status.progress){
+                if(this.props.status.progress !== false){
+                    var style = {
+                        transform: "scaleX("+ this.props.status.progress+"%)"
+                    }
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {ref: this.bar, key: 4, className: "bar-base bar-progress"}, null),
+                        e('div', {key: 4, className: "bar-base bar-progress", style: style}, null),
                         e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
                         e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel"}, "Cancel")
                     ]);
-                }else if(this.props.status.timer){
+                }else if(this.props.status.timer !== false){
+                    var remaining = Math.max(Math.round(this.props.status.timer - Date.now()/1000), 0);
+                    var style = {
+                        transform: "scaleX("+(remaining * 5)+"%)"
+                    }
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {ref: this.bar, key: 4, className: "bar-base bar-timer"}, null),
+                        e('div', {key: 4, className: "bar-base bar-timer", style: style}, null),
                         e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
                         e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-pour"}, "Pour")
                     ]);
+                }else if(this.props.status.position !== false){
+                    return e('div', {className: "status"}, [
+                        e('div', {key: 3, className: "bar-base"}, null),
+                        e('div', {key: 4, className: "bar-base invisible"}, null),
+                        e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
+                        e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
+                        e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
+                    ]);
                 }else{
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {ref: this.bar, key: 4, className: "bar-base invisible"}, null),
+                        e('div', {key: 4, className: "bar-base invisible"}, null),
                         e('div', {key: 0, className: "status-drink grey"}, "Drink: "),
                         e('div', {key: 1, className: "status-position grey"}, "Position: "),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
                     ]);
                 }
                 
-            }
-        }
-
-        class DrinkButtons extends React.Component {
-            constructor(props){
-                super(props);
             }
         }
 
@@ -142,7 +140,7 @@
                 if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
                     || ((nextProps.selected == this.props.name )
                         && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
-                            || (nextProps.status.position != this.props.status.position && (!nextProps.status.position || !this.props.status.position))
+                            || (nextProps.status.position != this.props.status.position)
                             || (nextProps.status.drink != this.props.status.drink)
                             || (nextProps.status.progress != this.props.status.progress && (!nextProps.status.progress || !this.props.status.progress)))))
                 {
@@ -152,16 +150,16 @@
             }
 
             expand(event){
-                this.props.updateList({selected: this.props.name});
                 var move = Math.round((document.documentElement.clientHeight * 0.01)-(this.item.current.getBoundingClientRect().y));
-                console.log(move);
-                this.item.current.style.transform = "translateY("+move+"px)";
+                this.style = {
+                    transform: "translateY("+move+"px)"
+                }
+                this.props.updateList({selected: this.props.name});
                 console.log("expand: " + this.props.name);
             }
 
             collapse(event){
                 this.props.updateList({selected: null});
-                this.item.current.style = {};
                 console.log("collapse: " + this.props.name);
             }
 
@@ -250,6 +248,8 @@
 
             render() {
                 console.log("render: " + this.props.name);
+                console.log("position: "+this.props.status.position);
+                console.log("users: "+this.props.status.users);
                 this.ingredientDetails = [];
                 this.ingredientSummary = "";
                 var i = 10;
@@ -263,21 +263,19 @@
                         this.ingredientSummary += key + ", ";
                         i++;
                     }
-                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(empty, " empty")}, [
+                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(empty, " empty"), style: this.style}, [
                         e('div', {key: 0, className: "title"}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
                             e('div', {key: 3, className: "line-left line-left-close"}),
                             e('div', {key: 4, className: "line-right line-right-close"})
                         ]),
-                        e('div', {key: 5, className: "details-wrapper"},[
-                            e('div', {key: 6, className: "details"}, [
-                                e('div', {key: 7, className: "ingredient-wrapper"},  
-                                    this.ingredientDetails
-                                ),
-                                e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
-                                e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
-                            ])
+                        e('div', {key: 6, className: "details"}, [
+                            e('div', {key: 7, className: "ingredient-wrapper"},  
+                                this.ingredientDetails
+                            ),
+                            e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
+                            e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
                         ])
                     ]);
                 }else if(this.props.selected == null){
@@ -295,9 +293,7 @@
                             e('div', {key: 3, className: "line-left"}),
                             e('div', {key: 4, className: "line-right"})
                         ]),
-                        e('div', {key: 5, className: "details-wrapper shrunk"}, [
-                            e('div', {key: 6, className: "details"}, null)
-                        ])
+                        e('div', {key: 6, className: "details shrunk"}, null)
                     ]);
                 }
             }
@@ -388,8 +384,8 @@
                                 //console.log("users: "+msg.status.users);
                                 //console.log("position: "+msg.status.position);
                                 //console.log("drink: "+msg.status.drink);
-                                console.log("timer: "+msg.status.timer);
-                                //console.log("progress: "+msg.status.progress);
+                                //console.log("timer: "+msg.status.timer);
+                                console.log("progress: "+msg.status.progress);
                                 //console.log("");
                                 if(msg.status.timer){
                                     msg.status.timer += Date.now()/1000;
@@ -424,11 +420,11 @@
         body{
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(to bottom right, hsl(180deg 100% 25%), hsl(340deg 100% 25%));
+            background-image: linear-gradient(to bottom right, hsl(180deg 100% 13%), hsl(340deg 100% 13%));
             background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
-            font-family: arial;
+            font-family: 'Roboto', sans-serif;
             font-size: 0;
         }
         #root{
@@ -447,8 +443,8 @@
             position: relative;
             transition-property: transform, opacity;
             transition-duration: 200ms;
-            background-color: hsla(0, 0%, 0%, 30%);
-            color: hsl(0deg 0% 100% / 70%);
+            background-color: hsla(0, 0%, 100%, 6%);
+            color: hsl(0deg 0% 100% / 80%);
             height: 100%;
             border-radius: 1vh;
         }
@@ -506,20 +502,15 @@
             white-space: nowrap;
             transition: 200ms;
         }
-        .details-wrapper{
-            position: absolute;
-            top: -691%;
-            height: 1582%;
-            width: 100%;
-            transition: 200ms;
-        }
         .details{
-            height: 50%;
             position: absolute;
+            height: 791%;
             width: 100%;
-            top: 50%;
-            background-color: hsla(0, 0%, 0%, 30%);
+            top: 100%;
+            background-color: hsla(0, 0%, 100%, 6%);
             border-radius: 0 0 1vh 1vh;
+            transform-origin: 50% 0%;
+            transition: 200ms;
         }
         .ingredient-wrapper{
             color: hsl(0deg 0% 100% / 60%);
@@ -562,14 +553,14 @@
             transition: 0ms;
         }
         .status{
-            background-color: hsla(0, 0%, 0%, 50%);
+            background-color: hsla(0, 0%, 100%, 6%);
             text-align: center;
             color: hsl(0deg 0% 100% / 80%);
             font-size: 3vh;
             height: 13%;
             position: sticky;
             bottom: 0;
-            /*box-shadow: 0 0 16px 6px rgb(0 0 0 / 60%);*/
+            box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
         }
         .status-button{
             position: absolute;
@@ -585,7 +576,7 @@
             transition: 200ms;
         }
         .status-pour{
-            animation: flash 150ms 0s infinite;
+            animation: flash 200ms 0s infinite;
             animation-direction: alternate;
             background-color: hsl(180deg 85% 25%);
         }
@@ -617,30 +608,26 @@
             left: 5%;
             font-size: 2.5vh;
         }
-        .status-time{
-            position: absolute;
-            height: 16px;
-            line-height: 16px;
-            top: 52px;
-            left: 16px;
-            font-size: 13px;
-        }
         .bar-base{
             position: absolute;
             top: 0;
             width: 100%;
             height: 3%;
             background-color: hsla(0, 0%, 0%, 20%);
+            transform-origin: 0% 50%;
+            transform: scaleX(100%);
         }
         .bar-timer{
-            animation: flash 150ms 0s infinite;
+            animation: flash 200ms 0s infinite;
             animation-direction: alternate;
             background-color: hsl(175deg 85% 40%);
-            transition: 1000ms;
+            transition-property: transform, opacity;
+            transition-duration: 500ms;
         }
         .bar-progress{
             background-color: hsl(330deg 85% 40%);
-            transition: 1000ms;
+            transition-property: transform, opacity;
+            transition-duration: 500ms;
         }
         .empty{
             opacity: 40%;
