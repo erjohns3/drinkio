@@ -183,6 +183,7 @@ async def init(websocket, path):
                 await broadcast_status()
             
             elif msg['type'] == "remove":
+                found = False
                 i = 0
                 for user in user_queue:
                     if user == websocket.remote_address[0]:
@@ -317,7 +318,7 @@ cancel_lock = threading.Lock()
 cancel_pour = False
 
 clean = {
-    "water"": 5
+    "water": 5
 }
 
 def check_cancel():

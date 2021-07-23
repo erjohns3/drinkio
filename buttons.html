@@ -34,14 +34,6 @@
                 tick: 0
             }
 
-            shouldComponentUpdate(nextProps, nextState){
-                if(nextProps.status.position == 1 && this.props.status.position != 1){
-                    window.navigator.vibrate(200);
-                    console.log("vibrate");
-                }
-                return true;
-            }
-
             componentDidMount() {
                 this.interval = setInterval(() => {
                     if(this.props.status.timer !== false){
@@ -67,6 +59,7 @@
             }
 
             button(event){
+                //window.navigator.vibrate(200);
                 if(this.props.status.timer !== false){
                     var msg = {
                         type: "pour"
@@ -133,141 +126,16 @@
             }
         }
 
-        class DrinkDetails extends React.Component {
-            constructor(props){
-                super(props);
-                this.ingredients = {};
-                this.volume = 0;
-            }
-
-            state = {
-                alcoholMult: 1,
-                nonalcoholMult: 1
-            }
-
-            queueButton(event){
-                if(!this.props.status.progress){
-                    var msg = {}
-                    if((!this.props.status.position || this.props.name != this.props.status.drink) && this.volume > 0 && !this.props.empty){ // add/swap queue
-                        msg = {
-                            type: "queue",
-                            name: this.props.name,
-                            ingredients: this.ingredients
-                        };
-                        socket.send(JSON.stringify(msg));
-                    }else if(this.props.status.position && this.props.name == this.props.status.drink){ // remove from queue
-                        msg = {
-                            type: "remove"
-                        };
-                        socket.send(JSON.stringify(msg));
-                    }
-                    console.log("queue send");
-                    console.log(msg);
-                }else{
-                    console.log("queue else");
-                }
-                event.stopPropagation()
-            }
-
-            pourButton(event){
-                if((this.props.status.users == 0 || (this.props.status.position == 1 && !this.props.status.progress)) && this.volume > 0 && !this.props.empty){
-                    var msg = {
-                        type: "pour",
-                        name: this.props.name,
-                        ingredients: this.ingredients
-                    };
-                    socket.send(JSON.stringify(msg));
-                }else if(this.props.status.position == 1 && this.props.status.progress){
-                    var msg = {
-                        type: "cancel"
-                    };
-                    socket.send(JSON.stringify(msg));
-                }
-                event.stopPropagation()
-            }
-
-            queueLabel(){
-                if(!this.props.status.position){
-                    return "Add to Queue";
-                }else if(this.props.name != this.props.status.drink){
-                    return "Swap in Queue";
-                }
-                return "Remove from Queue";
-            }
-
-            pourLabel(){
-                if(this.props.status.progress){
-                    return "Cancel";
-                }
-                return "Pour Now";
-            }
-
-            queueClass(){
-                if(this.props.status.progress || this.volume == 0 || this.props.empty){
-                    return " grey";
-                }
-                return "";
-            }
-
-            pourClass(){
-                if((this.props.status.users > 0 && this.props.status.position != 1) || this.volume == 0 || this.props.empty){
-                    return " grey";
-                }
-                return "";
-            }
-
-            alcoholSlider(event){
-                this.setState({alcoholMult: event.target.value});
-            }
-
-            nonalcoholSlider(event){
-                this.setState({nonalcoholMult: event.target.value});
-            }
-
-            render(){
-                this.ingredients = {};
-                var ingredientDetails = [];
-                this.volume = 0;
-                var alcohol = 0;
-                var i = 100;
-
-                for(var key in this.props.drink){
-                    var empty = "";
-                    if(this.props.ingredients[key].abv > 0){
-                        this.ingredients[key] = this.props.drink[key] * this.state.alcoholMult;
-                        alcohol += this.ingredients[key] * this.props.ingredients[key].abv;
-                    }else{
-                        this.ingredients[key] = this.props.drink[key] * this.state.nonalcoholMult;
-                    }
-                    this.volume += this.ingredients[key];
-                    if(this.props.ingredients[key].empty){
-                        empty = "( EMPTY )";
-                    }
-                    ingredientDetails.push(e('div', {key: i, className: "ingredient"}, key + ": " + this.ingredients[key].toFixed(1) + " oz " + empty));
-                    i++;
-                }
-
-                return [
-                    e('div', {key: 0, className: "ingredient-wrapper"}, ingredientDetails),
-                    e('div', {key: 1, className: "volume-title"}, "Volume: " + this.volume.toFixed(1) + " oz"),
-                    e('div', {key: 2, className: "alcohol-title"}, "Drinks: " + (alcohol/0.6).toFixed(1)),
-                    e('div', {key: 3, className: "abv-title"}, "ABV: " + (alcohol/this.volume*100).toFixed(1) + "%"),
-                    e('div', {key: 4, className: "alcohol-label"}, "Alcohol: " + this.state.alcoholMult + "x"),
-                    e('input', {key: 5, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.alcoholSlider(event), className:"alcohol-slider", id:"slider1"}, null),
-                    e('div', {key: 6, className: "nonalcohol-label"}, "Non-alcohol: " + this.state.nonalcoholMult + "x"),
-                    e('input', {key: 7, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.nonalcoholSlider(event), className:"nonalcohol-slider", id:"slider2"}, null),
-                    
-                    e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
-                    e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
-                ];
-            }
-        }
-
         class DrinkItem extends React.Component {
             constructor(props){
                 super(props);
                 this.item = React.createRef();
 
+            }
+
+            state = {
+                volume: 1,
+                strength: 1
             }
 
             shouldComponentUpdate(nextProps, nextState) {
@@ -297,11 +165,99 @@
                 console.log("collapse: " + this.props.name);
             }
 
+            queueButton(event){
+                if(!this.props.status.progress){
+                    var msg = {}
+                    if(!this.props.status.position){ // add to queue
+                        msg = {
+                            type: "queue",
+                            name: this.props.name,
+                            ingredients: this.props.drink
+                        };
+                    }else if(this.props.name != this.props.status.drink){ // swap in queue
+                        msg = {
+                            type: "queue",
+                            name: this.props.name,
+                            ingredients: this.props.drink
+                        };
+                    }else{ // remove from queue
+                        msg = {
+                            type: "remove"
+                        };
+                    }
+                    console.log("queue send");
+                    console.log(msg);
+                    socket.send(JSON.stringify(msg));
+                }else{
+                    console.log("queue else");
+                }
+                event.stopPropagation()
+            }
+
+            pourButton(event){
+                if(this.props.status.users == 0 || (this.props.status.position == 1 && !this.props.status.progress)){
+                    var msg = {
+                        type: "pour",
+                        name: this.props.name,
+                        ingredients: this.props.drink
+                    };
+                    socket.send(JSON.stringify(msg));
+                }else if(this.props.status.position == 1 && this.props.status.progress){
+                    var msg = {
+                        type: "cancel"
+                    };
+                    socket.send(JSON.stringify(msg));
+                }
+                event.stopPropagation()
+            }
+
+            queueLabel(){
+                if(!this.props.status.position){
+                    return "Add to Queue";
+                }else if(this.props.name != this.props.status.drink){
+                    return "Swap in Queue";
+                }
+                return "Remove from Queue";
+            }
+
+            pourLabel(){
+                if(this.props.status.progress){
+                    return "Cancel";
+                }
+                return "Pour Now";
+            }
+
+            queueClass(){
+                if(this.props.status.progress){
+                    return " grey";
+                }
+                return "";
+            }
+
+            pourClass(){
+                if(this.props.status.users > 0 && this.props.status.position != 1){
+                    return " grey";
+                }
+                return "";
+            }
+
             addText(condition, text) {
                 if(condition){
                     return text;
                 }
                 return "";
+            }
+
+            getSelected(){
+                return false;
+            }
+
+            setVolume(){
+                
+            }
+
+            setStrength(){
+
             }
 
             render() {
@@ -310,7 +266,7 @@
                 console.log("users: "+this.props.status.users);
                 this.ingredientDetails = [];
                 this.ingredientSummary = "";
-                var i = 24;
+                var i = 100;
                 var empty = false;
                 if(this.props.selected == this.props.name){
                     for(var key in this.props.drink){
@@ -322,15 +278,34 @@
                         i++;
                     }
                     return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(empty, " empty"), style: this.style}, [
-                        e('div', {key: 0, className: "title"+this.addText(empty, " strike")}, this.props.name),
+                        e('div', {key: 0, className: "title"}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
                             e('div', {key: 3, className: "line-left line-left-close"}),
                             e('div', {key: 4, className: "line-right line-right-close"})
                         ]),
-                        e('div', {key: 6, className: "details"},
-                            e(DrinkDetails, {key: 7, name: this.props.name, drink: this.props.drink, empty: empty, status: this.props.status, ingredients: this.props.ingredients, updateApp: this.props.updateApp, updateList: this.props.updateList}, null)
-                        )
+                        e('div', {key: 6, className: "details"}, [
+                            e('div', {key: 7, className: "ingredient-wrapper"},  
+                                this.ingredientDetails
+                            ),
+                            e('div', {key: 8, className: "volume-row"}, [
+                                e('div', {key: 9, onClick: (event)=>this.setVolume(0.5), className: "mixture-button "+this.getSelected(0.5)}, "50%"),
+                                e('div', {key: 10, onClick: (event)=>this.setVolume(0.75), className: "mixture-button "+this.getSelected(0.75)}, "75%"),
+                                e('div', {key: 11, onClick: (event)=>this.setVolume(1), className: "mixture-button "+this.getSelected(1)}, "100%"),
+                                e('div', {key: 12, onClick: (event)=>this.setVolume(1.5), className: "mixture-button "+this.getSelected(1.5)}, "150%"),
+                                e('div', {key: 13, onClick: (event)=>this.setVolume(2), className: "mixture-button "+this.getSelected(2)}, "200%")
+                            ]),
+                            e('div', {key: 14, className: "strength-row"}, [
+                                e('div', {key: 15, onClick: (event)=>this.setStrength(0.5), className: "mixture-button "+this.getSelected(0.5)}, "50%"),
+                                e('div', {key: 16, onClick: (event)=>this.setStrength(0.75), className: "mixture-button "+this.getSelected(0.75)}, "75%"),
+                                e('div', {key: 17, onClick: (event)=>this.setStrength(1), className: "mixture-button "+this.getSelected(1)}, "100%"),
+                                e('div', {key: 18, onClick: (event)=>this.setStrength(1.5), className: "mixture-button "+this.getSelected(1.5)}, "150%"),
+                                e('div', {key: 19, onClick: (event)=>this.setStrength(2), className: "mixture-button "+this.getSelected(2)}, "200%")
+                            ]),
+
+                            e('div', {key: 20, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
+                            e('div', {key: 21, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
+                        ])
                     ]);
                 }else if(this.props.selected == null){
                     for(var key in this.props.drink){
@@ -341,7 +316,7 @@
                         i++;
                     }
                     return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(empty, " empty")}, [
-                        e('div', {key: 0, className: "title"+this.addText(empty, " strike")}, this.props.name),
+                        e('div', {key: 0, className: "title"}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
                             e('div', {key: 3, className: "line-left"}),
@@ -474,7 +449,7 @@
         body{
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(to bottom right, hsl(180deg 100% 20%), hsl(340deg 100% 20%));
+            background-image: linear-gradient(to bottom right, hsl(180deg 100% 15%), hsl(340deg 100% 15%));
             background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
@@ -485,7 +460,7 @@
             height: calc(var(--vh, 1vh) * 100);
         }
         .list{
-            height: 90%;
+            height: 87%;
             overflow-y: auto;
         }
         .item-wrapper{
@@ -497,8 +472,8 @@
             position: relative;
             transition-property: transform, opacity;
             transition-duration: 200ms;
-            background-color: hsla(0, 0%, 100%, 10%);
-            color: hsl(0deg 0% 100% / 100%);
+            background-color: hsla(0, 0%, 100%, 7%);
+            color: hsl(0deg 0% 100% / 80%);
             height: 100%;
             border-radius: 1vh;
         }
@@ -524,7 +499,7 @@
             position: absolute;
             left: 16%;
             transform: rotateZ(-45deg);
-            background-color: hsl(0deg 0% 100% / 100%);
+            background-color: hsl(0deg 0% 100% / 70%);
             transition: 200ms;
         }
         .line-right{
@@ -533,7 +508,7 @@
             position: absolute;
             right: 16%;
             transform: rotateZ(45deg);
-            background-color: hsl(0deg 0% 100% / 100%);
+            background-color: hsl(0deg 0% 100% / 70%);
             transition: 200ms;
         }
         .line-left-close{
@@ -550,7 +525,7 @@
             left: 50%;
             line-height: 100%;
             font-size: 1.7vh;
-            color: hsl(0deg 0% 100% / 75%);
+            color: hsl(0deg 0% 100% / 50%);
             text-overflow: clip;
             overflow: hidden;
             white-space: nowrap;
@@ -561,13 +536,13 @@
             height: 791%;
             width: 100%;
             top: 100%;
-            background-color: hsla(0, 0%, 100%, 10%);
+            background-color: hsla(0, 0%, 100%, 7%);
             border-radius: 0 0 1vh 1vh;
             transform-origin: 50% 0%;
             transition: 200ms;
         }
         .ingredient-wrapper{
-            color: hsl(0deg 0% 100% / 100%);
+            color: hsl(0deg 0% 100% / 60%);
             position: absolute;
             font-size: 2vh;
             height: 25%;
@@ -576,8 +551,8 @@
             overflow-y: auto;
         }
         .ingredient{
-            line-height: 140%;
-            font-size: 2.5vh;
+            line-height: 160%;
+            font-size: 2.2vh;
             height: 20%;
             overflow: hidden;
         }
@@ -607,11 +582,11 @@
             transition: 0ms;
         }
         .status{
-            background-color: hsla(0, 0%, 100%, 10%);
+            background-color: hsla(0, 0%, 100%, 6%);
             text-align: center;
-            color: hsl(0deg 0% 100% / 100%);
+            color: hsl(0deg 0% 100% / 80%);
             font-size: 3vh;
-            height: 10%;
+            height: 13%;
             position: sticky;
             bottom: 0;
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
@@ -619,9 +594,9 @@
         .status-button{
             position: absolute;
             font-size: 2.5vh;
-            height: 78%;
-            top: 11%;
-            right: 2%;
+            height: 60%;
+            top: 20%;
+            right: 5%;
             width: 30%;
             line-height: 280%;
             overflow: hidden;
@@ -644,21 +619,21 @@
         }
         .status-drink{
             position: absolute;
-            height: 24%;
+            height: 16%;
             line-height: 100%;
             width: 55%;
             text-align: left;
-            top: 20%;
+            top: 25%;
             left: 5%;
             font-size: 2.5vh;
         }
         .status-position{
             position: absolute;
-            height: 24%;
+            height: 16%;
             line-height: 100%;
             width: 55%;
             text-align: left;
-            bottom: 20%;
+            bottom: 25%;
             left: 5%;
             font-size: 2.5vh;
         }
@@ -683,100 +658,15 @@
             transition-property: transform, opacity;
             transition-duration: 500ms;
         }
-        .volume-title{
-            position: absolute;
-            top: 30%;
-            left: 10%;
-            width: 35%;
-            height: 4%;
-            line-height: 140%;
-            font-size: 2.5vh;
-            overflow: hidden;
-            white-space: nowrap;
+        .mixture-button{
+
         }
-        .alcohol-title{
-            position: absolute;
-            top: 35%;
-            left: 10%;
-            width: 35%;
-            height: 4%;
-            line-height: 140%;
-            font-size: 2.5vh;
-            overflow: hidden;
-            white-space: nowrap;
+        .volume-row{
+
         }
-        .abv-title{
-            position: absolute;
-            top: 40%;
-            left: 10%;
-            width: 35%;
-            height: 4%;
-            line-height: 140%;
-            font-size: 2.5vh;
-            overflow: hidden;
-            white-space: nowrap;
+        .strength-row{
+            
         }
-        .alcohol-label{
-            position: absolute;
-            top: 50%;
-            left: 36%;
-            width: 28%;
-            height: 4%;
-            line-height: 140%;
-            font-size: 2.5vh;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .nonalcohol-label{
-            position: absolute;
-            top: 65%;
-            left: 31%;
-            width: 38%;
-            height: 4%;
-            line-height: 140%;
-            font-size: 2.5vh;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .alcohol-slider{
-            position: absolute;
-            top: 55%;
-            left: 5%;
-            width: 90%;
-            height: 4vh;
-            appearance: none;
-            background-color: hsl(0deg 0% 100% / 5%);
-            border-radius: 2vh;
-        }
-        .alcohol-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 4vh;
-            height: 4vh;
-            background: hsla(175deg 85% 40% / 80%);
-            border-radius: 2vh;
-            cursor: pointer;
-        }
-        .nonalcohol-slider{
-            position: absolute;
-            top: 70%;
-            left: 5%;
-            width: 90%;
-            height: 4vh;
-            appearance: none;
-            background-color: hsl(0deg 0% 100% / 5%);
-            border-radius: 2vh;
-        }
-        .nonalcohol-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 4vh;
-            height: 4vh;
-            background: hsla(175deg 85% 40% / 80%);
-            border-radius: 2vh;
-            cursor: pointer;
-        }
-        
         .empty{
             opacity: 40%;
         }
@@ -795,9 +685,6 @@
         }
         .grey{
             opacity: 25%;
-        }
-        .strike{
-            text-decoration: line-through;
         }
         /* Animation Keyframes*/
         @keyframes flash {
