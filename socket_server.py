@@ -53,8 +53,11 @@ status = {
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
+class ReuseAddrTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
 def http_server():
-    httpd = socketserver.TCPServer(("", PORT), Handler)
+    httpd = ReuseAddrTCPServer(("", PORT), Handler)
     print("serving at port", PORT)
     httpd.serve_forever()
 
