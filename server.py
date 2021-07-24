@@ -34,6 +34,7 @@ class AsyncTimer:
 
 state_lock = threading.Lock()
 config_lock = threading.Lock()
+socket_list = []
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
@@ -43,7 +44,8 @@ status = {
     "users": 0,
     "drink": "",
     "timer": -1,
-    "progress": -1
+    "progress": -1,
+    "tick": 0
 }
 
 #################################################
@@ -333,7 +335,7 @@ async def broadcast_config():
         if socket_list[i].closed:
             socket_list.pop(i)
         else:
-            await websocket.send(config)
+            await websocket.send(json.dumps(config))
             i=i+1
 
 #################################################
@@ -343,8 +345,12 @@ async def init(websocket, path):
     global user_queue
     global ready_timer
 
-    print("socket start: " + websocket.remote_address[0])
-    await websocket.send(config)
+    state_lock.acquire()
+    socket_list.append(websocket)
+    print("add: " + websocket.remote_address[0])
+    state_lock.release()
+    
+    await websocket.send(json.dumps(config))
     while True:
         msg_string = await websocket.recv()
         msg = json.loads(msg_string)
