@@ -336,7 +336,7 @@ def check_cancel():
     cancel_lock.release()
     return False
 
-def pour_drink(drink):
+async def pour_drink(drink):
 
     pi.write(PUMP_PIN, 0)
 
@@ -420,9 +420,9 @@ def pour_drink(drink):
     time.sleep(3 + max(pause, 0))
     pi.write(PUMP_PIN, 1)
 
-def pour_cycle(drink):
+async def pour_cycle(drink):
 
-    pour_drink(drink)
+    await pour_drink(drink)
 
     cancel_lock.acquire()
     cancel_pour = False
@@ -432,7 +432,7 @@ def pour_cycle(drink):
     state = State.CLEANING
     state_lock.release()
 
-    pour_drink(clean)
+    await pour_drink(clean)
 
     state_lock.acquire()
     state_reset()
