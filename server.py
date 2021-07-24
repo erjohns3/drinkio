@@ -415,7 +415,7 @@ async def init(websocket, path):
                         state = State.POURING
                         print("----POURING----")
                         print("pour now")
-                        pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
+                        pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
                         pour_thread.start()
                         await broadcast_status()
 
@@ -423,7 +423,7 @@ async def init(websocket, path):
                 if state == State.READY and user_queue[0] == websocket.remote_address[0] and user_queue[0] in user_drink_ingredients:
                     full = True
                     config_lock.acquire()
-                    for ingredient in msg['ingredients']:
+                    for ingredient in user_drink_ingredients[user_queue[0]]:
                         if ingredients[ingredient]["empty"]:
                             full = False
                     config_lock.release()
@@ -432,7 +432,7 @@ async def init(websocket, path):
                         state = State.POURING
                         print("----POURING----")
                         print("pour queue")
-                        pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
+                        pour_thread = threading.Thread(target=pour_cycle, kwargs=user_drink_ingredients[user_queue[0]], daemon=True)
                         pour_thread.start()
                         await broadcast_status()
 
@@ -447,6 +447,9 @@ async def init(websocket, path):
                     await broadcast_status()
 
         state_lock.release()
+
+def pour_wrapper(arg):
+    await pour_cycle(arg)
 
 start_server = websockets.serve(init, "0.0.0.0", 8765)
 
