@@ -141,7 +141,7 @@ async def pour_drink(drink):
         if check_cancel(): return
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
         config_lock.acquire()
-        print("Drink: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
+        print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
         #pi.write(PUMP_PIN, 0)
         time.sleep(2)
@@ -219,6 +219,8 @@ async def pour_drink(drink):
 
 async def pour_cycle(drink):
 
+    print("pour drink:")
+    print(drink)
     await pour_drink(drink)
 
     cancel_lock.acquire()
@@ -227,8 +229,10 @@ async def pour_cycle(drink):
 
     state_lock.acquire()
     state = State.CLEANING
+    print("----CLEANING----")
     state_lock.release()
 
+    print("clean:")
     await pour_drink(clean)
 
     state_lock.acquire()
@@ -270,16 +274,17 @@ async def ready_start():
 
 async def ready_end():
     state_lock.acquire()
-    await ready_reset()
+    await state_reset()
     state_lock.release()
 
-async def ready_reset():
+async def state_reset():
     global state
     global user_queue
 
     user_queue.pop(0)
     if len(user_queue) == 0:
         state = State.STANDBY
+        print("----STANDBY----")
     else:
         await ready_start()
     await broadcast_status()
@@ -365,6 +370,7 @@ async def init(websocket, path):
                 if state == State.STANDBY:
                     await ready_start()
                     state = State.READY
+                    print("----READY----")
                 
                 add_user = True
                 for user in user_queue:
@@ -392,7 +398,7 @@ async def init(websocket, path):
                         await broadcast_status()
                     elif state == State.READY:
                         ready_timer.cancel()
-                        await ready_reset()
+                        await state_reset()
 
             elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
                 if state == State.STANDBY:
@@ -407,6 +413,7 @@ async def init(websocket, path):
                         user_drink_name[websocket.remote_address[0]] = msg['name']
                         user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
                         state = State.POURING
+                        print("----POURING----")
                         print("pour now")
                         pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
                         pour_thread.start()
@@ -423,6 +430,7 @@ async def init(websocket, path):
                     if full:
                         ready_timer.cancel()
                         state = State.POURING
+                        print("----POURING----")
                         print("pour queue")
                         pour_thread = threading.Thread(target=pour_cycle, args=(user_drink_ingredients[user_queue[0]]), daemon=True)
                         pour_thread.start()
@@ -431,6 +439,7 @@ async def init(websocket, path):
             elif msg['type'] == "cancel":
                 if state == State.POURING and user_queue[0] == websocket.remote_address[0]:
                     state = State.CANCELLING
+                    print("----CANCELLING----")
                     print("pour cancel")
                     cancel_lock.acquire()
                     cancel_pour = True

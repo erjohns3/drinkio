@@ -30,7 +30,7 @@ class AsyncTimer:
 
 loc = pathlib.Path(__file__).parent.absolute()
 f = open(str(loc)+"/config.json", "r")
-config = f.read()
+config = json.loads(f.read())
 f.close()
 
 state_lock = threading.Lock()
@@ -83,10 +83,10 @@ async def ready_start():
 
 async def ready_end():
     state_lock.acquire()
-    await ready_reset()
+    await state_reset()
     state_lock.release()
 
-async def ready_reset():
+async def state_reset():
     global state
     global user_queue
 
@@ -152,7 +152,7 @@ async def init(websocket, path):
     print("add: " + websocket.remote_address[0])
     state_lock.release()
 
-    await websocket.send(config)
+    await websocket.send(json.dumps(config))
     while True:
         msg_string = await websocket.recv()
         msg = json.loads(msg_string)
@@ -194,7 +194,7 @@ async def init(websocket, path):
                         await broadcast_status()
                     elif state == State.READY:
                         ready_timer.cancel()
-                        await ready_reset()
+                        await state_reset()
 
             elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
                 if state == State.STANDBY:
