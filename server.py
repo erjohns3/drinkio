@@ -121,45 +121,49 @@ clean = {
     "water": 5
 }
 
-def check_cancel():
+async def check_cancel():
+    global cancel_pour
+
     cancel_lock.acquire()
     if cancel_pour:
         cancel_pour = False
         cancel_lock.release()
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-        time.sleep(2)
+        await asyncio.sleep(2)
         pi.write(PUMP_PIN, 1)
         return True
     cancel_lock.release()
     return False
 
 async def pour_drink(drink):
+    global pan_curr
 
     pi.write(PUMP_PIN, 0)
 
     for ingredient in drink:
-        if check_cancel(): return
+        if await check_cancel(): return
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
         #pi.write(PUMP_PIN, 0)
-        time.sleep(2)
+        await asyncio.sleep(2)
         pause = 7
         config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
         config_lock.release()
+        print("pan align")
         while pan_curr != pan_goal:
-            if check_cancel(): return
+            if await check_cancel(): return
             if pan_goal > pan_curr:
                 pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
             else:
                 pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
             pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-            time.sleep(PAN_PERIOD)
+            await asyncio.sleep(PAN_PERIOD)
             pause = pause - PAN_PERIOD
 
-        time.sleep(3 + max(pause, 0))
+        await asyncio.sleep(3 + max(pause, 0))
 
         flow_lock.acquire()
         flow_tick = 0
@@ -169,14 +173,16 @@ async def pour_drink(drink):
         flow_prev = 0
 
         tilt_curr = TILT_UP
+        print("tilt down")
         while tilt_curr != TILT_DOWN:
-            if check_cancel(): return
+            if await check_cancel(): return
             tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-            time.sleep(TILT_PERIOD)
+            await asyncio.sleep(TILT_PERIOD)
 
+        print("flow")
         while True:
-            if check_cancel(): return
+            if await check_cancel(): return
             flow_lock.acquire()
             if flow_tick >= max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4):
                 print("----done", flush=True)
@@ -194,27 +200,28 @@ async def pour_drink(drink):
                 elapsed = 4
 
             elapsed = elapsed + FLOW_PERIOD
-            flow_lock.release
-            time.sleep(FLOW_PERIOD)
+            flow_lock.release()
+            await asyncio.sleep(FLOW_PERIOD)
 
-        flow_lock.release
+        flow_lock.release()
         #pi.write(PUMP_PIN, 1)
-
+    print("tilt up")
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-    time.sleep(2)
+    await asyncio.sleep(2)
     pause = 7
     pan_goal = 500000
+    print("pan reset")
     while pan_curr != pan_goal:
-        if check_cancel(): return
+        if await check_cancel(): return
         if pan_goal > pan_curr:
             pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
         else:
             pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
         pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-        time.sleep(PAN_PERIOD)
+        await asyncio.sleep(PAN_PERIOD)
         pause = pause - PAN_PERIOD
 
-    time.sleep(3 + max(pause, 0))
+    await asyncio.sleep(3 + max(pause, 0))
     pi.write(PUMP_PIN, 1)
 
 async def pour_cycle(drink):
@@ -236,7 +243,7 @@ async def pour_cycle(drink):
     await pour_drink(clean)
 
     state_lock.acquire()
-    state_reset()
+    await state_reset()
     state_lock.release()
 
 #################################################
@@ -340,7 +347,7 @@ async def broadcast_config():
         if socket_list[i].closed:
             socket_list.pop(i)
         else:
-            await websocket.send(json.dumps(config))
+            await socket_list[i].send(json.dumps(config))
             i=i+1
 
 #################################################
