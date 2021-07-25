@@ -13,7 +13,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script type="module">
 
-        const socket = new WebSocket("ws://192.168.86.49:8765");
+        const socket = new WebSocket("ws://192.168.86.46:8765");
         const e = React.createElement;
 
         class Header extends React.Component{
@@ -271,7 +271,7 @@
 
             shouldComponentUpdate(nextProps, nextState) {
                 if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
-                    || (nextProps.empty != this.props.empty )
+                    || (nextProps.selected == null && nextProps.empty != this.props.empty )
                     || ((nextProps.selected == this.props.name )
                         && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
                             || (nextProps.status.position != this.props.status.position)
@@ -306,8 +306,6 @@
 
             render() {
                 console.log("render: " + this.props.name);
-                console.log("position: "+this.props.status.position);
-                console.log("users: "+this.props.status.users);
                 this.ingredientSummary = "";
                 var i = 24;
                 for(var key in this.props.drink){
@@ -368,11 +366,10 @@
                     var empty = false;
                     if(this.state.selected != null && this.state.selected != name){
                         tmp = " invisible";
-                    }else{
-                        for(var key in this.props.drinks[name]){
-                            if(this.props.ingredients[key].empty){
-                                empty = true;
-                            }
+                    }
+                    for(var key in this.props.drinks[name]){
+                        if(this.props.ingredients[key].empty){
+                            empty = true;
                         }
                     }
                     this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"+tmp},
