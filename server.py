@@ -293,6 +293,8 @@ async def state_reset():
         state = State.STANDBY
         print("----STANDBY----")
     else:
+        state = State.READY
+        print("----READY----")
         await ready_start()
     await broadcast_status()
 
@@ -376,9 +378,9 @@ async def init(websocket, path):
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add")
                 if state == State.STANDBY:
-                    await ready_start()
                     state = State.READY
                     print("----READY----")
+                    await ready_start()
                 
                 add_user = True
                 for user in user_queue:
