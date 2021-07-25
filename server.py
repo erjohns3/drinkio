@@ -306,7 +306,7 @@ async def send_status(socket):
             found = True
             break
         i = i+1
-    if found and state != State.CANCELLING and state != State.CLEANING:
+    if found:
         status["position"] = i
         status["drink"] = user_drink_name[user]
         if state == State.READY and user_queue[0] == socket.remote_address[0]:
@@ -452,12 +452,10 @@ async def init(websocket, path):
                     cancel_lock.acquire()
                     cancel_pour = True
                     cancel_lock.release()
+                    user_queue[0] = "cancelled"
                     await broadcast_status()
 
         state_lock.release()
-
-async def pour_wrapper(arg):
-    await pour_cycle(arg)
 
 start_server = websockets.serve(init, "0.0.0.0", 8765)
 
