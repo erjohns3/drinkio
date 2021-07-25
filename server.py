@@ -415,8 +415,9 @@ async def init(websocket, path):
                         state = State.POURING
                         print("----POURING----")
                         print("pour now")
-                        pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
-                        pour_thread.start()
+                        #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
+                        #pour_thread.start()
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
                         await broadcast_status()
 
             elif msg['type'] == "pour" :
@@ -432,8 +433,7 @@ async def init(websocket, path):
                         state = State.POURING
                         print("----POURING----")
                         print("pour queue")
-                        pour_thread = threading.Thread(target=pour_cycle, kwargs=user_drink_ingredients[user_queue[0]], daemon=True)
-                        pour_thread.start()
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
                         await broadcast_status()
 
             elif msg['type'] == "cancel":
@@ -448,7 +448,7 @@ async def init(websocket, path):
 
         state_lock.release()
 
-def pour_wrapper(arg):
+async def pour_wrapper(arg):
     await pour_cycle(arg)
 
 start_server = websockets.serve(init, "0.0.0.0", 8765)
