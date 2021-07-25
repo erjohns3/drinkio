@@ -356,6 +356,7 @@ async def init(websocket, path):
     global state
     global user_queue
     global ready_timer
+    global cancel_pour
 
     state_lock.acquire()
     socket_list.append(websocket)
