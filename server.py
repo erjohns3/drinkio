@@ -306,7 +306,7 @@ async def send_status(socket):
             found = True
             break
         i = i+1
-    if found:
+    if found and state != State.CANCELLING and state != State.CLEANING:
         status["position"] = i
         status["drink"] = user_drink_name[user]
         if state == State.READY and user_queue[0] == socket.remote_address[0]:
