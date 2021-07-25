@@ -37,7 +37,6 @@
             shouldComponentUpdate(nextProps, nextState){
                 if(nextProps.status.position == 1 && this.props.status.position != 1){
                     window.navigator.vibrate(200);
-                    console.log("vibrate");
                 }
                 return true;
             }
@@ -273,7 +272,8 @@
             shouldComponentUpdate(nextProps, nextState) {
                 if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
                     || ((nextProps.selected == this.props.name )
-                        && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
+                        && ((nextProps.empty != this.props.empty)
+                            || (nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
                             || (nextProps.status.position != this.props.status.position)
                             || (nextProps.status.drink != this.props.status.drink)
                             || (nextProps.status.progress != this.props.status.progress && (!nextProps.status.progress || !this.props.status.progress)))))
@@ -308,40 +308,27 @@
                 console.log("render: " + this.props.name);
                 console.log("position: "+this.props.status.position);
                 console.log("users: "+this.props.status.users);
-                this.ingredientDetails = [];
                 this.ingredientSummary = "";
                 var i = 24;
-                var empty = false;
+                for(var key in this.props.drink){
+                    this.ingredientSummary += key + ", ";
+                    i++;
+                }
                 if(this.props.selected == this.props.name){
-                    for(var key in this.props.drink){
-                        if(this.props.ingredients[key].empty){
-                            empty = true;
-                        }
-                        this.ingredientDetails.push(e('div', {key: i, className: "ingredient"}, key + ": " + this.props.drink[key] + " oz"+this.addText(this.props.ingredients[key].empty, " ( EMPTY )")));
-                        this.ingredientSummary += key + ", ";
-                        i++;
-                    }
-                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(empty, " empty"), style: this.style}, [
-                        e('div', {key: 0, className: "title"+this.addText(empty, " strike")}, this.props.name),
+                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(this.props.empty, " empty"), style: this.style}, [
+                        e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
                             e('div', {key: 3, className: "line-left line-left-close"}),
                             e('div', {key: 4, className: "line-right line-right-close"})
                         ]),
                         e('div', {key: 6, className: "details"},
-                            e(DrinkDetails, {key: 7, name: this.props.name, drink: this.props.drink, empty: empty, status: this.props.status, ingredients: this.props.ingredients, updateApp: this.props.updateApp, updateList: this.props.updateList}, null)
+                            e(DrinkDetails, {key: 7, name: this.props.name, drink: this.props.drink, empty: this.props.empty, status: this.props.status, ingredients: this.props.ingredients, updateApp: this.props.updateApp, updateList: this.props.updateList}, null)
                         )
                     ]);
                 }else if(this.props.selected == null){
-                    for(var key in this.props.drink){
-                        if(this.props.ingredients[key].empty){
-                            empty = true;
-                        }
-                        this.ingredientSummary += key + ", ";
-                        i++;
-                    }
-                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(empty, " empty")}, [
-                        e('div', {key: 0, className: "title"+this.addText(empty, " strike")}, this.props.name),
+                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(this.props.empty, " empty")}, [
+                        e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
                             e('div', {key: 3, className: "line-left"}),
@@ -378,11 +365,18 @@
                 this.list = [];
                 for(var name in this.props.drinks){
                     var tmp = ""
+                    var empty = false;
                     if(this.state.selected != null && this.state.selected != name){
                         tmp = " invisible";
+                    }else{
+                        for(var key in this.props.drinks[name]){
+                            if(this.props.ingredients[key].empty){
+                                empty = true;
+                            }
+                        }
                     }
                     this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"+tmp},
-                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
+                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
                     );
                 }
                 return e('div', {className: "list"+this.addText(this.state.selected != null, " noscroll")}, this.list);
