@@ -271,9 +271,9 @@
 
             shouldComponentUpdate(nextProps, nextState) {
                 if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
+                    || (nextProps.empty != this.props.empty )
                     || ((nextProps.selected == this.props.name )
-                        && ((nextProps.empty != this.props.empty)
-                            || (nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
+                        && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
                             || (nextProps.status.position != this.props.status.position)
                             || (nextProps.status.drink != this.props.status.drink)
                             || (nextProps.status.progress != this.props.status.progress && (!nextProps.status.progress || !this.props.status.progress)))))
