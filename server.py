@@ -196,7 +196,7 @@ async def pour_drink(drink):
             if await check_cancel(): return
             flow_lock.acquire()
             if flow_tick >= flow_goal:
-                print("----done", flush=True)
+                print("ingredient done", flush=True)
                 break
             
             if elapsed > 8:
@@ -207,7 +207,7 @@ async def pour_drink(drink):
                     state_lock.acquire()
                     await broadcast_config()
                     state_lock.release()
-                    print("----empty", flush=True)
+                    print("ingredient empty", flush=True)
                     break
                 flow_prev = flow_tick
                 elapsed = 4
@@ -232,6 +232,7 @@ async def pour_drink(drink):
     pi.write(PUMP_PIN, 1)
 
 async def pour_cycle(drink):
+    global state
 
     print("pour drink:")
     print(drink)
