@@ -266,18 +266,20 @@
             constructor(props){
                 super(props);
                 this.item = React.createRef();
-
+                this.empty = false;
             }
 
             shouldComponentUpdate(nextProps, nextState) {
+                console.log(this.props.name+" - curr empty: "+this.empty+", next empty: "+nextProps.empty);
                 if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
-                    || (nextProps.selected == null && nextProps.empty != this.props.empty )
+                    || (nextProps.selected == null && nextProps.empty != this.empty )
                     || ((nextProps.selected == this.props.name )
                         && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
                             || (nextProps.status.position != this.props.status.position)
                             || (nextProps.status.drink != this.props.status.drink)
                             || (nextProps.status.progress != this.props.status.progress && (!nextProps.status.progress || !this.props.status.progress)))))
                 {
+                    this.empty = nextProps.empty;
                     return true;
                 }
                 return false;
