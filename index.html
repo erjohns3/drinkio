@@ -266,20 +266,13 @@
             constructor(props){
                 super(props);
                 this.item = React.createRef();
-                this.empty = false;
             }
 
             shouldComponentUpdate(nextProps, nextState) {
-                console.log(this.props.name+" - curr empty: "+this.empty+", next empty: "+nextProps.empty);
-                if((nextProps.selected != this.props.selected && (nextProps.selected == this.props.name || this.props.selected == this.props.name))
-                    || (nextProps.selected == null && nextProps.empty != this.empty )
-                    || ((nextProps.selected == this.props.name )
-                        && ((nextProps.status.users != this.props.status.users && (nextProps.status.users == 0 || this.props.status.users == 0))
-                            || (nextProps.status.position != this.props.status.position)
-                            || (nextProps.status.drink != this.props.status.drink)
-                            || (nextProps.status.progress != this.props.status.progress && (!nextProps.status.progress || !this.props.status.progress)))))
+                if(nextProps.selected
+                    || (!nextProps.selected && this.props.selected)
+                    || nextProps.empty != this.props.empty)
                 {
-                    this.empty = nextProps.empty;
                     return true;
                 }
                 return false;
@@ -314,7 +307,7 @@
                     this.ingredientSummary += key + ", ";
                     i++;
                 }
-                if(this.props.selected == this.props.name){
+                if(this.props.selected){
                     return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(this.props.empty, " empty"), style: this.style}, [
                         e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
@@ -326,7 +319,7 @@
                             e(DrinkDetails, {key: 7, name: this.props.name, drink: this.props.drink, empty: this.props.empty, status: this.props.status, ingredients: this.props.ingredients, updateApp: this.props.updateApp, updateList: this.props.updateList}, null)
                         )
                     ]);
-                }else if(this.props.selected == null){
+                }else{
                     return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(this.props.empty, " empty")}, [
                         e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
@@ -375,7 +368,7 @@
                         }
                     }
                     this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"+tmp},
-                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
+                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected == name, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
                     );
                 }
                 return e('div', {className: "list"+this.addText(this.state.selected != null, " noscroll")}, this.list);

@@ -67,7 +67,7 @@ TILT_DOWN = 500000
 TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 100000 # pwm change per second
+PAN_SPEED = 200000 # pwm change per second
 PAN_PERIOD = 0.01
 
 
@@ -94,6 +94,7 @@ ingredients = config["ingredients"]
 
 pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
 pi.write(PUMP_PIN, 1)
+pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
 pan_curr = 495000
 
 #################################### gpio signals
@@ -129,7 +130,7 @@ async def check_cancel():
         cancel_pour = False
         cancel_lock.release()
         pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
         pi.write(PUMP_PIN, 1)
         return True
     cancel_lock.release()
@@ -146,13 +147,12 @@ async def pour_drink(drink):
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
-        #pi.write(PUMP_PIN, 0)
-        await asyncio.sleep(2)
-        pause = 7
+        
+        pause = 5
         config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
         config_lock.release()
-        print("pan align")
+        print("pan align: {} -> {}".format(pan_curr, pan_goal))
         while pan_curr != pan_goal:
             if await check_cancel(): return
             if pan_goal > pan_curr:
@@ -163,7 +163,7 @@ async def pour_drink(drink):
             await asyncio.sleep(PAN_PERIOD)
             pause = pause - PAN_PERIOD
 
-        await asyncio.sleep(3 + max(pause, 0))
+        await asyncio.sleep(max(pause, 0))
 
         flow_lock.acquire()
         flow_tick = 0
@@ -180,11 +180,12 @@ async def pour_drink(drink):
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
 
-        print("flow")
+        flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
+        print("flow: {} - {}".format(drink[ingredient], flow_goal))
         while True:
             if await check_cancel(): return
             flow_lock.acquire()
-            if flow_tick >= max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4):
+            if flow_tick >= flow_goal:
                 print("----done", flush=True)
                 break
             
@@ -204,24 +205,10 @@ async def pour_drink(drink):
             await asyncio.sleep(FLOW_PERIOD)
 
         flow_lock.release()
-        #pi.write(PUMP_PIN, 1)
+
     print("tilt up")
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-    await asyncio.sleep(2)
-    pause = 7
-    pan_goal = 500000
-    print("pan reset")
-    while pan_curr != pan_goal:
-        if await check_cancel(): return
-        if pan_goal > pan_curr:
-            pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
-        else:
-            pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-        pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-        await asyncio.sleep(PAN_PERIOD)
-        pause = pause - PAN_PERIOD
-
-    await asyncio.sleep(3 + max(pause, 0))
+    await asyncio.sleep(5)
     pi.write(PUMP_PIN, 1)
 
 async def pour_cycle(drink):
@@ -229,18 +216,23 @@ async def pour_cycle(drink):
     print("pour drink:")
     print(drink)
     await pour_drink(drink)
+    print("drink done")
 
-    cancel_lock.acquire()
-    cancel_pour = False
-    cancel_lock.release()
+    await asyncio.sleep(5)
 
     state_lock.acquire()
     state = State.CLEANING
     print("----CLEANING----")
     state_lock.release()
 
-    print("clean:")
+    cancel_lock.acquire()
+    cancel_pour = False
+    cancel_lock.release()
+
+    print("pour clean:")
+    print(clean)
     await pour_drink(clean)
+    print("clean done")
 
     state_lock.acquire()
     await state_reset()
@@ -377,10 +369,6 @@ async def init(websocket, path):
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add")
-                if state == State.STANDBY:
-                    state = State.READY
-                    print("----READY----")
-                    await ready_start()
                 
                 add_user = True
                 for user in user_queue:
@@ -392,6 +380,12 @@ async def init(websocket, path):
                     
                 user_drink_name[websocket.remote_address[0]] = msg['name']
                 user_drink_ingredients[websocket.remote_address[0]] = msg['ingredients']
+
+                if state == State.STANDBY:
+                    state = State.READY
+                    print("----READY----")
+                    await ready_start()
+
                 await broadcast_status()
             
             elif msg['type'] == "remove":
