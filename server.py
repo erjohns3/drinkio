@@ -40,11 +40,11 @@ user_drink_name = {}
 user_drink_ingredients = {}
 
 status = {
-    "position": -1,
+    "position": False,
     "users": 0,
-    "drink": "",
-    "timer": -1,
-    "progress": -1,
+    "drink": False,
+    "timer": False,
+    "progress": False,
     "tick": 0
 }
 
@@ -138,6 +138,10 @@ async def check_cancel():
 
 async def pour_drink(drink):
     global pan_curr
+    global progress
+
+    ingredient_count = len(drink)
+    ingredient_index = 0
 
     pi.write(PUMP_PIN, 0)
 
@@ -148,7 +152,7 @@ async def pour_drink(drink):
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
         
-        pause = 5
+        pause = 4
         config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
         config_lock.release()
@@ -163,7 +167,13 @@ async def pour_drink(drink):
             await asyncio.sleep(PAN_PERIOD)
             pause = pause - PAN_PERIOD
 
-        await asyncio.sleep(max(pause, 0))
+        await asyncio.sleep(1 + max(pause, 0))
+
+        state_lock.acquire()
+        if state == State.POURING:
+            progress = (ingredient_index + 0.5) / ingredient_count * 100
+            await broadcast_status()
+        state_lock.release()
 
         flow_lock.acquire()
         flow_tick = 0
@@ -194,7 +204,9 @@ async def pour_drink(drink):
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
                     config_lock.release()
+                    state_lock.acquire()
                     await broadcast_config()
+                    state_lock.release()
                     print("----empty", flush=True)
                     break
                 flow_prev = flow_tick
@@ -205,6 +217,14 @@ async def pour_drink(drink):
             await asyncio.sleep(FLOW_PERIOD)
 
         flow_lock.release()
+
+        state_lock.acquire()
+        if state == State.POURING:
+            progress = (ingredient_index + 1.0) / ingredient_count * 100
+            await broadcast_status()
+        state_lock.release()
+
+        ingredient_index = ingredient_index + 1
 
     print("tilt up")
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
@@ -223,6 +243,7 @@ async def pour_cycle(drink):
     state_lock.acquire()
     state = State.CLEANING
     print("----CLEANING----")
+    await broadcast_status()
     state_lock.release()
 
     cancel_lock.acquire()
@@ -260,7 +281,7 @@ state = State.STANDBY
 ready_wait = 20
 ready_timer = False
 ready_time = 0
-progress = 30
+progress = 0
 
 
 async def ready_start():
@@ -351,6 +372,7 @@ async def init(websocket, path):
     global user_queue
     global ready_timer
     global cancel_pour
+    global progress
 
     state_lock.acquire()
     socket_list.append(websocket)
@@ -422,6 +444,7 @@ async def init(websocket, path):
                         #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
                         #pour_thread.start()
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
+                        progress = 0
                         await broadcast_status()
 
             elif msg['type'] == "pour" :
@@ -438,6 +461,7 @@ async def init(websocket, path):
                         print("----POURING----")
                         print("pour queue")
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
+                        progress = 0
                         await broadcast_status()
 
             elif msg['type'] == "cancel":
