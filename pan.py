@@ -65,13 +65,13 @@ def on_press(key):
 
 with Listener(on_press=on_press, on_release=on_release) as listener:
 
-while True:
-    pan_lock.acquire()
-    if pan_goal > pan_curr:
-        pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
-        pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-    elif pan_goal < pan_curr:
-        pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-        pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
-    pan_lock.release()
-    time.sleep(PAN_PERIOD)
+    while True:
+        pan_lock.acquire()
+        if pan_goal > pan_curr:
+            pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
+            pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+        elif pan_goal < pan_curr:
+            pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
+            pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+        pan_lock.release()
+        time.sleep(PAN_PERIOD)
