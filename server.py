@@ -338,7 +338,7 @@ async def pour_cycle(drink):
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
-def http_server():
+def http_server(testing):
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
     print("serving at port", PORT)
     httpd.serve_forever()
