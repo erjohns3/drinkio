@@ -5,6 +5,7 @@ import sys
 import json
 import signal
 import pathlib
+import keyboard
 
 pi = pigpio.pi()
 
@@ -39,6 +40,8 @@ ingredients = config["ingredients"]
 
 ####################################
 
+pan_lock = threading.Lock()
+
 pan_curr = int(sys.argv[1])
 pan_goal = int(sys.argv[2])
 if pan_curr <= 100:
@@ -46,10 +49,30 @@ if pan_curr <= 100:
 if pan_goal <= 100:
     pan_goal = ports[pan_goal]
 
-while pan_curr != pan_goal:
+print(pan_goal)
+
+def pan_up():
+    pan_lock.aquire()
+    pan_goal = pan_goal + 1000
+    print(pan_goal)
+    pan_lock.release()
+
+def pan_down():
+    pan_lock.aquire()
+    pan_goal = pan_goal - 1000
+    print(pan_goal)
+    pan_lock.release()
+
+keyboard.on_press_key("w", pan_up)
+keyboard.on_press_key("s", pan_down)
+
+while True:
+    pan_lock.acquire()
     if pan_goal > pan_curr:
         pan_curr = min(pan_curr + (PAN_SPEED * PAN_PERIOD), pan_goal)
-    else:
+        pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+    elif pan_goal < pan_curr:
         pan_curr = max(pan_curr - (PAN_SPEED * PAN_PERIOD), pan_goal)
-    pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+        pi.hardware_PWM(PAN_PIN, 333, int(pan_curr))
+    pan_lock.release()
     time.sleep(PAN_PERIOD)
