@@ -23,16 +23,8 @@ TILT_DOWN = 500000
 TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 100000 # pwm change per second
+PAN_SPEED = 200000 # pwm change per second
 PAN_PERIOD = 0.01
-
-def signal_handler(sig, frame):
-    print('Ctrl+C', flush=True)
-    pi.write(PUMP_PIN, 1)
-    pi.stop()
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
 
 #####################################
 
@@ -47,11 +39,12 @@ ingredients = config["ingredients"]
 
 ####################################
 
-pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-time.sleep(2)
-
-pan_curr = ports[int(sys.argv[1])]
-pan_goal = ports[int(sys.argv[2])]
+pan_curr = int(sys.argv[1])
+pan_goal = int(sys.argv[2])
+if pan_curr <= 100:
+    pan_curr = ports[pan_curr]
+if pan_goal <= 100:
+    pan_goal = ports[pan_goal]
 
 while pan_curr != pan_goal:
     if pan_goal > pan_curr:

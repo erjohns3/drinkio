@@ -13,21 +13,17 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.753
-FLOW_MULT = 0.0374
+FLOW_BIAS = 0.637
+FLOW_MULT = 0.0203
 FLOW_PERIOD = 0.01
-FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
 TILT_DOWN = 500000
 TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 100000 # pwm change per second
-PAN_PERIOD = 0.01
-
 port = int(sys.argv[1])
-tick_target = int(sys.argv[2])
+flow_goal = sys.argv[2]
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
@@ -52,7 +48,6 @@ ingredients = config["ingredients"]
 
 pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
 pi.write(PUMP_PIN, 1)
-pan_curr = 495000
 
 #################################### gpio signals
 
@@ -72,12 +67,13 @@ pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
 
 ####################################
 
-print("Drink: {}, Angle: {}, Amount: {}".format(port, ports[port], tick_target), flush=True)
-pi.write(PUMP_PIN, 0)
+print("Drink: {}, Angle: {}, Amount: {}".format(port, ports[port], flow_goal), flush=True)
+
 pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
 time.sleep(2)
 pi.hardware_PWM(PAN_PIN, 333, ports[port])
 time.sleep(2)
+pi.write(PUMP_PIN, 0)
 
 flow_lock.acquire
 flow_tick = 0
@@ -92,9 +88,12 @@ while tilt_curr != TILT_DOWN:
     pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
     time.sleep(TILT_PERIOD)
 
+if flow_goal < 12:
+    flow_goal = max((flow_goal - FLOW_BIAS) / FLOW_MULT, 4)
+
 while True:
     flow_lock.acquire
-    if flow_tick >= tick_target:
+    if flow_tick >= flow_goal:
         print("----done", flush=True)
         break
     
