@@ -266,11 +266,8 @@ async def pour_cycle(drink):
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
-class ReuseAddrTCPServer(socketserver.TCPServer):
-    allow_reuse_address = True
-
 def http_server():
-    httpd = ReuseAddrTCPServer(("", PORT), Handler)
+    httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
     print("serving at port", PORT)
     httpd.serve_forever()
 
