@@ -340,7 +340,10 @@ async def send_status(socket):
     status["tick"] = status["tick"] + 1
     status["users"] = len(user_queue)
     print(status)
-    await socket.send('{"status":' +json.dumps(status) + '}')
+    try:
+        await socket.send('{"status":' +json.dumps(status) + '}')
+    except:
+        print("socket send failed")
 
 async def broadcast_status():
     global socket_list
@@ -380,7 +383,11 @@ async def init(websocket, path):
     
     await websocket.send(json.dumps(config))
     while True:
-        msg_string = await websocket.recv()
+        try:
+            msg_string = await websocket.recv()
+        except:
+            print("socket recv failed")
+            break
         msg = json.loads(msg_string)
         print(msg)
         state_lock.acquire()
