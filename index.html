@@ -13,8 +13,21 @@
     <script src="react-dom.production.min.js"></script>
     <script type="module">
 
-        const socket = new WebSocket("ws://makedrink.me:8765");
+        const socket = new WebSocket("ws://0.0.0.0:8765");
         const e = React.createElement;
+
+        var uuid = 0
+        var uuidIndex = document.cookie.indexOf("UUID");
+        if(uuidIndex < 0){
+            uuid = Math.random();
+            document.cookie = "UUID="+uuid;
+            console.log("new user");
+        }else{
+            uuid = parseFloat(document.cookie.substr(uuidIndex+5));
+            console.log("existing user");
+        }
+        console.log("UUID: " + uuid);
+        
 
         class Header extends React.Component{
             constructor(props){
@@ -68,11 +81,13 @@
             button(event){
                 if(this.props.status.timer !== false){
                     var msg = {
+                        uuid: uuid,
                         type: "pour"
                     };
                     socket.send(JSON.stringify(msg));
                 }else if(this.props.status.progress !== false){
                     var msg = {
+                        uuid: uuid,
                         type: "cancel"
                     };
                     socket.send(JSON.stringify(msg));
@@ -149,6 +164,7 @@
                     var msg = {}
                     if((!this.props.status.position || this.props.name != this.props.status.drink) && this.volume > 0 && !this.props.empty){ // add/swap queue
                         msg = {
+                            uuid: uuid,
                             type: "queue",
                             name: this.props.name,
                             ingredients: this.ingredients
@@ -156,6 +172,7 @@
                         socket.send(JSON.stringify(msg));
                     }else if(this.props.status.position && this.props.name == this.props.status.drink){ // remove from queue
                         msg = {
+                            uuid: uuid,
                             type: "remove"
                         };
                         socket.send(JSON.stringify(msg));
@@ -171,6 +188,7 @@
             pourButton(event){
                 if((this.props.status.users == 0 || (this.props.status.position == 1 && !this.props.status.progress)) && this.volume > 0 && !this.props.empty){
                     var msg = {
+                        uuid: uuid,
                         type: "pour",
                         name: this.props.name,
                         ingredients: this.ingredients
@@ -178,6 +196,7 @@
                     socket.send(JSON.stringify(msg));
                 }else if(this.props.status.position == 1 && this.props.status.progress){
                     var msg = {
+                        uuid: uuid,
                         type: "cancel"
                     };
                     socket.send(JSON.stringify(msg));
@@ -403,6 +422,7 @@
             componentDidMount(){
                 socket.onopen = function () {
                     var query = {
+                        uuid: uuid,
                         type: "query"
                     };
                     socket.send(JSON.stringify(query));
