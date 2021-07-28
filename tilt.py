@@ -31,6 +31,6 @@ else:
     tilt_curr = TILT_DOWN
     print("tilt down")
     while tilt_curr != TILT_UP:
-        tilt_curr = max(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_UP)
+        tilt_curr = max(tilt_curr - (TILT_SPEED * TILT_PERIOD), TILT_UP)
         pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
         time.sleep(TILT_PERIOD)
