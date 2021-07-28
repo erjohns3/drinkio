@@ -263,7 +263,7 @@ async def pour_cycle(drink):
 
 #################################################
 
-PORT = 8000
+PORT = 80
 Handler = http.server.SimpleHTTPRequestHandler
 
 def http_server():
