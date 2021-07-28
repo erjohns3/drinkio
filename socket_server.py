@@ -6,6 +6,7 @@ import threading
 import json
 import pathlib
 import time
+from os import path
 from enum import Enum
 
 class State(Enum):
@@ -32,6 +33,65 @@ loc = pathlib.Path(__file__).parent.absolute()
 f = open(str(loc)+"/config.json", "r")
 config = json.loads(f.read())
 f.close()
+
+
+with open(path.join(str(loc), 'ingredients.json'), "r") as github_ingredients_f:
+    github_ingredients = json.loads(github_ingredients_f.read().lower())
+
+with open(path.join(str(loc), 'recipes.json'), "rb") as github_recipes_f:
+    github_recipes = json.loads(github_recipes_f.read().decode("UTF-8").lower())
+
+
+CL_CONSTANT = 0.33814
+
+drink_dict = {}
+for i in github_recipes:
+    lol = []
+    for word in i['name'].split():
+        lol.append(word.capitalize())
+    name = ' '.join(lol)
+
+    if name not in drink_dict:
+        drink_dict[name] = {}
+
+    drink_dict[name]['ingredients'] = i['ingredients']
+
+    for ingredient in drink_dict[name]['ingredients']:
+        if 'unit' in ingredient and ingredient['unit'] == 'cl':
+            ingredient['amount'] *= CL_CONSTANT
+            ingredient['amount'] = round(ingredient['amount'], 1)
+            ingredient['unit'] = 'oz'
+
+
+
+
+formatted_github_ingredients = {}
+for key, value in github_ingredients.items():
+    if key in config['ingredients_we_own']:
+        del value['taste']
+        value['empty'] = False
+        value['port'] = config['ingredients_we_own'][key]['port']
+        value['abv'] /= 100
+        formatted_github_ingredients[key] = value
+
+to_remove = set()
+formatted_github_drinks = {}
+for key, value in drink_dict.items():
+    formatted_github_drinks[key] = {}
+    for ingredient in value['ingredients']:
+        if 'amount' in ingredient:
+            if ingredient['ingredient'] not in formatted_github_ingredients:
+                print(key)
+                to_remove.add(key)
+            formatted_github_drinks[key][ingredient['ingredient']] = ingredient['amount']
+
+for i in to_remove:
+    del formatted_github_drinks[i]
+
+config['drinks'] = formatted_github_drinks
+config['ingredients'] = formatted_github_ingredients
+del config['ingredients_we_own']
+
 
 state_lock = threading.Lock()
 socket_list = []

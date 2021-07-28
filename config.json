@@ -136,6 +136,9 @@
         823000
     ],
     "ingredients": {
+    },
+
+    "ingredients_we_own": {
         "water": {
             "port": 18,
             "empty": false,
