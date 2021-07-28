@@ -6,8 +6,8 @@
         },
         "Margarita": {
             "tequila": 2,
-            "triple sec": 2,
-            "lime juice": 2
+            "triple sec": 1.5,
+            "lime juice": 1
         },
         "Dark 'n' Stormy": {
             "vodka": 1.5,
@@ -142,17 +142,17 @@
             "abv": 0
         },
         "tequila": {
-            "port": 0,
+            "port": 10,
             "empty": false,
             "abv": 0.4
         },
         "triple sec": {
-            "port": 1,
+            "port": 34,
             "empty": false,
             "abv": 0.30
         },
         "lime juice": {
-            "port": 2,
+            "port": 14,
             "empty": false,
             "abv": 0
         },

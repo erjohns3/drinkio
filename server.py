@@ -57,8 +57,8 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.637
-FLOW_MULT = 0.0203
+FLOW_BIAS = 0.921
+FLOW_MULT = 0.0175
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
@@ -67,7 +67,7 @@ TILT_DOWN = 500000
 TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 200000 # pwm change per second
+PAN_SPEED = 150000 # pwm change per second
 PAN_PERIOD = 0.01
 
 
