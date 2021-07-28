@@ -9,9 +9,10 @@ import asyncio
 import websockets
 import http.server
 import socketserver
-from os import path
 from enum import Enum
-
+import argparse
+from bottle import route, run, template, jinja2_view
+import os
 
 class State(Enum):
     STANDBY = 1
@@ -49,9 +50,7 @@ status = {
     "tick": 0
 }
 
-#################################################
-
-pi = pigpio.pi()
+################################################# Setup pi
 
 PAN_PIN = 12
 TILT_PIN = 13
@@ -71,11 +70,40 @@ TILT_PERIOD = 0.01
 PAN_SPEED = 150000 # pwm change per second
 PAN_PERIOD = 0.01
 
+flow_lock = threading.Lock()
+flow_tick = 0
+
+pi = None
+
+def flow_rise(pin, level, tick):
+    global flow_tick
+    flow_lock.acquire()
+    flow_tick = flow_tick + 1
+    flow_lock.release()
+    print("flow: {}".format(flow_tick), flush=True)
+
+def setup_pigpio():
+    global pi
+    pi = pigpio.pi()
+
+    pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
+    pi.write(PUMP_PIN, 1)
+    pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+    pan_curr = 495000
+
+    pi.set_mode(FLOW_PIN, pigpio.INPUT)
+    pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
+    pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
+
+
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
-    pi.write(PUMP_PIN, 1)
-    pi.stop()
+    if pi is None:
+        print('signal_handler skipped for testing')
+    else:
+        pi.write(PUMP_PIN, 1)
+        pi.stop()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -88,10 +116,10 @@ config = json.loads(f.read())
 f.close()
 
 
-with open(path.join(str(loc), 'ingredients.json'), "r") as github_ingredients_f:
+with open(os.path.join(str(loc), 'ingredients.json'), "r") as github_ingredients_f:
     github_ingredients = json.loads(github_ingredients_f.read().lower())
 
-with open(path.join(str(loc), 'recipes.json'), "rb") as github_recipes_f:
+with open(os.path.join(str(loc), 'recipes.json'), "rb") as github_recipes_f:
     github_recipes = json.loads(github_recipes_f.read().decode("UTF-8").lower())
 
 
@@ -134,7 +162,6 @@ for key, value in drink_dict.items():
     for ingredient in value['ingredients']:
         if 'amount' in ingredient:
             if ingredient['ingredient'] not in formatted_github_ingredients:
-                print(key)
                 to_remove.add(key)
             formatted_github_drinks[key][ingredient['ingredient']] = ingredient['amount']
 
@@ -152,29 +179,6 @@ drinks = config["drinks"]
 ports = config["ports"]
 ingredients = config["ingredients"]
 
-#####################################
-
-pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
-pi.write(PUMP_PIN, 1)
-pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-pan_curr = 495000
-
-#################################### gpio signals
-
-flow_lock = threading.Lock()
-flow_tick = 0
-
-def flow_rise(pin, level, tick):
-    global flow_tick
-    flow_lock.acquire()
-    flow_tick = flow_tick + 1
-    flow_lock.release()
-    print("flow: {}".format(flow_tick), flush=True)
-
-pi.set_mode(FLOW_PIN, pigpio.INPUT)
-pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
-pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
-
 ####################################
 
 cancel_lock = threading.Lock()
@@ -185,6 +189,9 @@ clean = {
 }
 
 async def check_cancel():
+    if pi is None:
+        print("check_cancel() skipped for testing")
+        return False
     global cancel_pour
 
     cancel_lock.acquire()
@@ -199,6 +206,9 @@ async def check_cancel():
     return False
 
 async def pour_drink(drink):
+    if pi is None:
+        print("pour_drink() skipped for testing")
+        return
     global pan_curr
     global progress
     global flow_tick
@@ -333,11 +343,9 @@ def http_server():
     print("serving at port", PORT)
     httpd.serve_forever()
 
-http_thread = threading.Thread(target=http_server, args=(), daemon=True)
-http_thread.start()
 
 #################################################
-        
+
 state = State.STANDBY
 ready_wait = 20
 ready_timer = False
@@ -545,7 +553,30 @@ async def init(websocket, path):
 
         state_lock.release()
 
-start_server = websockets.serve(init, "0.0.0.0", 8765)
+def run_asyncio():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+    start_server = websockets.serve(init, "0.0.0.0", 8765)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--testing', action='store_true', default=False,
+                   help='To run webserver without drinkmaker attached')
+    args = parser.parse_args()
+
+    if not args.testing:
+        setup_pigpio()
+
+    http_thread = threading.Thread(target=http_server, args=[args.testing], daemon=True)
+    http_thread.start()
+
+    run_asyncio()
+
+
+
+if __name__ == "__main__":
+    main()
