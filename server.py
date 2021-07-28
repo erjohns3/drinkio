@@ -139,6 +139,7 @@ async def check_cancel():
 async def pour_drink(drink):
     global pan_curr
     global progress
+    global flow_tick
 
     ingredient_count = len(drink)
     ingredient_index = 0
