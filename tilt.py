@@ -24,7 +24,6 @@ if sys.argv[1] == "down":
     tilt_curr = TILT_UP
     print("tilt down")
     while tilt_curr != TILT_DOWN:
-        if await check_cancel(): return
         tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
         pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
         await asyncio.sleep(TILT_PERIOD)
@@ -32,7 +31,6 @@ else:
     tilt_curr = TILT_DOWN
     print("tilt down")
     while tilt_curr != TILT_UP:
-        if await check_cancel(): return
         tilt_curr = max(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_UP)
         pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
         await asyncio.sleep(TILT_PERIOD)
