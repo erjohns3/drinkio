@@ -5,7 +5,7 @@ import sys
 import json
 import signal
 import pathlib
-import keyboard
+from pynput.keyboard import Listener
 
 pi = pigpio.pi()
 
@@ -51,20 +51,19 @@ if pan_goal <= 100:
 
 print(pan_goal)
 
-def pan_up():
-    pan_lock.aquire()
-    pan_goal = pan_goal + 1000
-    print(pan_goal)
-    pan_lock.release()
+def on_press(key):
+    if key == 'w':
+        pan_lock.aquire()
+        pan_goal = pan_goal + 1000
+        print(pan_goal)
+        pan_lock.release()
+    if key == 's':
+        pan_lock.aquire()
+        pan_goal = pan_goal - 1000
+        print(pan_goal)
+        pan_lock.release()
 
-def pan_down():
-    pan_lock.aquire()
-    pan_goal = pan_goal - 1000
-    print(pan_goal)
-    pan_lock.release()
-
-keyboard.on_press_key("w", pan_up)
-keyboard.on_press_key("s", pan_down)
+with Listener(on_press=on_press, on_release=on_release) as listener:
 
 while True:
     pan_lock.acquire()
