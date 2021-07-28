@@ -8,11 +8,14 @@ import pathlib
 import asyncio
 import websockets
 import http.server
-import socketserver
 from enum import Enum
 import argparse
-from bottle import route, run, template, jinja2_view
 import os
+from os import path
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+
 
 class State(Enum):
     STANDBY = 1
@@ -111,17 +114,34 @@ signal.signal(signal.SIGINT, signal_handler)
 #####################################
 
 loc = pathlib.Path(__file__).parent.absolute()
-f = open(str(loc)+"/config.json", "r")
-config = json.loads(f.read())
-f.close()
+drink_io_folder = str(loc)
 
 
-with open(os.path.join(str(loc), 'ingredients.json'), "r") as github_ingredients_f:
-    github_ingredients = json.loads(github_ingredients_f.read().lower())
+with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
+    ingredients_owned = json.loads(f.read())['ingredients_owned']
 
-with open(os.path.join(str(loc), 'recipes.json'), "rb") as github_recipes_f:
-    github_recipes = json.loads(github_recipes_f.read().decode("UTF-8").lower())
+with open(path.join(drink_io_folder, 'rasp_pi_port_config.json'), 'r') as f:
+    rasp_pi_port_config = json.loads(f.read())
 
+with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
+    github_ingredients = json.loads(f.read().lower())
+
+with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
+    github_recipes = json.loads(f.read().decode("UTF-8").lower())
+
+
+class MyWatchdogMonitor(FileSystemEventHandler):
+    def on_modified(self, event):
+        if event.src_path.endswith('ingredients_owned.json'):
+            print(f'event type: {event.event_type}  path : {event.src_path}')
+
+event_handler = MyWatchdogMonitor()
+observer = Observer()
+observer.schedule(event_handler, path=drink_io_folder, recursive=False)
+observer.start()
+
+
+ports = rasp_pi_port_config['ports']
 
 CL_CONSTANT = 0.33814
 
@@ -148,10 +168,10 @@ for i in github_recipes:
 
 formatted_github_ingredients = {}
 for key, value in github_ingredients.items():
-    if key in config['ingredients_we_own']:
+    if key in ingredients_owned:
         del value['taste']
         value['empty'] = False
-        value['port'] = config['ingredients_we_own'][key]['port']
+        value['port'] = ingredients_owned[key]['port']
         value['abv'] /= 100
         formatted_github_ingredients[key] = value
 
@@ -168,16 +188,12 @@ for key, value in drink_dict.items():
 for i in to_remove:
     del formatted_github_drinks[i]
 
-config['drinks'] = formatted_github_drinks
-config['ingredients'] = formatted_github_ingredients
-del config['ingredients_we_own']
+to_send_to_client = {}
+to_send_to_client['drinks'] = formatted_github_drinks
+to_send_to_client['ingredients'] = formatted_github_ingredients
+ingredients = to_send_to_client['ingredients']
 
 
-
-
-drinks = config["drinks"]
-ports = config["ports"]
-ingredients = config["ingredients"]
 
 ####################################
 
@@ -436,7 +452,7 @@ async def broadcast_config():
         if socket_list[i].closed:
             socket_list.pop(i)
         else:
-            await socket_list[i].send(json.dumps(config))
+            await socket_list[i].send(json.dumps(to_send_to_client))
             i=i+1
 
 #################################################
@@ -453,7 +469,7 @@ async def init(websocket, path):
     print("add: " + websocket.remote_address[0])
     state_lock.release()
     
-    await websocket.send(json.dumps(config))
+    await websocket.send(json.dumps(to_send_to_client))
     while True:
         try:
             msg_string = await websocket.recv()
@@ -559,7 +575,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "0.0.0.0", 8765)
+    start_server = websockets.serve(init, "192.168.86.58", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 

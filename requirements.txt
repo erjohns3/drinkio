@@ -2,3 +2,4 @@
 # pip install -r requirements.txt
 websockets == 9.1
 pigpio == 1.78
+watchdog

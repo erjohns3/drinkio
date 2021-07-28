@@ -1,0 +1,28 @@
+{
+    "ingredients_owned": {
+        "water": {
+            "port": 18,
+            "empty": false
+        },
+        "tequila": {
+            "port": 10,
+            "empty": false
+        },
+        "triple sec": {
+            "port": 34,
+            "empty": false
+        },
+        "lime juice": {
+            "port": 14,
+            "empty": false
+        },
+        "vodka": {
+            "port": 3,
+            "empty": false
+        },
+        "orange juice": {
+            "port": 4,
+            "empty": false
+        }
+    }
+}
