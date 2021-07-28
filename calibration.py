@@ -23,7 +23,7 @@ TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
 port = int(sys.argv[1])
-flow_goal = sys.argv[2]
+flow_goal = float(sys.argv[2])
 
 def signal_handler(sig, frame):
     print('Ctrl+C', flush=True)
