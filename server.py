@@ -263,7 +263,7 @@ async def pour_cycle(drink):
 
 #################################################
 
-PORT = 8000
+PORT = 69
 Handler = http.server.SimpleHTTPRequestHandler
 
 class ReuseAddrTCPServer(socketserver.TCPServer):
