@@ -16,14 +16,12 @@
         const socket = new WebSocket("ws://makedrink.me:8765");
         const e = React.createElement;
 
-        var uuid = 0
-        var uuidIndex = document.cookie.indexOf("UUID");
-        if(uuidIndex < 0){
+        var uuid = localStorage.getItem('uuid');
+        if(uuid == null){
             uuid = Math.random();
-            document.cookie = "UUID="+uuid;
+            localStorage.setItem('uuid', uuid)
             console.log("new user");
         }else{
-            uuid = parseFloat(document.cookie.substr(uuidIndex+5));
             console.log("existing user");
         }
         console.log("UUID: " + uuid);
