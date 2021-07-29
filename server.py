@@ -129,19 +129,39 @@ with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
 with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
     github_recipes = json.loads(f.read().decode("UTF-8").lower())
 
+ports = rasp_pi_port_config['ports']
 
+
+# helper functions
+
+# ASSUMES HAS ALREADY BEEN LOCKED
+def dump_ingredients_owned_to_file(ingredients):
+    with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'w') as f:
+        f.write(json.dumps(ingredients))
+    
+
+
+# watchdog for "ingredients_owned.json" list
 class MyWatchdogMonitor(FileSystemEventHandler):
+    def __init__(self, _config_lock):
+        self.file_to_watch = 'ingredients_owned.json'
+        self.config_lock = _config_lock
+        
     def on_modified(self, event):
-        if event.src_path.endswith('ingredients_owned.json'):
-            print(f'event type: {event.event_type}  path : {event.src_path}')
+        if event.src_path.endswith(self.file_to_watch):
+            print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch))
+            self.config_lock.acquire()
+            # refresh here
+            self.config_lock.release()
 
-event_handler = MyWatchdogMonitor()
+event_handler = MyWatchdogMonitor(MyWatchdogMonitor)
 observer = Observer()
 observer.schedule(event_handler, path=drink_io_folder, recursive=False)
 observer.start()
 
 
-ports = rasp_pi_port_config['ports']
+
+# prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
 
 CL_CONSTANT = 0.33814
 
@@ -166,14 +186,22 @@ for i in github_recipes:
 
 
 
+# change to seraching through ingredients_owned and check for info in github ingredients
 formatted_github_ingredients = {}
-for key, value in github_ingredients.items():
-    if key in ingredients_owned:
-        del value['taste']
-        value['empty'] = False
-        value['port'] = ingredients_owned[key]['port']
-        value['abv'] /= 100
-        formatted_github_ingredients[key] = value
+for i_name, i_values in ingredients_owned.values():
+    if i_name in github_ingredients:
+        i_values['abv'] /= 100
+    formatted_github_ingredients[i_name] = i_values
+
+
+# formatted_github_ingredients = {}
+# for key, value in github_ingredients.items():
+#     if key in ingredients_owned:
+#         del value['taste']
+#         value['empty'] = False
+#         value['port'] = ingredients_owned[key]['port']
+#         value['abv'] /= 100
+#         formatted_github_ingredients[key] = value
 
 to_remove = set()
 formatted_github_drinks = {}
@@ -292,6 +320,7 @@ async def pour_drink(drink):
                 if flow_tick - flow_prev <= 3:
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
+                    dump_ingredients_owned_to_file(ingredients)
                     config_lock.release()
                     state_lock.acquire()
                     await broadcast_config()
@@ -575,7 +604,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "192.168.86.58", 8765)
+    start_server = websockets.serve(init, "192.168.86.56", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 
