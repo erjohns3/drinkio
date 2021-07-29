@@ -16,6 +16,17 @@
         const socket = new WebSocket("ws://192.168.86.56:8765");
         const e = React.createElement;
 
+        var uuid = localStorage.getItem('uuid');
+        if(uuid == null){
+            uuid = Math.random();
+            localStorage.setItem('uuid', uuid)
+            console.log("new user");
+        }else{
+            console.log("existing user");
+        }
+        console.log("UUID: " + uuid);
+        
+
         class Header extends React.Component{
             constructor(props){
                 super(props);
@@ -68,11 +79,13 @@
             button(event){
                 if(this.props.status.timer !== false){
                     var msg = {
+                        uuid: uuid,
                         type: "pour"
                     };
                     socket.send(JSON.stringify(msg));
                 }else if(this.props.status.progress !== false){
                     var msg = {
+                        uuid: uuid,
                         type: "cancel"
                     };
                     socket.send(JSON.stringify(msg));
@@ -149,6 +162,7 @@
                     var msg = {}
                     if((!this.props.status.position || this.props.name != this.props.status.drink) && this.volume > 0 && !this.props.empty){ // add/swap queue
                         msg = {
+                            uuid: uuid,
                             type: "queue",
                             name: this.props.name,
                             ingredients: this.ingredients
@@ -156,6 +170,7 @@
                         socket.send(JSON.stringify(msg));
                     }else if(this.props.status.position && this.props.name == this.props.status.drink){ // remove from queue
                         msg = {
+                            uuid: uuid,
                             type: "remove"
                         };
                         socket.send(JSON.stringify(msg));
@@ -171,6 +186,7 @@
             pourButton(event){
                 if((this.props.status.users == 0 || (this.props.status.position == 1 && !this.props.status.progress)) && this.volume > 0 && !this.props.empty){
                     var msg = {
+                        uuid: uuid,
                         type: "pour",
                         name: this.props.name,
                         ingredients: this.ingredients
@@ -178,6 +194,7 @@
                     socket.send(JSON.stringify(msg));
                 }else if(this.props.status.position == 1 && this.props.status.progress){
                     var msg = {
+                        uuid: uuid,
                         type: "cancel"
                     };
                     socket.send(JSON.stringify(msg));
@@ -403,6 +420,7 @@
             componentDidMount(){
                 socket.onopen = function () {
                     var query = {
+                        uuid: uuid,
                         type: "query"
                     };
                     socket.send(JSON.stringify(query));
