@@ -282,41 +282,54 @@ async def pour_drink(drink):
         elapsed = 0
         flow_prev = 0
 
-        tilt_curr = TILT_UP
-        print("tilt down")
-        while tilt_curr != TILT_DOWN:
-            if await check_cancel(): return
-            tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
-            pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-            await asyncio.sleep(TILT_PERIOD)
+        
+        total_ingredient_amount = []
+        if drink[ingredient] > .65 and drink[ingredient] <= 1.3:
+            total_ingredient_amount = [drink[ingredient] / 2, drink[ingredient] / 2]
+        else:
+            total_ingredient_amount = [drink[ingredient]]
 
-        flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
-        print("flow: {} - {}".format(drink[ingredient], flow_goal))
-        while True:
-            if await check_cancel(): return
-            flow_lock.acquire()
-            if flow_tick >= flow_goal:
-                print("ingredient done", flush=True)
-                break
-            
-            if elapsed > 8:
-                if flow_tick - flow_prev <= 3:
-                    print('--empty--')
-                    config_lock.acquire()
-                    ingredients[ingredient]["empty"] = True
-                    dump_ingredients_owned_to_file()
-                    config_lock.release()
-                    state_lock.acquire()
-                    await broadcast_config()
-                    state_lock.release()
-                    print("ingredient empty", flush=True)
+        for index, ingredient_amount in enumerate(total_ingredient_amount):
+            tilt_curr = TILT_UP
+            print("tilt down")
+            while tilt_curr != TILT_DOWN:
+                if await check_cancel(): return
+                tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+                pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+                await asyncio.sleep(TILT_PERIOD)
+
+            flow_goal = max((ingredient_amount - FLOW_BIAS) / FLOW_MULT, 4)
+            print("flow: {} - {}".format(ingredient_amount, flow_goal))
+            while True:
+                if await check_cancel(): return
+                flow_lock.acquire()
+                if flow_tick >= flow_goal:
+                    print("ingredient amount done", flush=True)
                     break
-                flow_prev = flow_tick
-                elapsed = 4
+                
+                if elapsed > 8:
+                    if flow_tick - flow_prev <= 3:
+                        print('--empty--')
+                        config_lock.acquire()
+                        ingredients[ingredient]["empty"] = True
+                        dump_ingredients_owned_to_file()
+                        config_lock.release()
+                        state_lock.acquire()
+                        await broadcast_config()
+                        state_lock.release()
+                        print("ingredient empty", flush=True)
+                        break
+                    flow_prev = flow_tick
+                    elapsed = 4
 
-            elapsed = elapsed + FLOW_PERIOD
-            flow_lock.release()
-            await asyncio.sleep(FLOW_PERIOD)
+                elapsed = elapsed + FLOW_PERIOD
+                flow_lock.release()
+                await asyncio.sleep(FLOW_PERIOD)
+            
+            if len(ingredient) > 1 and index == 0:
+                pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+                await asyncio.sleep(8)
+        print("total ingredient done", flush=True)
 
         flow_lock.release()
 
