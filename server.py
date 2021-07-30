@@ -137,8 +137,6 @@ def dump_ingredients_owned_to_file():
         for k in sorted(list(ingredients.keys()), key = lambda x: ingredients[x]['port']):
             v = ingredients[k]
             new_dict_to_dump[k] = v.copy()
-            if 'abv' in new_dict_to_dump[k]:
-                del new_dict_to_dump[k]['abv']
         
         json.dump(new_dict_to_dump, f, indent=2)
     
@@ -165,15 +163,13 @@ def load_config_from_files(config_lock):
         all_drink_recipes = json.loads(f.read().decode("UTF-8"))
 
 
-
-
     # change to seraching through ingredients_owned and check for info in github ingredients
     owned_ingredients = {}
     for i_name, i_values in ingredients_owned.items():
         if i_name in github_ingredients:
             i_values['abv'] = github_ingredients[i_name]['abv'] / 100
         else:
-            i_values['abv'] = -999
+            i_values['abv'] = '???'
         owned_ingredients[i_name] = i_values
 
     to_remove = set()
@@ -196,7 +192,9 @@ def load_config_from_files(config_lock):
     ingredients = to_send_to_client['ingredients']
     config_lock.release()
 
+
 load_config_from_files(config_lock)
+dump_ingredients_owned_to_file()
 
 # watchdog for "ingredients_owned.json" list
 class MyWatchdogMonitor(FileSystemEventHandler):
@@ -604,7 +602,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "0.0.0.0", 8765)
+    start_server = websockets.serve(init, "192.168.86.56", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 

@@ -31,7 +31,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "grenadine syrup",
           "amount": 0.34,
           "unit": "oz"
         }
@@ -151,7 +151,7 @@
           "unit": "???"
         },
         {
-          "ingredient": "soda water",
+          "ingredient": "club soda",
           "amount": "???",
           "unit": "???"
         }
@@ -160,7 +160,7 @@
     "Horse's Neck": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.35,
           "unit": "oz"
         },
@@ -199,12 +199,12 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "grenadine syrup",
           "amount": 0.34,
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.34,
           "unit": "oz"
         },
@@ -247,7 +247,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.68,
           "unit": "oz"
         },
@@ -291,14 +291,14 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 1.01,
           "unit": "oz"
         },
         {
-          "ingredient": "1 dash of cola",
-          "amount": "???",
-          "unit": "???"
+          "ingredient": "coke",
+          "amount": 0.5,
+          "unit": "oz"
         }
       ]
     },
@@ -310,7 +310,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.51,
           "unit": "oz"
         },
@@ -372,7 +372,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.51,
           "unit": "oz"
         }
@@ -392,20 +392,6 @@
         }
       ]
     },
-    "Rum and Coke": {
-      "ingredients": [
-        {
-          "ingredient": "white rum",
-          "amount": 2,
-          "unit": "oz"
-        },
-        {
-          "ingredient": "coca cola",
-          "amount": 5,
-          "unit": "oz"
-        }
-      ]
-    },
     "Cuba Libre": {
       "ingredients": [
         {
@@ -414,7 +400,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "coca cola",
+          "ingredient": "coke",
           "amount": 4.06,
           "unit": "oz"
         },
@@ -447,7 +433,7 @@
     "Porto Flip": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 0.51,
           "unit": "oz"
         },
@@ -476,12 +462,12 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.34,
           "unit": "oz"
         },
         {
-          "ingredient": "soda water",
+          "ingredient": "club soda",
           "amount": 2.71,
           "unit": "oz"
         }
@@ -495,7 +481,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "coffee liqueur",
+          "ingredient": "kahlua",
           "amount": 0.34,
           "unit": "oz"
         },
@@ -601,18 +587,23 @@
       "ingredients": [
         {
           "ingredient": "gin",
-          "amount": 1.52,
+          "amount": 2,
           "unit": "oz"
         },
         {
-          "ingredient": "cherry liqueur",
-          "amount": 0.51,
+          "ingredient": "maraschino",
+          "amount": 0.5,
           "unit": "oz"
         },
         {
-          "ingredient": "lemon juice",
-          "amount": 0.51,
+          "ingredient": "creme de la violet",
+          "amount": 0.5,
           "unit": "oz"
+        },
+        {
+            "ingredient": "lemon juice",
+            "amount": 0.75,
+            "unit": "oz"
         }
       ]
     },
@@ -662,7 +653,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "grenadine syrup",
           "amount": 0.51,
           "unit": "oz"
         }
@@ -681,7 +672,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.51,
           "unit": "oz"
         }
@@ -704,7 +695,7 @@
     "B52": {
       "ingredients": [
         {
-          "ingredient": "coffee liqueur",
+          "ingredient": "kahlua",
           "amount": 0.68,
           "unit": "oz"
         },
@@ -723,7 +714,7 @@
     "Stinger": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.69,
           "unit": "oz"
         },
@@ -785,7 +776,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "splash of soda water",
+          "ingredient": "splash of club soda",
           "amount": "???",
           "unit": "???"
         }
@@ -804,7 +795,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.34,
           "unit": "oz"
         },
@@ -818,7 +809,7 @@
     "Alexander": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.01,
           "unit": "oz"
         },
@@ -894,7 +885,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "coffee liqueur",
+          "ingredient": "kahlua",
           "amount": 0.68,
           "unit": "oz"
         }
@@ -957,7 +948,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.51,
           "unit": "oz"
         },
@@ -1039,7 +1030,7 @@
           "unit": "???"
         },
         {
-          "ingredient": "2 drops grenadine",
+          "ingredient": "2 drops grenadine syrup",
           "amount": "???",
           "unit": "???"
         }
@@ -1067,7 +1058,7 @@
     "Sidecar": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.69,
           "unit": "oz"
         },
@@ -1110,7 +1101,7 @@
     "Sazerac": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.69,
           "unit": "oz"
         },
@@ -1144,7 +1135,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "a splash of soda water",
+          "ingredient": "a splash of club soda",
           "amount": "???",
           "unit": "???"
         }
@@ -1183,7 +1174,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "grenadine syrup",
           "amount": 0.34,
           "unit": "oz"
         },
@@ -1197,7 +1188,7 @@
     "French Connection": {
       "ingredients": [
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.18,
           "unit": "oz"
         },
@@ -1245,12 +1236,12 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.51,
           "unit": "oz"
         },
         {
-          "ingredient": "soda water",
+          "ingredient": "club soda",
           "amount": 2.03,
           "unit": "oz"
         }
@@ -1359,7 +1350,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 0.34,
           "unit": "oz"
         },
@@ -1393,7 +1384,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "grenadine syrup",
           "amount": 0.34,
           "unit": "oz"
         }
@@ -1455,7 +1446,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 1.01,
           "unit": "oz"
         },
@@ -1480,7 +1471,7 @@
           "unit": "???"
         },
         {
-          "ingredient": "soda water",
+          "ingredient": "club soda",
           "amount": "???",
           "unit": "???"
         }
@@ -1504,7 +1495,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "syrup",
+          "ingredient": "simple syrup",
           "amount": 0.34,
           "unit": "oz"
         }
@@ -1570,7 +1561,7 @@
           "unit": "oz"
         },
         {
-          "ingredient": "cognac",
+          "ingredient": "brandy",
           "amount": 1.01,
           "unit": "oz"
         },

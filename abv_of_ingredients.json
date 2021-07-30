@@ -171,6 +171,34 @@
     "abv": 20,
     "taste": null
   },
+  "water": {
+    "abv": 0,
+    "taste": null
+  },
+  "tonic water": {
+    "abv": 0,
+    "taste": null
+  },
+  "sprite": {
+    "abv": 0,
+    "taste": null
+  },
+  "coke": {
+    "abv": 0,
+    "taste": null
+  },
+  "gingerale": {
+    "abv": 0,
+    "taste": null
+  },
+  "simple syrup": {
+    "abv": 0,
+    "taste": null
+  },
+  "club soda": {
+    "abv": 0,
+    "taste": null
+  },
   "Soda water": {
     "abv": 0,
     "taste": null

@@ -1,110 +1,147 @@
 {
-    "water": {
-        "port": 18,
-        "empty": false
-    },
-    "whiskey": {
-        "port": 3,
-        "empty": false
-    },
-    "white rum": {
-        "port": 3,
-        "empty": false
-    },
-    "dark rum": {
-        "port": 3,
-        "empty": false
-    },
-    "vodka": {
-        "port": 3,
-        "empty": false
-    },
-    "tequila": {
-        "port": 10,
-        "empty": false
-    },
-    "brandy": {
-        "port": 10,
-        "empty": false
-    },
-    "scotch": {
-        "port": 10,
-        "empty": false
-    },
-    "gin": {
-        "port": 10,
-        "empty": false
-    },
-    "fireball": {
-        "port": 10,
-        "empty": false
-    },
-    "triple sec": {
-        "port": 34,
-        "empty": false
-    },
-    "vermouth": {
-        "port": 34,
-        "empty": false
-    },
-    "kahlua": {
-        "port": 34,
-        "empty": false
-    },
-    "amaretto": {
-        "port": 34,
-        "empty": false
-    },
-    "creme de la violet": {
-        "port": 4,
-        "empty": false
-    },
-    "simple syrup": {
-        "port": 4,
-        "empty": false
-    },
-    "grenadine syrup": {
-        "port": 4,
-        "empty": false
-    },
-    "lime juice": {
-        "port": 14,
-        "empty": false
-    },
-    "lemon juice": {
-        "port": 14,
-        "empty": false
-    },
-    "orange juice": {
-        "port": 4,
-        "empty": false
-    },
-    "cranberry juice": {
-        "port": 4,
-        "empty": false
-    },
-    "sprite": {
-        "port": 4,
-        "empty": false
-    },
-    "coke": {
-        "port": 4,
-        "empty": false
-    },
-    "gingerale": {
-        "port": 4,
-        "empty": false
-    },
-    "tonic": {
-        "port": 4,
-        "empty": false
-    },
-    "club soda": {
-        "port": 4,
-        "empty": false
-    },
-    "ginger beer": {
-        "port": 4,
-        "empty": false
-    }
+  "whiskey": {
+    "port": 3,
+    "empty": false,
+    "abv": 0.4
+  },
+  "white rum": {
+    "port": 3,
+    "empty": false,
+    "abv": 0.4
+  },
+  "dark rum": {
+    "port": 3,
+    "empty": false,
+    "abv": 0.4
+  },
+  "vodka": {
+    "port": 3,
+    "empty": false,
+    "abv": 0.4
+  },
+  "creme de la violet": {
+    "port": 4,
+    "empty": false,
+    "abv": "???"
+  },
+  "simple syrup": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "grenadine syrup": {
+    "port": 4,
+    "empty": false,
+    "abv": "???"
+  },
+  "orange juice": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "cranberry juice": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "sprite": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "coke": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "gingerale": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "tonic water": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "club soda": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.0
+  },
+  "ginger beer": {
+    "port": 4,
+    "empty": false,
+    "abv": 0.05
+  },
+  "tequila": {
+    "port": 10,
+    "empty": false,
+    "abv": 0.4
+  },
+  "brandy": {
+    "port": 10,
+    "empty": false,
+    "abv": "???"
+  },
+  "scotch": {
+    "port": 10,
+    "empty": false,
+    "abv": "???"
+  },
+  "gin": {
+    "port": 10,
+    "empty": false,
+    "abv": 0.4
+  },
+  "fireball": {
+    "port": 10,
+    "empty": false,
+    "abv": "???"
+  },
+  "lime juice": {
+    "port": 14,
+    "empty": false,
+    "abv": 0.0
+  },
+  "lemon juice": {
+    "port": 14,
+    "empty": false,
+    "abv": 0.0
+  },
+  "water": {
+    "port": 18,
+    "empty": false,
+    "abv": 0.0
+  },
+  "triple sec": {
+    "port": 34,
+    "empty": false,
+    "abv": 0.4
+  },
+  "vermouth": {
+    "port": 34,
+    "empty": false,
+    "abv": 0.17
+  },
+  "kahlua": {
+    "port": 34,
+    "empty": false,
+    "abv": "???"
+  },
+  "amaretto": {
+    "port": 34,
+    "empty": false,
+    "abv": "???"
+  },
+  "peach schnapps": {
+    "port": 34,
+    "empty": false,
+    "abv": 0.4
+  },
+  "maraschino": {
+    "port": 34,
+    "empty": false,
+    "abv": "???"
+  }
 }

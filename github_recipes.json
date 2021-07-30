@@ -28,8 +28,8 @@
         "ingredient": "Lime juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
-        "label": "Grenadine" }
+        "ingredient": "Grenadine syrup Syrup",
+        "label": "Grenadine syrup" }
     ],
     "preparation": "Shake with ice cubes. Strain into chilled cocktail glass." },
   { "name": "Negroni",
@@ -143,11 +143,11 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
-        "label": "Grenadine" },
+        "ingredient": "Grenadine syrup",
+        "label": "Grenadine syrup" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
+        "ingredient": "Simple Syrup",
         "label": "Sugar syrup" },
       { "special": "3 to 4 dashes Angostura bitters" }
     ],
@@ -181,7 +181,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 2,
-        "ingredient": "Syrup",
+        "ingredient": "Simple Syrup",
         "label": "Sugar syrup" },
       { "special": "1 raw egg white (small egg)" }
     ],
@@ -274,7 +274,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 1.5,
-        "ingredient": "Syrup",
+        "ingredient": "simple syrup",
         "label": "Sugar syrup" }
     ],
     "garnish": "Half an orange slice and cherry",
@@ -301,7 +301,7 @@
         "ingredient": "White rum" },
       { "unit": "cl",
         "amount": 12,
-        "ingredient": "Coca Cola" },
+        "ingredient": "Coke" },
       { "unit": "cl",
         "amount": 1,
         "ingredient": "Lime juice" }
@@ -351,7 +351,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
+        "ingredient": "Simple syrup",
         "label": "Sugar syrup" },
       { "unit": "cl",
         "amount": 8,
@@ -497,11 +497,11 @@
         "ingredient": "Orange juice" },
       { "unit": "cl",
         "amount": 1.5,
-        "ingredient": "Syrup",
-        "label": "Grenadine" }
+        "ingredient": "Grenadine syrup",
+        "label": "Grenadine syrup" }
     ],
     "garnish": "Orange slice and a cherry",
-    "preparation": "Build tequila and orange juice into highball with ice cubes. Add a splash of grenadine to create sunrise effect. Do not stir." },
+    "preparation": "Build tequila and orange juice into highball with ice cubes. Add a splash of grenadine syrup to create sunrise effect. Do not stir." },
   { "name": "Daiquiri",
     "glass": "martini",
     "category": "Before Dinner Cocktail",
@@ -514,7 +514,7 @@
         "ingredient": "Lime juice" },
       { "unit": "cl",
         "amount": 1.5,
-        "ingredient": "Syrup",
+        "ingredient": "Simple syrup",
         "label": "Simple syrup" }
     ],
     "preparation": "Shake and strain into a cocktail glass." },
@@ -618,7 +618,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
+        "ingredient": "Simple syrup",
         "label": "Sugar syrup" },
       { "unit": "cl",
         "amount": 1.5,
@@ -748,8 +748,8 @@
         "label": "Orange Curaçao" },
       { "unit": "cl",
         "amount": 1.5,
-        "ingredient": "Syrup",
-        "label": "Orgeat syrup" },
+        "ingredient": "Simple syrup",
+        "label": "Orgeat Simple syrup" },
       { "unit": "cl",
         "amount": 1,
         "ingredient": "Lime juice" }
@@ -803,7 +803,7 @@
         "amount": 3,
         "ingredient": "Orange juice" },
       { "special": "2 drops Absinthe" },
-      { "special": "2 drops Grenadine" }
+      { "special": "2 drops Grenadine syrup" }
     ],
     "preparation": "Shake and strain into a chilled cocktail glass." },
   { "name": "Derby",
@@ -905,8 +905,8 @@
         "ingredient": "Lime juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
-        "label": "Grenadine" },
+        "ingredient": "Grenadine syrup",
+        "label": "Grenadine syrup" },
       { "special": "1 dash Angostura bitters" }
     ],
     "garnish": "Pineapple slice and a cherry",
@@ -951,7 +951,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 1.5,
-        "ingredient": "Syrup",
+        "ingredient": "Simple Syrup",
         "label": "Sugar syrup" },
       { "unit": "cl",
         "amount": 6,
@@ -1062,8 +1062,8 @@
         "ingredient": "Pineapple juice" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
-        "label": "Grenadine" }
+        "ingredient": "Grenadine syrup",
+        "label": "Grenadine syrup" }
     ],
     "preparation": "Shake and strain into a chilled large cocktail glass." },
   { "name": "Hemingway Special",
@@ -1113,7 +1113,7 @@
         "ingredient": "Lemon juice" },
       { "unit": "cl",
         "amount": 3,
-        "ingredient": "Syrup",
+        "ingredient": "Simple Syrup",
         "label": "Sugar syrup" },
       { "unit": "cl",
         "amount": 6,
@@ -1140,7 +1140,7 @@
         "label": "Creme de Cassis" },
       { "unit": "cl",
         "amount": 1,
-        "ingredient": "Syrup",
+        "ingredient": "Simple Syrup",
         "label": "Sugar syrup" }
     ],
     "garnish": "Lemon slice and a blackberry",
