@@ -20,7 +20,8 @@ FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
 TILT_DOWN = 500000
-TILT_SPEED = 50000 # pwm change per second
+TILT_DOWN_SPEED = 50000 # pwm change per second
+TILT_UP_SPEED = 100000 # pwm change per second
 TILT_PERIOD = 0.01
 
 port = int(sys.argv[1])
@@ -72,16 +73,12 @@ pi.hardware_PWM(PAN_PIN, 333, ports[port])
 time.sleep(2)
 pi.write(PUMP_PIN, 0)
 
-flow_lock.acquire
-flow_tick = 0
-flow_lock.release
-
 elapsed = 0
 flow_prev = 0
 
 tilt_curr = TILT_UP
 while tilt_curr != TILT_DOWN:
-    tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+    tilt_curr = min(tilt_curr + (TILT_DOWN_SPEED * TILT_PERIOD), TILT_DOWN)
     pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
     time.sleep(TILT_PERIOD)
 
@@ -89,7 +86,7 @@ if flow_goal <= 3:
     flow_goal = max((flow_goal - FLOW_BIAS) / FLOW_MULT, 4)
 
 while True:
-    flow_lock.acquire
+    flow_lock.acquire()
     if flow_tick >= flow_goal:
         print("----done", flush=True)
         break
@@ -102,12 +99,17 @@ while True:
         elapsed = 4
 
     elapsed = elapsed + FLOW_PERIOD
-    flow_lock.release
+    flow_lock.release()
     time.sleep(FLOW_PERIOD)
 
-flow_lock.release
+flow_lock.release()
 
-pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+tilt_curr = TILT_DOWN
+print("tilt up")
+while tilt_curr != TILT_UP:
+    tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+    pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+    time.sleep(TILT_PERIOD)
 time.sleep(7)
 
 pi.write(PUMP_PIN, 1)
