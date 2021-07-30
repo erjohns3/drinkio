@@ -11,6 +11,7 @@ import websockets
 import http.server
 from enum import Enum
 import argparse
+from flow_tick_helper import amount_to_flow_ticks
 import os
 from os import path
 from watchdog.observers import Observer
@@ -60,15 +61,13 @@ PAN_PIN = 12
 TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
-
-FLOW_BIAS = 0.849
-FLOW_MULT = 0.0161
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
 TILT_DOWN = 500000
-TILT_SPEED = 50000 # pwm change per second
+TILT_DOWN_SPEED = 50000 # pwm change per second
+TILT_UP_SPEED = 100000 # pwm change per second
 TILT_PERIOD = 0.01
 
 PAN_SPEED = 150000 # pwm change per second
@@ -94,7 +93,12 @@ def setup_pigpio():
 
     pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
     pi.write(PUMP_PIN, 1)
-    pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+    tilt_curr = TILT_DOWN
+    print("tilt up")
+    while tilt_curr != TILT_UP:
+        tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+        pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+        time.sleep(TILT_PERIOD)
 
     pi.set_mode(FLOW_PIN, pigpio.INPUT)
     pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
@@ -222,7 +226,12 @@ async def check_cancel():
     if cancel_pour:
         cancel_pour = False
         cancel_lock.release()
-        pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+        tilt_curr = TILT_DOWN
+        print("tilt up")
+        while tilt_curr != TILT_UP:
+            tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+            pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+            time.sleep(TILT_PERIOD)
         await asyncio.sleep(5)
         pi.write(PUMP_PIN, 1)
         return True
@@ -245,7 +254,12 @@ async def pour_drink(drink):
 
     for ingredient in drink:
         if await check_cancel(): return
-        pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+        tilt_curr = TILT_DOWN
+        print("tilt up")
+        while tilt_curr != TILT_UP:
+            tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+            pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+            time.sleep(TILT_PERIOD)
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
@@ -286,11 +300,17 @@ async def pour_drink(drink):
         print("tilt down")
         while tilt_curr != TILT_DOWN:
             if await check_cancel(): return
-            tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
+            tilt_curr = min(tilt_curr + (TILT_DOWN_SPEED * TILT_PERIOD), TILT_DOWN)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
 
-        flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
+
+        # linear formula
+        # flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
+        
+        # using LUT and linear formula. function is in "flow_tick_helper.py"
+        flow_goal = amount_to_flow_ticks(drink[ingredient])
+
         print("flow: {} - {}".format(drink[ingredient], flow_goal))
         while True:
             if await check_cancel(): return
@@ -328,8 +348,12 @@ async def pour_drink(drink):
 
         ingredient_index = ingredient_index + 1
 
+    tilt_curr = TILT_DOWN
     print("tilt up")
-    pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
+    while tilt_curr != TILT_UP:
+        tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+        pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+        time.sleep(TILT_PERIOD)
     await asyncio.sleep(8)
     pi.write(PUMP_PIN, 1)
 
