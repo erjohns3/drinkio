@@ -28,14 +28,11 @@ PAN_PERIOD = 0.01
 
 #####################################
 
-loc = pathlib.Path(__file__).parent.absolute()
-f = open(str(loc)+"/config.json", "r")
-config = json.loads(f.read())
+f = open('rasp_pi_port_config.json', "r")
+ports = json.loads(f.read())['ports']
 f.close()
 
-drinks = config["drinks"]
-ports = config["ports"]
-ingredients = config["ingredients"]
+print(ports)
 
 ####################################
 
