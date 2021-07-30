@@ -19,9 +19,9 @@ FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
-TILT_DOWN = 500000
+TILT_DOWN = 485000
 TILT_DOWN_SPEED = 50000 # pwm change per second
-TILT_UP_SPEED = 100000 # pwm change per second
+TILT_UP_SPEED = 500000 # pwm change per second
 TILT_PERIOD = 0.01
 
 port = int(sys.argv[1])

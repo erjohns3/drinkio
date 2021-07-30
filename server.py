@@ -65,9 +65,9 @@ FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
-TILT_DOWN = 500000
+TILT_DOWN = 485000
 TILT_DOWN_SPEED = 50000 # pwm change per second
-TILT_UP_SPEED = 100000 # pwm change per second
+TILT_UP_SPEED = 500000 # pwm change per second
 TILT_PERIOD = 0.01
 
 PAN_SPEED = 150000 # pwm change per second
@@ -186,7 +186,7 @@ def load_config_from_files(config_lock):
 
 
 load_config_from_files(config_lock)
-dump_ingredients_owned_to_file()
+#dump_ingredients_owned_to_file()
 
 # watchdog for "ingredients_owned.json" list
 class MyWatchdogMonitor(FileSystemEventHandler):
@@ -213,7 +213,7 @@ cancel_lock = threading.Lock()
 cancel_pour = False
 
 clean = {
-    "water": 5
+    "water": 3
 }
 
 async def check_cancel():
@@ -311,7 +311,7 @@ async def pour_drink(drink):
         # using LUT and linear formula. function is in "flow_tick_helper.py"
         flow_goal = amount_to_flow_ticks(drink[ingredient])
 
-        print("flow: {} - {}".format(drink[ingredient], flow_goal))
+        print("flow goal: {} - {}".format(drink[ingredient], flow_goal))
         while True:
             if await check_cancel(): return
             flow_lock.acquire()
@@ -321,7 +321,7 @@ async def pour_drink(drink):
             
             if elapsed > 8:
                 if flow_tick - flow_prev <= 3:
-                    print('--empty--')
+                    print("ingredient empty start", flush=True)
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
                     dump_ingredients_owned_to_file()
@@ -329,7 +329,7 @@ async def pour_drink(drink):
                     state_lock.acquire()
                     await broadcast_config()
                     state_lock.release()
-                    print("ingredient empty", flush=True)
+                    print("ingredient empty done", flush=True)
                     break
                 flow_prev = flow_tick
                 elapsed = 4
