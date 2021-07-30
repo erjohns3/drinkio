@@ -75,7 +75,7 @@
     "abv": 0.05
   },
   "tequila": {
-    "port": 2,
+    "port": 8,
     "empty": false,
     "abv": 0.4
   },
