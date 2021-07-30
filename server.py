@@ -403,7 +403,7 @@ state = State.STANDBY
 ready_wait = 20
 ready_timer = False
 ready_time = 0
-progress = 0
+progress = 1
 
 
 async def ready_start():
@@ -580,7 +580,7 @@ async def init(websocket, path):
                         #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
                         #pour_thread.start()
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
-                        progress = 0
+                        progress = 1
                         await broadcast_status()
 
             elif msg['type'] == "pour" :
@@ -597,7 +597,7 @@ async def init(websocket, path):
                         print("----POURING----")
                         print("pour queue")
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
-                        progress = 0
+                        progress = 1
                         await broadcast_status()
 
             elif msg['type'] == "cancel":
