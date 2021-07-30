@@ -154,43 +154,33 @@ def load_config_from_files(config_lock):
     global ingredients
 
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
-        ingredients_owned = json.loads(f.read())
+        owned_ingredients = json.loads(f.read())
 
-    with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
-        github_ingredients = json.loads(f.read().lower())
-
-    with open(path.join(drink_io_folder, 'real_recipes.json'), 'rb') as f:
-        all_drink_recipes = json.loads(f.read().decode("UTF-8"))
+    with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
+        drink_recipes = json.loads(f.read().decode("UTF-8"))
 
 
-    # change to seraching through ingredients_owned and check for info in github ingredients
-    owned_ingredients = {}
-    for i_name, i_values in ingredients_owned.items():
-        if i_name in github_ingredients:
-            i_values['abv'] = github_ingredients[i_name]['abv'] / 100
-        else:
-            i_values['abv'] = '???'
-        owned_ingredients[i_name] = i_values
+    # removes recipes we dont have from drinks
+    # to_remove = set()
+    # drinks_with_owned_ingredients = {}
+    # for key, value in drink_recipes.items():
+    #     drinks_with_owned_ingredients[key] = {}
+    #     for ingredient in value['ingredients']:
+    #         if 'ingredient' in ingredient and ingredient['ingredient'] not in owned_ingredients:
+    #             to_remove.add(key)
+    #             continue
+    #         if 'amount' in ingredient:
+    #             drinks_with_owned_ingredients[key][ingredient['ingredient']] = ingredient['amount']
 
-    to_remove = set()
-    drinks_with_owned_ingredients = {}
-    for key, value in all_drink_recipes.items():
-        drinks_with_owned_ingredients[key] = {}
-        for ingredient in value['ingredients']:
-            if 'ingredient' in ingredient and ingredient['ingredient'] not in owned_ingredients:
-                to_remove.add(key)
-                continue
-            if 'amount' in ingredient:
-                drinks_with_owned_ingredients[key][ingredient['ingredient']] = ingredient['amount']
-
-    for i in to_remove:
-        del drinks_with_owned_ingredients[i]
+    # for i in to_remove:
+    #     del drinks_with_owned_ingredients[i]
 
     config_lock.acquire()
-    to_send_to_client['drinks'] = drinks_with_owned_ingredients
+    to_send_to_client['drinks'] = drink_recipes
     to_send_to_client['ingredients'] = owned_ingredients
     ingredients = to_send_to_client['ingredients']
     config_lock.release()
+
 
 
 load_config_from_files(config_lock)
