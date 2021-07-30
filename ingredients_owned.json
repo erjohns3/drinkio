@@ -75,7 +75,7 @@
     "abv": 0.05
   },
   "tequila": {
-    "port": 36,
+    "port": 2,
     "empty": false,
     "abv": 0.4
   },
@@ -95,7 +95,7 @@
     "abv": 0.33
   },
   "lime juice": {
-    "port": 35,
+    "port": 17,
     "empty": false,
     "abv": 0.0
   },
@@ -110,7 +110,7 @@
     "abv": 0.0
   },
   "triple sec": {
-    "port": 34,
+    "port": 35,
     "empty": false,
     "abv": 0.4
   },
