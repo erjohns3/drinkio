@@ -120,7 +120,7 @@
     "abv": 0.17
   },
   "kahlua": {
-    "port": 26,
+    "port": 10,
     "empty": false,
     "abv": 0.2
   },
