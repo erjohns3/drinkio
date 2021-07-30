@@ -16,7 +16,7 @@ from os import path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-
+import recommendations
 
 class State(Enum):
     STANDBY = 1
@@ -109,6 +109,7 @@ def signal_handler(sig, frame):
     else:
         pi.write(PUMP_PIN, 1)
         pi.stop()
+    recommendations.DB.backup_db()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -142,14 +143,14 @@ def dump_ingredients_owned_to_file():
     
 
 
-global to_send_to_client
-to_send_to_client = {}
+global shared_data
+shared_data = {}
 
 
 # prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
 
 def load_config_from_files(config_lock):
-    global to_send_to_client
+    global shared_data
     global ingredients
 
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
@@ -175,9 +176,9 @@ def load_config_from_files(config_lock):
     #     del drinks_with_owned_ingredients[i]
 
     config_lock.acquire()
-    to_send_to_client['drinks'] = drink_recipes
-    to_send_to_client['ingredients'] = owned_ingredients
-    ingredients = to_send_to_client['ingredients']
+    shared_data['drinks'] = drink_recipes
+    shared_data['ingredients'] = owned_ingredients
+    ingredients = shared_data['ingredients']
     config_lock.release()
 
 
@@ -363,8 +364,7 @@ async def pour_cycle(drink):
 
 PORT = 80
 Handler = http.server.SimpleHTTPRequestHandler
-
-def http_server(testing=False):
+def http_server():
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
     print("serving at port", PORT)
     httpd.serve_forever()
@@ -454,14 +454,14 @@ async def broadcast_status():
 
 async def broadcast_config():
     global connection_list
-    global to_send_to_client
+    global shared_data
     
     i=0
     while i < len(connection_list):
         if connection_list[i][0].closed:
             connection_list.pop(i)
         else:
-            await connection_list[i][0].send(json.dumps(to_send_to_client))
+            await connection_list[i][0].send(json.dumps(shared_data))
             i=i+1
 
 #################################################
@@ -473,14 +473,13 @@ async def init(websocket, path):
     global cancel_pour
     global progress
     global ingredients
-    global to_send_to_client
+    global shared_data
 
     state_lock.acquire()
     connection_list.append([websocket, False])
     print("init: " + websocket.remote_address[0])
     state_lock.release()
-    
-    await websocket.send(json.dumps(to_send_to_client))
+    await websocket.send(json.dumps(shared_data))
     while True:
         try:
             msg_string = await websocket.recv()
@@ -491,7 +490,13 @@ async def init(websocket, path):
         print(msg)
         state_lock.acquire()
         if 'type' in msg:
-            if msg['type'] == "query":
+            if msg['type'] == "recs":
+                recs = recommendations.Recommender.get_them(msg["uuid"])
+                full_drinks = {key: shared_data["drinks"][key] for key in recs}
+                to_send = {'recs': full_drinks}
+                await websocket.send(json.dumps(to_send))
+
+            elif msg['type'] == "query":
                 for connection in connection_list:
                     if connection[0] == websocket:
                         connection[1] = msg['uuid']
@@ -544,6 +549,7 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
+                        recommendations.DB.record_pour(msg['uuid'], msg['name'])
                         user_queue.append(msg['uuid'])
                         user_drink_name[msg['uuid']] = msg['name']
                         user_drink_ingredients[msg['uuid']] = msg['ingredients']
@@ -604,7 +610,7 @@ def main():
     if not args.testing:
         setup_pigpio()
 
-    http_thread = threading.Thread(target=http_server, args=[args.testing], daemon=True)
+    http_thread = threading.Thread(target=http_server, daemon=True)
     http_thread.start()
 
     run_asyncio()

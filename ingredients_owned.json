@@ -74,11 +74,6 @@
     "empty": false,
     "abv": 0.05
   },
-  "tequila": {
-    "port": 36,
-    "empty": false,
-    "abv": 0.4
-  },
   "brandy": {
     "port": 10,
     "empty": false,
@@ -93,11 +88,6 @@
     "port": 10,
     "empty": false,
     "abv": 0.33
-  },
-  "lime juice": {
-    "port": 35,
-    "empty": false,
-    "abv": 0.0
   },
   "lemon juice": {
     "port": 14,
@@ -138,5 +128,15 @@
     "port": 34,
     "empty": false,
     "abv": 0.32
+  },
+  "lime juice": {
+    "port": 35,
+    "empty": false,
+    "abv": 0.0
+  },
+  "tequila": {
+    "port": 36,
+    "empty": false,
+    "abv": 0.4
   }
 }

@@ -13,7 +13,7 @@
     <script src="react-dom.production.min.js"></script>
     <script type="module">
 
-        const socket = new WebSocket("ws://makedrink.me:8765");
+        const socket = new WebSocket("ws://0.0.0.0:8765");
         const e = React.createElement;
 
         var uuid = localStorage.getItem('uuid');
@@ -36,7 +36,7 @@
             }
         }
 
-        class Status extends React.Component{
+        class BottomBar extends React.Component{
             constructor(props){
                 super(props);
             }
@@ -75,7 +75,21 @@
             getTime(){
                 return this.state.timer;
             }
-
+            getRecsButton(){
+                return e('div', {key: 6, onClick: (event)=>this.props.toggleRecs(), className: this.getRecsButtonClass()}, this.getRecsButtonText());
+            }
+            getRecsButtonText(){
+                if (this.props.recsVisible){
+                    return "Home"
+                }
+                return "For You"
+            }
+            getRecsButtonClass(){
+                if (this.props.recsVisible){
+                    return "recommendation-button recommendation-on"
+                }
+                return "recommendation-button recommendation-off"
+            }
             button(event){
                 if(this.props.status.timer !== false){
                     var msg = {
@@ -101,6 +115,7 @@
             }
 
             render(){
+                var recsButton = this.getRecsButton();
                 if(this.props.status.progress !== false){
                     var style = {
                         transform: "scaleX("+ this.props.status.progress+"%)"
@@ -108,6 +123,7 @@
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
                         e('div', {key: 4, className: "bar-base bar-progress", style: style}, null),
+                        recsButton,
                         e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
                         e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel"}, "Cancel")
@@ -120,6 +136,7 @@
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
                         e('div', {key: 4, className: "bar-base bar-timer", style: style}, null),
+                        recsButton,
                         e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
                         e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-pour"}, "Pour")
@@ -128,6 +145,7 @@
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
                         e('div', {key: 4, className: "bar-base invisible"}, null),
+                        recsButton,
                         e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
                         e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
@@ -136,6 +154,7 @@
                     return e('div', {className: "status"}, [
                         e('div', {key: 3, className: "bar-base"}, null),
                         e('div', {key: 4, className: "bar-base invisible"}, null),
+                        recsButton,
                         e('div', {key: 0, className: "status-drink grey"}, "Drink: "),
                         e('div', {key: 1, className: "status-position grey"}, "Position: "),
                         e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
@@ -269,9 +288,9 @@
                     e('div', {key: 2, className: "alcohol-title"}, "Drinks: " + (alcohol/0.6).toFixed(1)),
                     e('div', {key: 3, className: "abv-title"}, "ABV: " + (alcohol/this.volume*100).toFixed(1) + "%"),
                     e('div', {key: 4, className: "alcohol-label"}, "Alcohol: " + this.state.alcoholMult + "x"),
-                    e('input', {key: 5, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.alcoholSlider(event), className:"alcohol-slider", id:"slider1"}, null),
+                    e('input', {key: 5, type:"range", min:0, max:2, step:0.25, defaultValue:1, onClick: (event)=>event.stopPropagation(), onInput: (event)=>this.alcoholSlider(event), className:"alcohol-slider", id:"slider1"}, null),
                     e('div', {key: 6, className: "nonalcohol-label"}, "Non-alcohol: " + this.state.nonalcoholMult + "x"),
-                    e('input', {key: 7, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.nonalcoholSlider(event), className:"nonalcohol-slider", id:"slider2"}, null),
+                    e('input', {key: 7, type:"range", min:0, max:2, step:0.25, defaultValue:1, onClick: (event)=>event.stopPropagation(), onInput: (event)=>this.nonalcoholSlider(event), className:"nonalcohol-slider", id:"slider2"}, null),
                     
                     e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
                     e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
@@ -317,7 +336,7 @@
             }
 
             render() {
-                console.log("render: " + this.props.name);
+                // console.log("render: " + this.props.name);
                 this.ingredientSummary = "";
                 var i = 24;
                 for(var key in this.props.drink){
@@ -376,7 +395,7 @@
                 for(var name in this.props.drinks){
                     var tmp = ""
                     var empty = false;
-                    if(this.state.selected != null && this.state.selected != name){
+                    if(this.props.recsVisible || (this.state.selected != null && this.state.selected != name)){
                         tmp = " invisible";
                     }
                     for(var key in this.props.drinks[name]){
@@ -388,9 +407,53 @@
                         e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected == name, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
                     );
                 }
-                return e('div', {className: "list"+this.addText(this.state.selected != null, " noscroll")}, this.list);
+                var animated = (this.props.recsHaveToggled) ? ' faded' : '';
+                return e('div', {className: "list"+animated+this.addText(this.state.selected != null, " noscroll")}, this.list);
             }
         }
+
+        class RecommendedDrinkList extends React.Component {
+            constructor(props){
+                super(props);
+            }
+
+            state = {
+                selected: null
+            }
+
+            updateState(newState){
+                this.setState(newState);
+            }
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
+                }
+                return "";
+            }
+
+            render() {
+                console.log("Recommendations render: drink list");
+                this.list = [];
+                for(var name in this.props.drinks){
+                    var tmp = ""
+                    var empty = false;
+                    if( (this.state.selected != null && this.state.selected != name)){
+                        tmp = " invisible";
+                    }
+                    for(var key in this.props.drinks[name]){
+                        if(this.props.ingredients[key].empty){
+                            empty = true;
+                        }
+                    }
+                    this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"+tmp},
+                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected == name, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
+                    );
+                }
+                return [e('div', {className: "list recommendation-list faded"+this.addText(this.state.selected != null, " noscroll")}, this.list)];
+            }
+        }
+
 
         class App extends React.Component {
             constructor(){
@@ -402,6 +465,7 @@
 
             state = {
                 drinks: null,
+                recs: null,
                 ingredients: null,
                 status: {
                     users: 0,
@@ -410,15 +474,27 @@
                     timer: false,
                     progress: false,
                     tick: 0
-                }
+                },
+                recsVisible: false,
+                recsHaveToggled: false,
+            }
+
+            toggleRecs() {
+                this.updateState({recsVisible: !this.state.recsVisible, recsHaveToggled: true});
             }
 
             updateState(newState){
                 this.setState(newState);
+                console.log(this.state);
             }
 
             componentDidMount(){
                 socket.onopen = function () {
+                    var recs = {
+                        uuid: uuid,
+                        type: "recs"
+                    }
+                    socket.send(JSON.stringify(recs))
                     var query = {
                         uuid: uuid,
                         type: "query"
@@ -449,6 +525,10 @@
                                     msg.status.timer += Date.now()/1000;
                                 }
                                 this.setState({ status: msg.status });
+                                break;
+                            case 'recs':
+                                this.updateState({recs: msg.recs});
+                                break;
                             default:
                                 break;
                         }
@@ -457,9 +537,15 @@
             }
 
             render() {
+                if (this.state.recsVisible){
+                    var drinkList = e(RecommendedDrinkList, {key: 0, status: this.state.status, drinks: this.state.recs, ingredients: this.state.ingredients, updateApp: this.updateState.bind(this)}, null)
+                }
+                else {
+                    var drinkList = e(DrinkList, {key: 0, status: this.state.status, drinks: this.state.drinks, ingredients: this.state.ingredients, recsHaveToggled: this.state.recsHaveToggled, updateApp: this.updateState.bind(this)}, null)
+                }
                 return [
-                    e(DrinkList, {key: 0, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, updateApp: this.updateState.bind(this)}, null),
-                    e(Status, {key: 1, status: this.state.status}, null)
+                    drinkList,
+                    e(BottomBar, {key: 1, status: this.state.status, recsVisible: this.state.recsVisible, toggleRecs: this.toggleRecs.bind(this)}, null)
                 ];
             }
         }
@@ -492,6 +578,12 @@
             height: 90%;
             overflow-y: auto;
         }
+        .faded{
+            animation: fadeIn 500ms;
+        }
+        .recommendation-list{
+            background-image: linear-gradient(to bottom right, #242635a1, hsl(269deg 58% 8%));
+        } /* Note: the gradients are color-matched with recommendation toggle */
         .item-wrapper{
             transition: 200ms;
             height: 11%;
@@ -622,7 +714,7 @@
         }
         .status-button{
             position: absolute;
-            font-size: 2.5vh;
+            font-size: 2.0vh;
             height: 78%;
             top: 11%;
             right: 2%;
@@ -632,6 +724,25 @@
             border-radius: 1vh;
             text-align: center;
             transition: 200ms;
+        }
+        .recommendation-button{
+            position: absolute;
+            font-size: 2.0vh;
+            height: 78%;
+            top: 11%;
+            right: 34%;
+            width: 18%;
+            line-height: 280%;
+            overflow: hidden;
+            border-radius: 1vh;
+            text-align: center;
+            transition: 200ms;
+        }
+        .recommendation-off{
+            background-color: #242635eb;
+        }
+        .recommendation-on{
+            background-color: hsl(269deg 58% 8%)
         }
         .status-pour{
             animation: flash 200ms 0s infinite;
@@ -650,21 +761,21 @@
             position: absolute;
             height: 24%;
             line-height: 100%;
-            width: 55%;
+            width: 43%;
             text-align: left;
             top: 20%;
             left: 5%;
-            font-size: 2.5vh;
+            font-size: 2.0vh;
         }
         .status-position{
             position: absolute;
             height: 24%;
             line-height: 100%;
-            width: 55%;
+            width: 43%;
             text-align: left;
             bottom: 20%;
             left: 5%;
-            font-size: 2.5vh;
+            font-size: 2.0vh;
         }
         .bar-base{
             position: absolute;
@@ -803,7 +914,34 @@
         .strike{
             text-decoration: line-through;
         }
+        .in {
+        animation: fadeIn 500ms;
+        }
+
+        .out {
+        animation: fadeOut 500ms;
+        }
         /* Animation Keyframes*/
+        @keyframes fadeIn {
+        0% {
+            opacity: 0;
+            left: -200px;
+        }
+        100% {
+            opacity: 1;
+            left: 0px;
+        }
+        }
+        @keyframes fadeOut {
+        0% {
+            opacity: 1;
+            left: 0px;
+        }
+        100% {
+            opacity: 0;
+            left: 200px;
+        }
+        }
         @keyframes flash {
             from {
                 filter: saturate(100%)
