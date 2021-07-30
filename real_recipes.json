@@ -1,0 +1,1738 @@
+{
+    "Vesper": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vodka",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lillet blonde",
+          "amount": 0.25,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Bacardi": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Negroni": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "campari",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Rose": {
+      "ingredients": [
+        {
+          "ingredient": "kirsch",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "3 dashes strawberry syrup",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Old Fashioned": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 dashes angostura bitters",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "1 sugar cube",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "few dashes plain water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Tuxedo": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1/2 bar spoon maraschino",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "1/4 bar spoon absinthe",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "3 dashes orange bitters",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Mojito": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "6 mint sprigs",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 teaspoons white sugar",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "soda water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Horse's Neck": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "ginger ale",
+          "amount": 4.06,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "dash of angostura bitters (optional)",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Planter's Punch": {
+      "ingredients": [
+        {
+          "ingredient": "dark rum",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "3 to 4 dashes angostura bitters",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Sea Breeze": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cranberry juice",
+          "amount": 4.06,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "grapefruit juice",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Pisco Sour": {
+      "ingredients": [
+        {
+          "ingredient": "pisco",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 raw egg white (small egg)",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Long Island Iced Tea": {
+      "ingredients": [
+        {
+          "ingredient": "tequila",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vodka",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "white rum",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "gin",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.85,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 dash of cola",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Clover Club": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "few drops of egg white",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Angel Face": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "apricot brandy",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "calvados",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Mimosa": {
+      "ingredients": [
+        {
+          "ingredient": "champagne",
+          "amount": 2.54,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 2.54,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Whiskey Sour": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Screwdriver": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 3.38,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Rum and Coke": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 2,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "coca cola",
+          "amount": 5,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Cuba Libre": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "coca cola",
+          "amount": 4.06,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Manhattan": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 dash angostura bitters",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Porto Flip": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "red port",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "egg yolk",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Gin Fizz": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "soda water",
+          "amount": 2.71,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Espresso Martini": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "coffee liqueur",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "sugar syrup (according to individual preference of sweetness)",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "1 short strong espresso",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Margarita": {
+      "ingredients": [
+        {
+          "ingredient": "tequila",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "French 75": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 dashes sugar syrup",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "champagne",
+          "amount": 2.03,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Yellow Bird": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "galliano",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Pina Colada": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "coconut milk",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Aviation": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cherry liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Bellini": {
+      "ingredients": [
+        {
+          "ingredient": "prosecco",
+          "amount": 3.38,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "peach puree",
+          "amount": 1.69,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Grasshopper": {
+      "ingredients": [
+        {
+          "ingredient": "creme liqueur",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "creme liqueur",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Tequila Sunrise": {
+      "ingredients": [
+        {
+          "ingredient": "tequila",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Daiquiri": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.85,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Rusty Nail": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "drambuie",
+          "amount": 0.85,
+          "unit": "oz"
+        }
+      ]
+    },
+    "B52": {
+      "ingredients": [
+        {
+          "ingredient": "coffee liqueur",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream liqueur",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Stinger": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "creme liqueur",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Golden Dream": {
+      "ingredients": [
+        {
+          "ingredient": "galliano",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "God Mother": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "disaronno",
+          "amount": 1.18,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Spritz Veneziano": {
+      "ingredients": [
+        {
+          "ingredient": "prosecco",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "aperol",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "splash of soda water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Bramble": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "blackberry liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Alexander": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "creme liqueur",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Lemon Drop Martini": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 0.85,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "French Martini": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "raspberry liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Vodka Sprite": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 2,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "sprite",
+          "amount": 4,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Black Russian": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "coffee liqueur",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Bloody Mary": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "tomato juice",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 to 3 dashes of worcestershire sauce",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "tabasco",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "celery salt",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "pepper",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Mai-tai": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "dark rum",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Barracuda": {
+      "ingredients": [
+        {
+          "ingredient": "dark rum",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "galliano",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 dash lime juice",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "top with prosecco",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Sex On The Beach": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "peach schnapps",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cranberry juice",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 1.35,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Monkey Gland": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 drops absinthe",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 drops grenadine",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Derby": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 drops peach bitters",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 fresh mint leaves",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Sidecar": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Irish Coffee": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "hot coffee",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 teaspoon of brown sugar",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Sazerac": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "absinthe",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 sugar cube",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 dashes peychaud's bitters",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Americano": {
+      "ingredients": [
+        {
+          "ingredient": "campari",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "a splash of soda water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Singapore Sling": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cherry liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.25,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "dom benedictine",
+          "amount": 0.25,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 4.06,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 dash angostura bitters",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "French Connection": {
+      "ingredients": [
+        {
+          "ingredient": "cognac",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "disaronno",
+          "amount": 1.18,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Moscow Mule": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "ginger beer",
+          "amount": 4.06,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.17,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 slice lime in a highball glass",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "John Collins": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "soda water",
+          "amount": 2.03,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Kir": {
+      "ingredients": [
+        {
+          "ingredient": "dry white wine",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "creme liqueur",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Mint Julep": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "4 fresh mint sprigs",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "1 teaspoon powdered sugar",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 teaspoons water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Tommy's Margarita": {
+      "ingredients": [
+        {
+          "ingredient": "tequila",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 bar spoons of agave nectar",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Paradise": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "apricot brandy",
+          "amount": 0.68,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Dirty Martini": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "olive juice",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Champagne Cocktail": {
+      "ingredients": [
+        {
+          "ingredient": "champagne",
+          "amount": 3.04,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cognac",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "2 dashes angostura bitters",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "1 sugar cube",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Mary Pickford": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cherry liqueur",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "pineapple juice",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Hemingway Special": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "grapefruit juice",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cherry liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Dark 'n' Stormy": {
+      "ingredients": [
+        {
+          "ingredient": "dark rum",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "ginger beer",
+          "amount": 3.38,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Ramos Fizz": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cream",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 egg white",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "3 dashes orange flower water",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 drops vanilla extract",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "soda water",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Russian Spring Punch": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 0.85,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.85,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "creme liqueur",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "syrup",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "God Father": {
+      "ingredients": [
+        {
+          "ingredient": "whiskey",
+          "amount": 1.18,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "disaronno",
+          "amount": 1.18,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Cosmopolitan": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cranberry juice",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Dry Martini": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 2.03,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "vermouth",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Between The Sheets": {
+      "ingredients": [
+        {
+          "ingredient": "white rum",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cognac",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Casino": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "cherry liqueur",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange bitters",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.34,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Caipirinha": {
+      "ingredients": [
+        {
+          "ingredient": "cachaca",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "half fresh lime cut into 4 wedges",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "2 teaspoon sugar",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Vampiro": {
+      "ingredients": [
+        {
+          "ingredient": "tequila",
+          "amount": 1.69,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "tomato juice",
+          "amount": 2.37,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 0.34,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "1 teaspoon clear honey",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "half slice onion finely chopped",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "few slices fresh red hot chili peppers",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "few drops worcestershire sauce",
+          "amount": "???",
+          "unit": "???"
+        },
+        {
+          "ingredient": "salt",
+          "amount": "???",
+          "unit": "???"
+        }
+      ]
+    },
+    "Kamikaze": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lime juice",
+          "amount": 1.01,
+          "unit": "oz"
+        }
+      ]
+    },
+    "White Lady": {
+      "ingredients": [
+        {
+          "ingredient": "gin",
+          "amount": 1.35,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "triple sec",
+          "amount": 1.01,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "lemon juice",
+          "amount": 0.68,
+          "unit": "oz"
+        }
+      ]
+    },
+    "Harvey Wallbanger": {
+      "ingredients": [
+        {
+          "ingredient": "vodka",
+          "amount": 1.52,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "galliano",
+          "amount": 0.51,
+          "unit": "oz"
+        },
+        {
+          "ingredient": "orange juice",
+          "amount": 3.04,
+          "unit": "oz"
+        }
+      ]
+    }
+  }

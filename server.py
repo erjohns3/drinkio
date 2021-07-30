@@ -161,26 +161,9 @@ def load_config_from_files(config_lock):
     with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
         github_ingredients = json.loads(f.read().lower())
 
-    with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
-        github_recipes = json.loads(f.read().decode("UTF-8").lower())
+    with open(path.join(drink_io_folder, 'real_recipes.json'), 'rb') as f:
+        all_drink_recipes = json.loads(f.read().decode("UTF-8").lower())
 
-    all_drink_recipes = {}
-    for i in github_recipes:
-        lol = []
-        for word in i['name'].split():
-            lol.append(word.capitalize())
-        name = ' '.join(lol)
-
-        if name not in all_drink_recipes:
-            all_drink_recipes[name] = {}
-
-        all_drink_recipes[name]['ingredients'] = i['ingredients']
-
-        for ingredient in all_drink_recipes[name]['ingredients']:
-            if 'unit' in ingredient and ingredient['unit'] == 'cl':
-                ingredient['amount'] *= CL_CONSTANT
-                ingredient['amount'] = round(ingredient['amount'], 1)
-                ingredient['unit'] = 'oz'
 
 
 
