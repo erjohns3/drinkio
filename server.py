@@ -149,6 +149,7 @@ to_send_to_client = {}
 # prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
 
 def load_config_from_files(config_lock):
+    config_lock.acquire()
     global to_send_to_client
     global ingredients
 
@@ -174,7 +175,6 @@ def load_config_from_files(config_lock):
     # for i in to_remove:
     #     del drinks_with_owned_ingredients[i]
 
-    config_lock.acquire()
     to_send_to_client['drinks'] = drink_recipes
     to_send_to_client['ingredients'] = owned_ingredients
     ingredients = to_send_to_client['ingredients']
@@ -299,6 +299,7 @@ async def pour_drink(drink):
             
             if elapsed > 8:
                 if flow_tick - flow_prev <= 3:
+                    print('--empty--')
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
                     dump_ingredients_owned_to_file()
