@@ -77,7 +77,7 @@ PAN_PERIOD = 0.01
 flow_lock = threading.Lock()
 flow_tick = 0
 
-CL_CONSTANT = 0.33814
+pan_curr = 495000
 
 pi = None
 
@@ -95,7 +95,6 @@ def setup_pigpio():
     pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
     pi.write(PUMP_PIN, 1)
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-    pan_curr = 495000
 
     pi.set_mode(FLOW_PIN, pigpio.INPUT)
     pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
@@ -130,7 +129,7 @@ ports = rasp_pi_port_config['ports']
 
 # ASSUMES HAS ALREADY BEEN LOCKED
 def dump_ingredients_owned_to_file():
-    global ingredients
+    print("----dump ingredients to to file start----")
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'w') as f:
         new_dict_to_dump = {}
         # for k, v in ingredients.values():
@@ -139,11 +138,11 @@ def dump_ingredients_owned_to_file():
             new_dict_to_dump[k] = v.copy()
         
         json.dump(new_dict_to_dump, f, indent=2)
+        print("----dump ingredients to to file done----")
     
 
 
 global to_send_to_client
-global ingredients
 to_send_to_client = {}
 
 
