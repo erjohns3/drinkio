@@ -301,7 +301,7 @@
         "ingredient": "White rum" },
       { "unit": "cl",
         "amount": 12,
-        "ingredient": "Cola" },
+        "ingredient": "Coca Cola" },
       { "unit": "cl",
         "amount": 1,
         "ingredient": "Lime juice" }
@@ -673,6 +673,33 @@
         "ingredient": "Pineapple juice" }
     ],
     "preparation": "Stir in mixing glass with ice cubes. Strain into chilled cocktail glass. Squeeze oil from lemon peel onto the drink." },
+  { "name": "French Martini",
+    "glass": "martini",
+    "category": "Before Dinner Cocktail",
+    "ingredients": [
+      { "unit": "cl",
+        "amount": 4.5,
+        "ingredient": "Vodka" },
+      { "unit": "cl",
+        "amount": 1.5,
+        "ingredient": "Raspberry liqueur" },
+      { "unit": "cl",
+        "amount": 1.5,
+        "ingredient": "Pineapple juice" }
+    ],
+    "preparation": "Stir in mixing glass with ice cubes. Strain into chilled cocktail glass. Squeeze oil from lemon peel onto the drink." },
+    { "name": "Vodka Sprite",
+      "glass": "martini",
+      "category": "Before Dinner Cocktail",
+      "ingredients": [
+        { "unit": "oz",
+          "amount": 2,
+          "ingredient": "Vodka" },
+        { "unit": "oz",
+          "amount": 4,
+          "ingredient": "Sprite" }
+      ],
+      "preparation": "Stir in mixing glass with ice cubes. Strain into chilled cocktail glass. Squeeze oil from lemon peel onto the drink." },
   { "name": "Black Russian",
     "glass": "old-fashioned",
     "category": "After Dinner Cocktail",

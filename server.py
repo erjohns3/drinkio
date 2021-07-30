@@ -1,4 +1,5 @@
 import threading
+from types import new_class
 import pigpio
 import time
 import sys
@@ -76,6 +77,8 @@ PAN_PERIOD = 0.01
 flow_lock = threading.Lock()
 flow_tick = 0
 
+CL_CONSTANT = 0.33814
+
 pi = None
 
 def flow_rise(pin, level, tick):
@@ -117,17 +120,8 @@ loc = pathlib.Path(__file__).parent.absolute()
 drink_io_folder = str(loc)
 
 
-with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
-    ingredients_owned = json.loads(f.read())['ingredients_owned']
-
 with open(path.join(drink_io_folder, 'rasp_pi_port_config.json'), 'r') as f:
     rasp_pi_port_config = json.loads(f.read())
-
-with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
-    github_ingredients = json.loads(f.read().lower())
-
-with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
-    github_recipes = json.loads(f.read().decode("UTF-8").lower())
 
 ports = rasp_pi_port_config['ports']
 
@@ -135,91 +129,110 @@ ports = rasp_pi_port_config['ports']
 # helper functions
 
 # ASSUMES HAS ALREADY BEEN LOCKED
-def dump_ingredients_owned_to_file(ingredients):
+def dump_ingredients_owned_to_file():
+    global ingredients
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'w') as f:
-        f.write(json.dumps(ingredients))
+        new_dict_to_dump = {}
+        # for k, v in ingredients.values():
+        for k in sorted(list(ingredients.keys()), key = lambda x: ingredients[x]['port']):
+            v = ingredients[k]
+            new_dict_to_dump[k] = v.copy()
+            if 'abv' in new_dict_to_dump[k]:
+                del new_dict_to_dump[k]['abv']
+        
+        json.dump(new_dict_to_dump, f, indent=2)
     
 
 
-# watchdog for "ingredients_owned.json" list
-class MyWatchdogMonitor(FileSystemEventHandler):
-    def __init__(self, _config_lock):
-        self.file_to_watch = 'ingredients_owned.json'
-        self.config_lock = _config_lock
-        
-    def on_modified(self, event):
-        if event.src_path.endswith(self.file_to_watch):
-            print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch))
-            self.config_lock.acquire()
-            # refresh here
-            self.config_lock.release()
-
-event_handler = MyWatchdogMonitor(MyWatchdogMonitor)
-observer = Observer()
-observer.schedule(event_handler, path=drink_io_folder, recursive=False)
-observer.start()
-
+global to_send_to_client
+global ingredients
+to_send_to_client = {}
 
 
 # prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
 
-CL_CONSTANT = 0.33814
+def load_config_from_files(config_lock):
+    global to_send_to_client
+    global ingredients
 
-drink_dict = {}
-for i in github_recipes:
-    lol = []
-    for word in i['name'].split():
-        lol.append(word.capitalize())
-    name = ' '.join(lol)
+    with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
+        ingredients_owned = json.loads(f.read())
 
-    if name not in drink_dict:
-        drink_dict[name] = {}
+    with open(path.join(drink_io_folder, 'abv_of_ingredients.json'), 'r') as f:
+        github_ingredients = json.loads(f.read().lower())
 
-    drink_dict[name]['ingredients'] = i['ingredients']
+    with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
+        github_recipes = json.loads(f.read().decode("UTF-8").lower())
 
-    for ingredient in drink_dict[name]['ingredients']:
-        if 'unit' in ingredient and ingredient['unit'] == 'cl':
-            ingredient['amount'] *= CL_CONSTANT
-            ingredient['amount'] = round(ingredient['amount'], 1)
-            ingredient['unit'] = 'oz'
+    all_drink_recipes = {}
+    for i in github_recipes:
+        lol = []
+        for word in i['name'].split():
+            lol.append(word.capitalize())
+        name = ' '.join(lol)
+
+        if name not in all_drink_recipes:
+            all_drink_recipes[name] = {}
+
+        all_drink_recipes[name]['ingredients'] = i['ingredients']
+
+        for ingredient in all_drink_recipes[name]['ingredients']:
+            if 'unit' in ingredient and ingredient['unit'] == 'cl':
+                ingredient['amount'] *= CL_CONSTANT
+                ingredient['amount'] = round(ingredient['amount'], 1)
+                ingredient['unit'] = 'oz'
 
 
 
+    # change to seraching through ingredients_owned and check for info in github ingredients
+    owned_ingredients = {}
+    for i_name, i_values in ingredients_owned.items():
+        if i_name in github_ingredients:
+            i_values['abv'] = github_ingredients[i_name]['abv'] / 100
+        else:
+            i_values['abv'] = -999
+        owned_ingredients[i_name] = i_values
 
-# change to seraching through ingredients_owned and check for info in github ingredients
-formatted_github_ingredients = {}
-for i_name, i_values in ingredients_owned.values():
-    if i_name in github_ingredients:
-        i_values['abv'] /= 100
-    formatted_github_ingredients[i_name] = i_values
-
-
-# formatted_github_ingredients = {}
-# for key, value in github_ingredients.items():
-#     if key in ingredients_owned:
-#         del value['taste']
-#         value['empty'] = False
-#         value['port'] = ingredients_owned[key]['port']
-#         value['abv'] /= 100
-#         formatted_github_ingredients[key] = value
-
-to_remove = set()
-formatted_github_drinks = {}
-for key, value in drink_dict.items():
-    formatted_github_drinks[key] = {}
-    for ingredient in value['ingredients']:
-        if 'amount' in ingredient:
-            if ingredient['ingredient'] not in formatted_github_ingredients:
+    to_remove = set()
+    drinks_with_owned_ingredients = {}
+    for key, value in all_drink_recipes.items():
+        drinks_with_owned_ingredients[key] = {}
+        for ingredient in value['ingredients']:
+            if 'ingredient' in ingredient and ingredient['ingredient'] not in owned_ingredients:
                 to_remove.add(key)
-            formatted_github_drinks[key][ingredient['ingredient']] = ingredient['amount']
+                continue
+            if 'amount' in ingredient:
+                drinks_with_owned_ingredients[key][ingredient['ingredient']] = ingredient['amount']
 
-for i in to_remove:
-    del formatted_github_drinks[i]
+    for i in to_remove:
+        del drinks_with_owned_ingredients[i]
 
-to_send_to_client = {}
-to_send_to_client['drinks'] = formatted_github_drinks
-to_send_to_client['ingredients'] = formatted_github_ingredients
-ingredients = to_send_to_client['ingredients']
+    config_lock.acquire()
+    to_send_to_client['drinks'] = drinks_with_owned_ingredients
+    to_send_to_client['ingredients'] = owned_ingredients
+    ingredients = to_send_to_client['ingredients']
+    config_lock.release()
+
+    dump_ingredients_owned_to_file()
+
+load_config_from_files(config_lock)
+
+# watchdog for "ingredients_owned.json" list
+class MyWatchdogMonitor(FileSystemEventHandler):
+    def __init__(self, _config_lock, f_load_config_from_files):
+        self.file_to_watch = 'ingredients_owned.json'
+        self.config_lock = _config_lock
+        self.f_load_config_from_files = f_load_config_from_files
+        
+    def on_modified(self, event):
+        if event.src_path.endswith(self.file_to_watch):
+            print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch))
+            self.f_load_config_from_files(self.config_lock)
+
+event_handler = MyWatchdogMonitor(config_lock, load_config_from_files)
+observer = Observer()
+observer.schedule(event_handler, path=drink_io_folder, recursive=False)
+observer.start()
 
 
 
@@ -256,6 +269,7 @@ async def pour_drink(drink):
     global pan_curr
     global progress
     global flow_tick
+    global ingredients
 
     ingredient_count = len(drink)
     ingredient_index = 0
@@ -320,7 +334,7 @@ async def pour_drink(drink):
                 if flow_tick - flow_prev <= 3:
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
-                    dump_ingredients_owned_to_file(ingredients)
+                    dump_ingredients_owned_to_file()
                     config_lock.release()
                     state_lock.acquire()
                     await broadcast_config()
@@ -383,7 +397,7 @@ async def pour_cycle(drink):
 PORT = 80
 Handler = http.server.SimpleHTTPRequestHandler
 
-def http_server():
+def http_server(testing=False):
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
     print("serving at port", PORT)
     httpd.serve_forever()
@@ -473,6 +487,7 @@ async def broadcast_status():
 
 async def broadcast_config():
     global connection_list
+    global to_send_to_client
     
     i=0
     while i < len(connection_list):
@@ -490,6 +505,8 @@ async def init(websocket, path):
     global ready_timer
     global cancel_pour
     global progress
+    global ingredients
+    global to_send_to_client
 
     state_lock.acquire()
     connection_list.append([websocket, False])
