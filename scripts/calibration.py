@@ -13,8 +13,6 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.849
-FLOW_MULT = 0.0161
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
@@ -81,9 +79,6 @@ while tilt_curr != TILT_DOWN:
     tilt_curr = min(tilt_curr + (TILT_DOWN_SPEED * TILT_PERIOD), TILT_DOWN)
     pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
     time.sleep(TILT_PERIOD)
-
-if flow_goal <= 3:
-    flow_goal = max((flow_goal - FLOW_BIAS) / FLOW_MULT, 4)
 
 while True:
     flow_lock.acquire()
