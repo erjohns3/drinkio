@@ -163,9 +163,13 @@
 		"coke": 4
 	},
 	"Matt Special": {
-		"tequila": 1.2,
-		"kahlua": 1.2,
-		"lime juice": 0.7
+		"tequila": 1.5,
+		"kahlua": 1.0,
+		"lime juice": 0.5
+	},
+	"Amaretto Sour": {
+		"amaretto": 1.5,
+		"lemon juice": 0.75
 	},
 	"Vodka": {
 		"vodka": 1.5
