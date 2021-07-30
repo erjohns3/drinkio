@@ -77,6 +77,7 @@ flow_lock = threading.Lock()
 flow_tick = 0
 
 pan_curr = 495000
+tilt_curr = TILT_UP
 
 pi = None
 
@@ -93,12 +94,6 @@ def setup_pigpio():
 
     pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
     pi.write(PUMP_PIN, 1)
-    tilt_curr = TILT_DOWN
-    print("tilt up")
-    while tilt_curr != TILT_UP:
-        tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
-        pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-        time.sleep(TILT_PERIOD)
 
     pi.set_mode(FLOW_PIN, pigpio.INPUT)
     pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
@@ -221,18 +216,19 @@ async def check_cancel():
         print("check_cancel() skipped for testing")
         return False
     global cancel_pour
+    global tilt_curr
 
     cancel_lock.acquire()
     if cancel_pour:
         cancel_pour = False
         cancel_lock.release()
-        tilt_curr = TILT_DOWN
+        
         print("tilt up")
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-            time.sleep(TILT_PERIOD)
-        await asyncio.sleep(5)
+            await asyncio.sleep(TILT_PERIOD)
+        await asyncio.sleep(8)
         pi.write(PUMP_PIN, 1)
         return True
     cancel_lock.release()
@@ -243,6 +239,7 @@ async def pour_drink(drink):
         print("pour_drink() skipped for testing")
         return
     global pan_curr
+    global tilt_curr
     global progress
     global flow_tick
     global ingredients
@@ -254,17 +251,10 @@ async def pour_drink(drink):
 
     for ingredient in drink:
         if await check_cancel(): return
-        tilt_curr = TILT_DOWN
-        print("tilt up")
-        while tilt_curr != TILT_UP:
-            tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
-            pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-            time.sleep(TILT_PERIOD)
+        
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
-
-        await asyncio.sleep(2)
         
         pause = 4
         config_lock.acquire()
@@ -296,7 +286,6 @@ async def pour_drink(drink):
         elapsed = 0
         flow_prev = 0
 
-        tilt_curr = TILT_UP
         print("tilt down")
         while tilt_curr != TILT_DOWN:
             if await check_cancel(): return
@@ -340,6 +329,14 @@ async def pour_drink(drink):
 
         flow_lock.release()
 
+        print("tilt up")
+        while tilt_curr != TILT_UP:
+            tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
+            pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+            await asyncio.sleep(TILT_PERIOD)
+
+        await asyncio.sleep(2)
+
         state_lock.acquire()
         if state == State.POURING:
             progress = (ingredient_index + 1.0) / ingredient_count * 100
@@ -348,12 +345,6 @@ async def pour_drink(drink):
 
         ingredient_index = ingredient_index + 1
 
-    tilt_curr = TILT_DOWN
-    print("tilt up")
-    while tilt_curr != TILT_UP:
-        tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
-        pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
-        time.sleep(TILT_PERIOD)
     await asyncio.sleep(8)
     pi.write(PUMP_PIN, 1)
 

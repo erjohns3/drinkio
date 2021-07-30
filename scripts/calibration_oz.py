@@ -21,9 +21,9 @@ FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
-TILT_DOWN = 500000
+TILT_DOWN = 485000
 TILT_DOWN_SPEED = 50000 # pwm change per second
-TILT_UP_SPEED = 100000 # pwm change per second
+TILT_UP_SPEED = 500000 # pwm change per second
 TILT_PERIOD = 0.01
 
 port = int(sys.argv[1])
@@ -85,6 +85,7 @@ while tilt_curr != TILT_DOWN:
     time.sleep(TILT_PERIOD)
 
 flow_goal = amount_to_flow_ticks(oz_goal)
+print("flow goal: {}".format(flow_goal))
 
 while True:
     flow_lock.acquire()
