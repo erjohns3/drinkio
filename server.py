@@ -181,11 +181,14 @@ def load_config_from_files(config_lock):
     ingredients = to_send_to_client['ingredients']
     config_lock.release()
 
-    # for k, v in drink_recipes
+    for k, v in drink_recipes.items():
+        for _, v2 in v.items():
+            v[_] = round(v2, 1)            
 
-    # with open(path.join(drink_io_folder, 'dumped.json'), 'w') as f:
-    #     json.dump(drink_recipes, f, indent=2)
+    with open(path.join(drink_io_folder, 'dumped.json'), 'w') as f:
+        json.dump(drink_recipes, f, indent=2)
 
+    exit()
 
 
 load_config_from_files(config_lock)
