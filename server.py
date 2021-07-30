@@ -181,15 +181,6 @@ def load_config_from_files(config_lock):
     ingredients = to_send_to_client['ingredients']
     config_lock.release()
 
-    for k, v in drink_recipes.items():
-        for _, v2 in v.items():
-            v[_] = round(v2, 1)            
-
-    with open(path.join(drink_io_folder, 'dumped.json'), 'w') as f:
-        json.dump(drink_recipes, f, indent=2)
-
-    exit()
-
 
 load_config_from_files(config_lock)
 dump_ingredients_owned_to_file()
@@ -600,7 +591,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "192.168.86.56", 8765)
+    start_server = websockets.serve(init, "0.0.0.0", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 

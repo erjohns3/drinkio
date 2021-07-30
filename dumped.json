@@ -1,0 +1,145 @@
+{
+  "Gin 'n' Tonic": {
+    "gin": 2,
+    "tonic": 4
+  },
+  "Rum 'n' Coke": {
+    "gin": 2,
+    "tonic": 4
+  },
+  "Bacardi": {
+    "white rum": 1.5,
+    "lime juice": 0.7,
+    "grenadine syrup": 0.3
+  },
+  "Long Island Iced Tea": {
+    "tequila": 0.5,
+    "vodka": 0.5,
+    "white rum": 0.5,
+    "triple sec": 0.5,
+    "gin": 0.5,
+    "lemon juice": 0.8,
+    "simple syrup": 1.0,
+    "coke": 0.5
+  },
+  "Whiskey Sour": {
+    "whiskey": 1.5,
+    "lemon juice": 1.0,
+    "simple syrup": 0.5
+  },
+  "Screwdriver": {
+    "vodka": 1.7,
+    "orange juice": 3.4
+  },
+  "Cuba Libre": {
+    "white rum": 1.7,
+    "coke": 4.1,
+    "lime juice": 0.3
+  },
+  "Gin Fizz": {
+    "gin": 1.5,
+    "lemon juice": 1.0,
+    "simple syrup": 0.3,
+    "club soda": 2.7
+  },
+  "Margarita": {
+    "tequila": 1.2,
+    "triple sec": 0.7,
+    "lime juice": 0.5
+  },
+  "Aviation": {
+    "gin": 2,
+    "maraschino": 0.5,
+    "creme de la violet": 0.5,
+    "lemon juice": 0.8
+  },
+  "Tequila Sunrise": {
+    "tequila": 1.5,
+    "orange juice": 3.0,
+    "grenadine syrup": 0.5
+  },
+  "Daiquiri": {
+    "white rum": 1.5,
+    "lime juice": 0.8,
+    "simple syrup": 0.5
+  },
+  "Lemon Drop Martini": {
+    "vodka": 0.8,
+    "triple sec": 0.7,
+    "lemon juice": 0.5
+  },
+  "Vodka Sprite": {
+    "vodka": 2,
+    "sprite": 4
+  },
+  "Black Russian": {
+    "vodka": 1.7,
+    "kahlua": 0.7
+  },
+  "Mai-tai": {
+    "white rum": 1.4,
+    "dark rum": 0.7,
+    "triple sec": 0.5,
+    "simple syrup": 0.5,
+    "lime juice": 0.3
+  },
+  "Sex On The Beach": {
+    "vodka": 1.4,
+    "peach schnapps": 0.7,
+    "cranberry juice": 1.4,
+    "orange juice": 1.4
+  },
+  "Sidecar": {
+    "brandy": 1.7,
+    "triple sec": 0.7,
+    "lemon juice": 0.7
+  },
+  "John Collins": {
+    "gin": 1.5,
+    "lemon juice": 1.0,
+    "simple syrup": 0.5,
+    "club soda": 2.0
+  },
+  "Dark 'n' Stormy": {
+    "dark rum": 2.0,
+    "ginger beer": 3.4,
+    "lime juice": 0.5
+  },
+  "Moscow Mule": {
+    "vodka": 2.0,
+    "ginger beer": 3.4,
+    "lime juice": 0.5
+  },
+  "Hemenway Special": {
+    "white rum": 2.0,
+    "cranberry juice": 1.4,
+    "lime juice": 0.5,
+    "maraschino": 0.5
+  },
+  "Cosmopolitan": {
+    "vodka": 1.4,
+    "triple sec": 0.5,
+    "lime juice": 0.5,
+    "cranberry juice": 1.0
+  },
+  "Dry Martini": {
+    "gin": 2.0,
+    "vermouth": 0.3
+  },
+  "Between The Sheets": {
+    "white rum": 1.0,
+    "brandy": 1.0,
+    "triple sec": 1.0,
+    "lemon juice": 0.7
+  },
+  "Kamikaze": {
+    "vodka": 1.0,
+    "triple sec": 1.0,
+    "lime juice": 1.0
+  },
+  "White Lady": {
+    "gin": 1.4,
+    "triple sec": 1.0,
+    "lemon juice": 0.7
+  }
+}
