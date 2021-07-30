@@ -162,7 +162,7 @@ def load_config_from_files(config_lock):
         github_ingredients = json.loads(f.read().lower())
 
     with open(path.join(drink_io_folder, 'real_recipes.json'), 'rb') as f:
-        all_drink_recipes = json.loads(f.read().decode("UTF-8").lower())
+        all_drink_recipes = json.loads(f.read().decode("UTF-8"))
 
 
 
