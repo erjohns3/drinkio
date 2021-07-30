@@ -13,9 +13,10 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.637
-FLOW_MULT = 0.0203
+FLOW_BIAS = 0.849
+FLOW_MULT = 0.0161
 FLOW_PERIOD = 0.01
+FLOW_TIMEOUT = 5
 
 TILT_UP = 400000
 TILT_DOWN = 500000
@@ -35,14 +36,10 @@ signal.signal(signal.SIGINT, signal_handler)
 
 #####################################
 
-loc = pathlib.Path(__file__).parent.absolute()
-f = open(str(loc)+"/config.json", "r")
-config = json.loads(f.read())
+f = open('rasp_pi_port_config.json', "r")
+ports = json.loads(f.read())['ports']
 f.close()
 
-drinks = config["drinks"]
-ports = config["ports"]
-ingredients = config["ingredients"]
 
 #####################################
 
@@ -88,7 +85,7 @@ while tilt_curr != TILT_DOWN:
     pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
     time.sleep(TILT_PERIOD)
 
-if flow_goal < 12:
+if flow_goal <= 3:
     flow_goal = max((flow_goal - FLOW_BIAS) / FLOW_MULT, 4)
 
 while True:

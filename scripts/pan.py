@@ -32,7 +32,6 @@ f = open('rasp_pi_port_config.json', "r")
 ports = json.loads(f.read())['ports']
 f.close()
 
-print(ports)
 
 ####################################
 

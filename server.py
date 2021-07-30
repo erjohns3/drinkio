@@ -61,8 +61,8 @@ TILT_PIN = 13
 PUMP_PIN = 27
 FLOW_PIN = 17
 
-FLOW_BIAS = 0.921
-FLOW_MULT = 0.0175
+FLOW_BIAS = 0.849
+FLOW_MULT = 0.0161
 FLOW_PERIOD = 0.01
 FLOW_TIMEOUT = 5
 
@@ -249,6 +249,8 @@ async def pour_drink(drink):
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         config_lock.release()
+
+        await asyncio.sleep(2)
         
         pause = 4
         config_lock.acquire()
@@ -328,7 +330,7 @@ async def pour_drink(drink):
 
     print("tilt up")
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
-    await asyncio.sleep(5)
+    await asyncio.sleep(8)
     pi.write(PUMP_PIN, 1)
 
 async def pour_cycle(drink):
