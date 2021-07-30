@@ -5,6 +5,9 @@ import sys
 import json
 import signal
 import pathlib
+
+import sys
+sys.path.insert(0, '../')
 from flow_tick_helper import amount_to_flow_ticks
 
 pi = pigpio.pi()
