@@ -196,8 +196,6 @@ def load_config_from_files(config_lock):
     ingredients = to_send_to_client['ingredients']
     config_lock.release()
 
-    dump_ingredients_owned_to_file()
-
 load_config_from_files(config_lock)
 
 # watchdog for "ingredients_owned.json" list
@@ -606,7 +604,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "192.168.86.56", 8765)
+    start_server = websockets.serve(init, "0.0.0.0", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 

@@ -1,26 +1,110 @@
 {
-  "vodka": {
-    "port": 3,
-    "empty": false
-  },
-  "orange juice": {
-    "port": 4,
-    "empty": false
-  },
-  "tequila": {
-    "port": 10,
-    "empty": false
-  },
-  "lime juice": {
-    "port": 14,
-    "empty": false
-  },
-  "water": {
-    "port": 18,
-    "empty": false
-  },
-  "triple sec": {
-    "port": 34,
-    "empty": false
-  }
+    "water": {
+        "port": 18,
+        "empty": false
+    },
+    "whiskey": {
+        "port": 3,
+        "empty": false
+    },
+    "white rum": {
+        "port": 3,
+        "empty": false
+    },
+    "dark rum": {
+        "port": 3,
+        "empty": false
+    },
+    "vodka": {
+        "port": 3,
+        "empty": false
+    },
+    "tequila": {
+        "port": 10,
+        "empty": false
+    },
+    "brandy": {
+        "port": 10,
+        "empty": false
+    },
+    "scotch": {
+        "port": 10,
+        "empty": false
+    },
+    "gin": {
+        "port": 10,
+        "empty": false
+    },
+    "fireball": {
+        "port": 10,
+        "empty": false
+    },
+    "triple sec": {
+        "port": 34,
+        "empty": false
+    },
+    "vermouth": {
+        "port": 34,
+        "empty": false
+    },
+    "kahlua": {
+        "port": 34,
+        "empty": false
+    },
+    "amaretto": {
+        "port": 34,
+        "empty": false
+    },
+    "creme de la violet": {
+        "port": 4,
+        "empty": false
+    },
+    "simple syrup": {
+        "port": 4,
+        "empty": false
+    },
+    "grenadine syrup": {
+        "port": 4,
+        "empty": false
+    },
+    "lime juice": {
+        "port": 14,
+        "empty": false
+    },
+    "lemon juice": {
+        "port": 14,
+        "empty": false
+    },
+    "orange juice": {
+        "port": 4,
+        "empty": false
+    },
+    "cranberry juice": {
+        "port": 4,
+        "empty": false
+    },
+    "sprite": {
+        "port": 4,
+        "empty": false
+    },
+    "coke": {
+        "port": 4,
+        "empty": false
+    },
+    "gingerale": {
+        "port": 4,
+        "empty": false
+    },
+    "tonic": {
+        "port": 4,
+        "empty": false
+    },
+    "club soda": {
+        "port": 4,
+        "empty": false
+    },
+    "ginger beer": {
+        "port": 4,
+        "empty": false
+    }
 }
