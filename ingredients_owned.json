@@ -10,12 +10,12 @@
     "abv": 0.4
   },
   "dark rum": {
-    "port": 3,
+    "port": 22,
     "empty": false,
     "abv": 0.4
   },
   "vodka": {
-    "port": 3,
+    "port": 23,
     "empty": false,
     "abv": 0.4
   },
@@ -35,7 +35,7 @@
     "abv": 0
   },
   "orange juice": {
-    "port": 4,
+    "port": 20,
     "empty": false,
     "abv": 0.0
   },
