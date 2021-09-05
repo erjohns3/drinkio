@@ -1,4 +1,19 @@
 {
+	"Creek Water": {
+		"tequila": 0.3, 
+		"whiskey": 0.3, 
+		"gin": 0.3, 
+		"cranberry juice": 0.3, 
+		"coke": 0.3, 
+		"lime juice": 0.3, 
+		"lemon juice": 0.3, 
+		"orange juice": 0.3, 
+		"dark rum": 0.3, 
+		"vodka": 0.3, 
+		"white rum": 0.3, 
+		"simple syrup": 0.3, 
+		"triple sec": 0.3
+	},
 	"Vodka Sprite": {
 		"vodka": 2,
 		"sprite": 4
@@ -132,6 +147,20 @@
 		"triple sec": 1.0,
 		"lime juice": 1.0
 	},
+	"The Richard": {
+		"white rum": 2.1,
+		"triple sec": 1.5,
+		"lemon juice": 0.3,
+		"lime juice": 0.3,
+		"cranberry juice": 1.3
+	},
+	"McCabe Special": {
+		"gin": 1.4,
+		"triple sec": 1.0,
+		"lemon juice": 0.5,
+		"lime juice": 0.5,
+		"cranberry juice": 2.5
+	},
 	"White Lady": {
 		"gin": 1.4,
 		"triple sec": 1.0,
@@ -146,6 +175,10 @@
 	"Black Russian": {
 		"vodka": 1.7,
 		"kahlua": 0.7
+	},
+	"randys drink thing": {
+		"gingerale": 4,
+		"brandy": 2 
 	},
 	"Bacardi": {
 		"white rum": 1.5,
