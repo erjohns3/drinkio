@@ -45,6 +45,7 @@ connection_list = []
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
+args
 
 status = {
     "position": False,
@@ -244,13 +245,18 @@ async def pour_drink(drink):
     global flow_tick
     global ingredients
 
-    ingredient_count = len(drink)
+    ingredient_count = 0
     ingredient_index = 0
+    for ingredient in drink:
+        if drink[ingredient] > 0:
+            ingredient_count += 1
 
     pi.write(PUMP_PIN, 0)
 
     for ingredient in drink:
         if await check_cancel(): return
+
+        if drink[ingredient] <= 0: continue
         
         config_lock.acquire()
         print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
@@ -515,6 +521,9 @@ async def init(websocket, path):
                         connection[1] = msg['uuid']
                 print("new uuid: {}".format(msg['uuid']))
                 await send_status(websocket, msg['uuid'])
+                
+            elif args.local and websocket.remote_address[0] != "192.168.86.1":
+                print("non local")
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add")
@@ -614,10 +623,15 @@ def run_asyncio():
 
 
 def main():
+    global args
     parser = argparse.ArgumentParser()
     parser.add_argument('--testing', action='store_true', default=False,
                    help='To run webserver without drinkmaker attached')
+    parser.add_argument('--local', action='store_true', default=False,
+                   help='To run webserver without drinkmaker attached')
     args = parser.parse_args()
+
+    print("local: " + str(args.local))
 
     if not args.testing:
         setup_pigpio()

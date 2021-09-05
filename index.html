@@ -13,8 +13,43 @@
     <script src="react-dom.production.min.js"></script>
     <script type="module">
 
-        const socket = new WebSocket("ws://makedrink.me:8765");
+        var socket = null;
         const e = React.createElement;
+        
+        var socketTimer = null;
+        var socketMessageHandler = null;
+        
+        function socketInit(){
+            console.log("socket init");
+
+            socket = new WebSocket("ws://makedrink.me:8765");
+
+            socket.onopen = function () {
+                console.log("socket open");
+                clearInterval(socketTimer);
+                var query = {
+                    uuid: uuid,
+                    type: "query"
+                };
+                socket.send(JSON.stringify(query));
+            }
+
+            socket.onclose = function () {
+                console.log("socket close");
+                socketTimer = setInterval(()=>{
+                    if(socket.readyState == WebSocket.CLOSED){
+                        socketInit();
+                    }
+                }, 2000);
+            }
+
+            socket.onerror = function(){
+                console.log("socket error");
+                socket.close();
+            }
+
+            socket.onmessage = socketMessageHandler;
+        }
 
         var uuid = localStorage.getItem('uuid');
         if(uuid == null){
@@ -418,15 +453,7 @@
             }
 
             componentDidMount(){
-                socket.onopen = function () {
-                    var query = {
-                        uuid: uuid,
-                        type: "query"
-                    };
-                    socket.send(JSON.stringify(query));
-                }
-
-                socket.onmessage = (event)=>{
+                socketMessageHandler = (event)=>{
                     var msg = JSON.parse(event.data);
                     console.log(msg);
                     for(var key in msg){
@@ -454,6 +481,8 @@
                         }
                     }
                 }
+
+                socketInit();
             }
 
             render() {
@@ -508,7 +537,7 @@
         }
         .title{
             position: absolute;
-            width: 44%;
+            width: 55%;
             height: 32%;
             top: 34%;
             left: 5%;
@@ -548,10 +577,10 @@
         }
         .ingredient-summary{
             position: absolute;
-            width: 34%;
+            width: 25%;
             height: 18%;
             top: 41%;
-            left: 50%;
+            left: 60%;
             line-height: 100%;
             font-size: 1.7vh;
             color: hsl(0deg 0% 100% / 75%);
