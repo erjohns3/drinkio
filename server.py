@@ -45,7 +45,7 @@ connection_list = []
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
-args
+args = False
 
 status = {
     "position": False,
@@ -521,7 +521,7 @@ async def init(websocket, path):
                         connection[1] = msg['uuid']
                 print("new uuid: {}".format(msg['uuid']))
                 await send_status(websocket, msg['uuid'])
-                
+
             elif args.local and websocket.remote_address[0] != "192.168.86.1":
                 print("non local")
 
