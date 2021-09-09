@@ -218,5 +218,8 @@
 	},
 	"Fireball": {
 		"fireball": 1.5
+	},
+	"Water": {
+		"water": 3
 	}
 }

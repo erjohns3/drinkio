@@ -515,6 +515,7 @@ async def init(websocket, path):
         print(msg)
         state_lock.acquire()
         if 'type' in msg:
+            print("----local: " + str(args.local) + ", address: " + websocket.remote_address[0])
             if msg['type'] == "query":
                 for connection in connection_list:
                     if connection[0] == websocket:
@@ -630,8 +631,6 @@ def main():
     parser.add_argument('--local', action='store_true', default=False,
                    help='To run webserver without drinkmaker attached')
     args = parser.parse_args()
-
-    print("local: " + str(args.local))
 
     if not args.testing:
         setup_pigpio()
