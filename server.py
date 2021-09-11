@@ -87,11 +87,13 @@ def flow_rise(pin, level, tick):
     flow_lock.acquire()
     flow_tick = flow_tick + 1
     flow_lock.release()
-    print("flow: {}".format(flow_tick), flush=True)
+    print("flow: {}".format(flow_tick))
 
 def setup_pigpio():
     global pi
     pi = pigpio.pi()
+    if not pi.connected:
+        exit()
 
     pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
     pi.write(PUMP_PIN, 1)
@@ -103,15 +105,16 @@ def setup_pigpio():
 
 
 def signal_handler(sig, frame):
-    print('Ctrl+C', flush=True)
+    print('SIG Handler', flush=True)
     if pi is None:
-        print('signal_handler skipped for testing')
+        print('signal_handler skipped for testing', flush=True)
     else:
         pi.write(PUMP_PIN, 1)
         pi.stop()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 #####################################
 
@@ -129,7 +132,7 @@ ports = rasp_pi_port_config['ports']
 
 # ASSUMES HAS ALREADY BEEN LOCKED
 def dump_ingredients_owned_to_file():
-    print("----dump ingredients to to file start----")
+    print("----dump ingredients to to file start----", flush=True)
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'w') as f:
         new_dict_to_dump = {}
         # for k, v in ingredients.values():
@@ -138,7 +141,7 @@ def dump_ingredients_owned_to_file():
             new_dict_to_dump[k] = v.copy()
         
         json.dump(new_dict_to_dump, f, indent=2)
-        print("----dump ingredients to to file done----")
+        print("----dump ingredients to to file done----", flush=True)
     
 
 
@@ -193,7 +196,7 @@ class MyWatchdogMonitor(FileSystemEventHandler):
         
     def on_modified(self, event):
         if event.src_path.endswith(self.file_to_watch):
-            print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch))
+            print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch), flush=True)
             self.f_load_config_from_files(self.config_lock)
 
 event_handler = MyWatchdogMonitor(config_lock, load_config_from_files)
@@ -214,7 +217,6 @@ clean = {
 
 async def check_cancel():
     if pi is None:
-        print("check_cancel() skipped for testing")
         return False
     global cancel_pour
     global tilt_curr
@@ -224,11 +226,11 @@ async def check_cancel():
         cancel_pour = False
         cancel_lock.release()
         
-        print("tilt up")
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
+        print("tilt up", flush=True)
         await asyncio.sleep(8)
         pi.write(PUMP_PIN, 1)
         return True
@@ -237,7 +239,7 @@ async def check_cancel():
 
 async def pour_drink(drink):
     if pi is None:
-        print("pour_drink() skipped for testing")
+        print("pour_drink() skipped for testing", flush=True)
         return
     global pan_curr
     global tilt_curr
@@ -266,7 +268,7 @@ async def pour_drink(drink):
         config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
         config_lock.release()
-        print("pan align: {} -> {}".format(pan_curr, pan_goal))
+        print("pan align: {} -> {}".format(pan_curr, pan_goal), flush=True)
         while pan_curr != pan_goal:
             if await check_cancel(): return
             if pan_goal > pan_curr:
@@ -292,13 +294,13 @@ async def pour_drink(drink):
         elapsed = 0
         flow_prev = 0
 
-        print("tilt down")
+        print("flow goal: {} - {}".format(drink[ingredient], flow_goal))
+        print("tilt down", flush=True)
         while tilt_curr != TILT_DOWN:
             if await check_cancel(): return
             tilt_curr = min(tilt_curr + (TILT_DOWN_SPEED * TILT_PERIOD), TILT_DOWN)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
-
 
         # linear formula
         # flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
@@ -306,17 +308,15 @@ async def pour_drink(drink):
         # using LUT and linear formula. function is in "flow_tick_helper.py"
         flow_goal = amount_to_flow_ticks(drink[ingredient])
 
-        print("flow goal: {} - {}".format(drink[ingredient], flow_goal))
         while True:
             if await check_cancel(): return
             flow_lock.acquire()
             if flow_tick >= flow_goal:
-                print("ingredient done", flush=True)
                 break
             
             if elapsed > 8:
                 if flow_tick - flow_prev <= 3:
-                    print("ingredient empty start", flush=True)
+                    print("ingredient empty")
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
                     dump_ingredients_owned_to_file()
@@ -324,7 +324,6 @@ async def pour_drink(drink):
                     state_lock.acquire()
                     await broadcast_config()
                     state_lock.release()
-                    print("ingredient empty done", flush=True)
                     break
                 flow_prev = flow_tick
                 elapsed = 4
@@ -335,11 +334,13 @@ async def pour_drink(drink):
 
         flow_lock.release()
 
-        print("tilt up")
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
+
+        print("ingredient done")
+        print("tilt up", flush=True)
 
         await asyncio.sleep(2)
 
@@ -356,17 +357,18 @@ async def pour_drink(drink):
 
 async def pour_cycle(drink):
     global state
+    global cancel_pour
 
     print("pour drink:")
-    print(drink)
+    print(drink, flush=True)
     await pour_drink(drink)
-    print("drink done")
+    print("drink done", flush=True)
 
     await asyncio.sleep(5)
 
     state_lock.acquire()
     state = State.CLEANING
-    print("----CLEANING----")
+    print("----CLEANING----", flush=True)
     await broadcast_status()
     state_lock.release()
 
@@ -375,9 +377,9 @@ async def pour_cycle(drink):
     cancel_lock.release()
 
     print("pour clean:")
-    print(clean)
+    print(clean, flush=True)
     await pour_drink(clean)
-    print("clean done")
+    print("clean done", flush=True)
 
     state_lock.acquire()
     await state_reset()
@@ -390,7 +392,7 @@ Handler = http.server.SimpleHTTPRequestHandler
 
 def http_server(testing=False):
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
-    print("serving at port", PORT)
+    print("serving at port" + str(PORT), flush=True)
     httpd.serve_forever()
 
 
@@ -423,10 +425,10 @@ async def state_reset():
     user_queue.pop(0)
     if len(user_queue) == 0:
         state = State.STANDBY
-        print("----STANDBY----")
+        print("----STANDBY----", flush=True)
     else:
         state = State.READY
-        print("----READY----")
+        print("----READY----", flush=True)
         await ready_start()
     await broadcast_status()
 
@@ -459,11 +461,11 @@ async def send_status(socket, uuid):
         status["progress"] = False
     status["tick"] = status["tick"] + 1
     status["users"] = len(user_queue)
-    print(status)
+    print(status, flush=True)
     try:
         await socket.send('{"status":' +json.dumps(status) + '}')
     except:
-        print("socket send failed")
+        print("socket send failed", flush=True)
 
 async def broadcast_status():
     global connection_list
@@ -501,7 +503,7 @@ async def init(websocket, path):
 
     state_lock.acquire()
     connection_list.append([websocket, False])
-    print("init: " + websocket.remote_address[0])
+    print("init: " + websocket.remote_address[0], flush=True)
     state_lock.release()
     
     await websocket.send(json.dumps(to_send_to_client))
@@ -509,25 +511,25 @@ async def init(websocket, path):
         try:
             msg_string = await websocket.recv()
         except:
-            print("socket recv failed")
+            print("socket recv failed", flush=True)
             break
         msg = json.loads(msg_string)
-        print(msg)
+        print(msg, flush=True)
         state_lock.acquire()
         if 'type' in msg:
-            print("----local: " + str(args.local) + ", address: " + websocket.remote_address[0])
+            print("----local: " + str(args.local) + ", address: " + websocket.remote_address[0], flush=True)
             if msg['type'] == "query":
                 for connection in connection_list:
                     if connection[0] == websocket:
                         connection[1] = msg['uuid']
-                print("new uuid: {}".format(msg['uuid']))
+                print("new uuid: {}".format(msg['uuid']), flush=True)
                 await send_status(websocket, msg['uuid'])
 
             elif args.local and websocket.remote_address[0] != "192.168.86.1":
-                print("non local")
+                print("non local", flush=True)
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
-                print("queue add")
+                print("queue add", flush=True)
                 
                 add_user = True
                 for user in user_queue:
@@ -542,7 +544,7 @@ async def init(websocket, path):
 
                 if state == State.STANDBY:
                     state = State.READY
-                    print("----READY----")
+                    print("----READY----", flush=True)
                     await ready_start()
 
                 await broadcast_status()
@@ -576,8 +578,8 @@ async def init(websocket, path):
                         user_drink_name[msg['uuid']] = msg['name']
                         user_drink_ingredients[msg['uuid']] = msg['ingredients']
                         state = State.POURING
-                        print("----POURING----")
-                        print("pour now")
+                        print("----POURING----", flush=True)
+                        print("pour now", flush=True)
                         #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
                         #pour_thread.start()
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
@@ -595,8 +597,8 @@ async def init(websocket, path):
                     if full:
                         ready_timer.cancel()
                         state = State.POURING
-                        print("----POURING----")
-                        print("pour queue")
+                        print("----POURING----", flush=True)
+                        print("pour queue", flush=True)
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
                         progress = 1
                         await broadcast_status()
@@ -604,8 +606,8 @@ async def init(websocket, path):
             elif msg['type'] == "cancel":
                 if state == State.POURING and user_queue[0] == msg['uuid']:
                     state = State.CANCELLING
-                    print("----CANCELLING----")
-                    print("pour cancel")
+                    print("----CANCELLING----", flush=True)
+                    print("pour cancel", flush=True)
                     cancel_lock.acquire()
                     cancel_pour = True
                     cancel_lock.release()
