@@ -102,10 +102,8 @@ def setup_pigpio():
     pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
     pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
 
-
-
 def signal_handler(sig, frame):
-    print('SIG Handler', flush=True)
+    print('SIG Handler: ' + str(sig), flush=True)
     if pi is None:
         print('signal_handler skipped for testing', flush=True)
     else:
@@ -392,7 +390,7 @@ Handler = http.server.SimpleHTTPRequestHandler
 
 def http_server(testing=False):
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
-    print("serving at port" + str(PORT), flush=True)
+    print("serving at port " + str(PORT), flush=True)
     httpd.serve_forever()
 
 
