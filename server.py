@@ -292,7 +292,9 @@ async def pour_drink(drink):
         elapsed = 0
         flow_prev = 0
 
+        flow_goal = amount_to_flow_ticks(drink[ingredient])
         print("flow goal: {} - {}".format(drink[ingredient], flow_goal))
+
         print("tilt down", flush=True)
         while tilt_curr != TILT_DOWN:
             if await check_cancel(): return
@@ -304,7 +306,6 @@ async def pour_drink(drink):
         # flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
         
         # using LUT and linear formula. function is in "flow_tick_helper.py"
-        flow_goal = amount_to_flow_ticks(drink[ingredient])
 
         while True:
             if await check_cancel(): return
