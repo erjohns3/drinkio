@@ -50,33 +50,31 @@ class User:
         return sum
 
     def get_bac(self):
-        # 1 shot = 1.5 fl oz * 40% = 17.74 grams
+        # bac = (1 mg of alcohol) / (100 ml of blood)
         if len(self.drinks) > 0 and self.weight > 0:
             if self.sex == "male":
-                sex_mult = 0.6
+                blood = self.weight * 0.453592 * 75
             elif self.sex == "female":
-                sex_mult = 0.55
+                blood = self.weight * 0.453592 * 65
             else:
                 return 0
 
-            alcohol = self.drinks[0]['amount'] * 17.74
+            #alcohol_mult = 17.74 # ml of alcohol per drink
+            alcohol_mult = 14 # grams of alcohol per drink
+            alcohol = self.drinks[0]['amount'] * alcohol_mult
 
             for i in range(1, len(self.drinks)):
-                alcohol -= (0.015 * (self.weight*sex_mult*4.53592) * ((self.drinks[i]['time']-self.drinks[i-1]['time'])/3600))
+                alcohol -= (0.015 * (blood / 10) * ((self.drinks[i]['time']-self.drinks[i-1]['time'])/3600))
                 if alcohol < 0:
                     alcohol = 0
-                alcohol += self.drinks[i]['amount'] * 17.74
+                alcohol += self.drinks[i]['amount'] * alcohol_mult
                 
-            alcohol -= (0.015 * (self.weight*sex_mult*4.53592) * ((time.time()-self.drinks[len(self.drinks)-1]['time'])/3600))
+            alcohol -= (0.015 * (blood / 10) * ((time.time()-self.drinks[len(self.drinks)-1]['time'])/3600))
+
             if alcohol < 0:
                 alcohol = 0
-            if self.sex == "male":
-                sex_mult = 0.68
-            elif self.sex == "female":
-                sex_mult = 0.55
-            else:
-                return 0
-            bac = alcohol / (self.weight * 453.592 * sex_mult) * 100
+
+            bac = alcohol / (blood / 10)
             return bac
         else:
             return 0
@@ -596,7 +594,6 @@ async def init(websocket, path):
                     if connection['socket'] == websocket:
                         if msg['uuid'] in users:
                             print("existing user")
-                            print(users[msg['uuid']])
                             await send_user(websocket, msg['uuid'])
                         else:
                             print("new user")
