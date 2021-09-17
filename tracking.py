@@ -3,7 +3,7 @@ import sqlalchemy
 import shutil
 from pathlib import Path
 import os
-
+import json
 
 primary_db = "DRINKIO_DB"
 backup_db = ".BACKUP_DRINKIO_DB"
@@ -22,21 +22,22 @@ class DB:
             CREATE TABLE IF NOT EXISTS user_pours (
                 uuid REAL NOT NULL,
                 drink TEXT NOT NULL,
+                ingredients TEXT NOT NULL,
                 Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         """
         DB.doIt(create_table_sql)
 
     @staticmethod
-    def record_pour(uuid, drink):
+    def record_pour(uuid, drink, ingredients):
         DB.create_if_not_exists()
         query_sql = f"""
-            INSERT INTO user_pours (uuid, drink)
-            VALUES (:uuid, :drink);
+            INSERT INTO user_pours (uuid, drink, ingredients)
+            VALUES (:uuid, :drink, :ingredient);
         """
         connection = sqlalchemy.create_engine(f'sqlite:///{primary_db}')
         cursor = connection.connect()
-        return cursor.execute(query_sql, uuid=uuid, drink=drink)
+        return cursor.execute(query_sql, uuid=uuid, drink=drink, ingredient = json.dumps(ingredients))
 
     @staticmethod
     def getAll():

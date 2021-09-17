@@ -669,8 +669,8 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
-                        if 'uuid' in msg and 'name' in msg:
-                            tracking.DB.record_pour(msg['uuid'], msg['name'])
+                        if 'uuid' in msg and 'name' in msg and 'ingredients' in msg:
+                            tracking.DB.record_pour(msg['uuid'], msg['name'], msg['ingredients'])
                         user_queue.append(msg['uuid'])
                         user_drink_name[msg['uuid']] = msg['name']
                         user_drink_ingredients[msg['uuid']] = msg['ingredients']
@@ -696,8 +696,8 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
-                        if 'uuid' in msg and 'name' in msg:
-                            tracking.DB.record_pour(msg['uuid'], msg['name'])
+                        if 'uuid' in msg and 'name' in msg and 'ingredients' in msg:
+                            tracking.DB.record_pour(msg['uuid'], msg['name'], msg['ingredients'])
                         ready_timer.cancel()
                         state = State.POURING
                         print("----POURING----", flush=True)
