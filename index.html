@@ -418,7 +418,8 @@
             }
 
             shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.tick != this.props.tick ||
+                if(nextProps.drinksTick != this.props.drinksTick ||
+                    nextProps.statusTick != this.props.statusTick ||
                     nextState.selected != this.state.selected)
                 {
                     return true;
@@ -500,9 +501,9 @@
 
             render() {
                 console.log("render ingredient item: " + this.props.name);
-                var button = e('div', {key: 2, onClick: (event)=>this.setEmpty(event), className: "ingredient-button-full"}, "Full");
+                var button = e('div', {key: 2, onClick: (event)=>this.setEmpty(event), className: "ingredient-button ingredient-button-full"}, "Full");
                 if(this.props.ingredient.empty){
-                    button = e('div', {key: 2, onClick: (event)=>this.setFull(event), className: "ingredient-button-empty"}, "Empty");
+                    button = e('div', {key: 2, onClick: (event)=>this.setFull(event), className: "ingredient-button ingredient-button-empty"}, "Empty");
                 }
 
                 return e('div', {className: "ingredient-item"}, [
@@ -676,7 +677,7 @@
 
             render() {
                 return e('div', {ref: this.item, key: 0, className: "page-viewer" + " shift-"+this.props.tab}, [
-                    e(DrinkPage, {key: 1, drinks: this.props.drinks, status: this.props.status, ingredients: this.props.ingredients, tick: this.props.drinksTick, updateApp: this.props.updateApp}, null),
+                    e(DrinkPage, {key: 1, drinks: this.props.drinks, status: this.props.status, ingredients: this.props.ingredients, drinksTick: this.props.drinksTick, statusTick: this.props.statusTick, updateApp: this.props.updateApp}, null),
                     e(IngredientPage, {key: 2, ingredients: this.props.ingredients, tick: this.props.drinksTick, updateApp: this.props.updateApp}, null),
                     e(UserPage, {key: 3, user: this.props.user, tick: this.props.userTick, updateApp: this.props.updateApp}, null),
                 ]);
@@ -751,7 +752,7 @@
             render() {
                 return [
                     e(Header, {key: 0, tab: this.state.tab, updateApp: this.updateState.bind(this)}, null),
-                    e(PageViewer, {key: 1, tab: this.state.tab, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, drinksTick: this.state.drinksTick, user: this.state.user, userTick: this.state.userTick, updateApp: this.updateState.bind(this)}, null),
+                    e(PageViewer, {key: 1, tab: this.state.tab, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, drinksTick: this.state.drinksTick, statusTick: this.state.statusTick, user: this.state.user, userTick: this.state.userTick, updateApp: this.updateState.bind(this)}, null),
                     e(Status, {key: 2, status: this.state.status, tick: this.state.statusTick}, null)
                 ];
             }
@@ -997,6 +998,12 @@
             border-radius: 1vh;
             text-align: center;
             line-height: 300%;
+            transition: 200ms;
+        }
+        .user-update:active{
+            transform: scale(0.97);
+            opacity: 90%;
+            transition: 0ms;
         }
 
         .ingredient-item{
@@ -1023,7 +1030,7 @@
             line-height: 350%;
             font-size: 2vh;
         }
-        .ingredient-button-full{
+        .ingredient-button{
             position: absolute;
             width: 25%;
             height: 80%;
@@ -1036,19 +1043,18 @@
             transition: 200ms;
             text-align: center;
         }
-        .ingredient-button-empty{
-            position: absolute;
-            width: 25%;
-            height: 80%;
-            top: 10%;
-            right: 5%;
-            line-height: 350%;
-            font-size: 2vh;
-            background-color: hsl(340deg 80% 27%);
-            border-radius: 1vh;
-            transition: 200ms;
-            text-align: center;
+        .ingredient-button:active{
+            transform: scale(0.97);
+            opacity: 90%;
+            transition: 0ms;
         }
+        .ingredient-button-full{
+            background-color: hsl(180deg 80% 27%);
+        }
+        .ingredient-button-empty{
+            background-color: hsl(340deg 80% 27%);
+        }
+
         .drink-item-wrapper{
             transition: 200ms;
             height: 11%;
@@ -1372,6 +1378,15 @@
         }
 
         @keyframes tab-anim {
+            from {
+                background-color: hsla(0, 0%, 100%, 20%);
+            }
+            to {
+                background-color: hsla(0, 0%, 100%, 10%);
+            }
+        }
+
+        @keyframes button-anim {
             from {
                 background-color: hsla(0, 0%, 100%, 20%);
             }
