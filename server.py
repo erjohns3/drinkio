@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import threading
 from types import new_class
 import pigpio
@@ -528,7 +527,7 @@ async def broadcast_status():
     while i < len(connection_list):
         if connection_list[i]['socket'].closed:
             connection_list.pop(i)
-        elif connection_list[i]['user'] is not NULL:
+        elif connection_list[i]['user'] is not False:
             await send_status(connection_list[i]['socket'], connection_list[i]['user'].uuid)
             i=i+1
 
@@ -572,7 +571,7 @@ async def init(websocket, path):
     global ingredients
 
     state_lock.acquire()
-    connection_list.append({'socket': websocket, 'user': NULL})
+    connection_list.append({'socket': websocket, 'user': False})
     print("init: " + websocket.remote_address[0], flush=True)
     state_lock.release()
     
