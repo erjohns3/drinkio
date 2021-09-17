@@ -22,7 +22,7 @@
         function socketInit(){
             console.log("socket init");
 
-            socket = new WebSocket("ws://makedrink.me:8765");
+            socket = new WebSocket("ws://192.168.86.32:8765");
 
             socket.onopen = function () {
                 console.log("socket open");
@@ -66,8 +66,31 @@
             constructor(props){
                 super(props);
             }
+
             render(){
-                return e('div', {className: "header"}, "drink.io");
+                return e('div', {key: 0, className: "header"},[
+                        e(Tab, {key: 1, title: "Drinks", selected: this.props.tab == "Drinks", updateApp: this.props.updateApp}, null),
+                        e(Tab, {key: 2, title: "Ingredients", selected: this.props.tab == "Ingredients", updateApp: this.props.updateApp}, null),
+                        e(Tab, {key: 3, title: "User", selected: this.props.tab == "User", updateApp: this.props.updateApp}, null)]);
+            }
+        }
+
+        class Tab extends React.Component{
+            constructor(props){
+                super(props);
+            }
+
+            button(event){
+                this.props.updateApp({tab: this.props.title});
+            }
+
+            render(){
+                if (this.props.selected){
+                    return e('div', {key: 0, className: "tab tab-selected tab-"+this.props.title}, this.props.title);
+                }
+                else{
+                    return e('div', {key: 0, onClick: (event)=>this.button(event), className: "tab tab-"+this.props.title}, this.props.title);
+                }
             }
         }
 
@@ -331,7 +354,7 @@
             }
 
             expand(event){
-                var move = Math.round((document.documentElement.clientHeight * 0.01)-(this.item.current.getBoundingClientRect().y));
+                var move = Math.round((document.documentElement.clientHeight * 0.08)-(this.item.current.getBoundingClientRect().y));
                 this.style = {
                     transform: "translateY("+move+"px)"
                 }
@@ -352,7 +375,7 @@
             }
 
             render() {
-                console.log("render: " + this.props.name);
+                console.log("render drink item: " + this.props.name);
                 this.ingredientSummary = "";
                 var i = 24;
                 for(var key in this.props.drink){
@@ -360,7 +383,7 @@
                     i++;
                 }
                 if(this.props.selected){
-                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "item border-flat"+this.addText(this.props.empty, " empty"), style: this.style}, [
+                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "drink-item border-flat"+this.addText(this.props.empty, " empty"), style: this.style}, [
                         e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
@@ -372,7 +395,7 @@
                         )
                     ]);
                 }else{
-                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "item "+this.addText(this.props.empty, " empty")}, [
+                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "drink-item "+this.addText(this.props.empty, " empty")}, [
                         e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
                         e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
                         e('div', {key: 2, className: "arrow-wrapper"}, [
@@ -385,13 +408,22 @@
             }
         }
 
-        class DrinkList extends React.Component {
+        class DrinkPage extends React.Component {
             constructor(props){
                 super(props);
             }
 
             state = {
                 selected: null
+            }
+
+            shouldComponentUpdate(nextProps, nextState) {
+                if(nextProps.tick != this.props.tick ||
+                    nextState.selected != this.state.selected)
+                {
+                    return true;
+                }
+                return false;
             }
 
             updateState(newState){
@@ -406,7 +438,7 @@
             }
 
             render() {
-                console.log("render: drink list");
+                console.log("render drink list");
                 this.list = [];
                 for(var name in this.props.drinks){
                     var tmp = ""
@@ -419,11 +451,235 @@
                             empty = true;
                         }
                     }
-                    this.list.push(e('div', {key: name+"wrapper", className: "item-wrapper"+tmp},
+                    this.list.push(e('div', {key: name+"wrapper", className: "drink-item-wrapper"+tmp},
                         e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected == name, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
                     );
                 }
-                return e('div', {className: "list"+this.addText(this.state.selected != null, " noscroll")}, this.list);
+                return e('div', {className: "drink-page"+this.addText(this.state.selected != null, " noscroll")}, this.list);
+            }
+        }
+
+        class IngredientItem extends React.Component {
+            constructor(props){
+                super(props);
+            }
+
+            shouldComponentUpdate(nextProps, nextState) {
+                if(nextProps.ingredient.empty != this.props.ingredient.empty){
+                    return true;
+                }
+                return false;
+            }
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
+                }
+                return "";
+            }
+
+            setFull(){
+                var msg = {
+                    uuid: uuid,
+                    type: "ingredient",
+                    name: this.props.name,
+                    empty: false
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
+            setEmpty(){
+                var msg = {
+                    uuid: uuid,
+                    type: "ingredient",
+                    name: this.props.name,
+                    empty: true
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
+            render() {
+                console.log("render ingredient item: " + this.props.name);
+                var button = e('div', {key: 2, onClick: (event)=>this.setEmpty(event), className: "ingredient-button-full"}, "Full");
+                if(this.props.ingredient.empty){
+                    button = e('div', {key: 2, onClick: (event)=>this.setFull(event), className: "ingredient-button-empty"}, "Empty");
+                }
+
+                return e('div', {className: "ingredient-item"}, [
+                    e('div', {key: 0, className: "ingredient-title"}, this.props.name),
+                    e('div', {key: 1, className: "ingredient-port"}, this.props.ingredient.port),
+                    button
+                ]);
+            }
+        }
+
+        class IngredientPage extends React.Component {
+            constructor(props){
+                super(props);
+            }
+
+            state = {
+                selected: null
+            }
+
+            shouldComponentUpdate(nextProps, nextState) {
+                if(nextProps.tick != this.props.tick){
+                    return true;
+                }
+                return false;
+            }
+
+            updateState(newState){
+                this.setState(newState);
+            }
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
+                }
+                return "";
+            }
+
+            render() {
+                console.log("render ingredient list");
+                this.list = [];
+                for(var name in this.props.ingredients){
+                    this.list.push(
+                        e(IngredientItem, {key: name, name: name, ingredient: this.props.ingredients[name], updateApp: this.props.updateApp}, null)
+                    );
+                }
+                return e('div', {className: "ingredient-page"}, this.list);
+            }
+        }
+
+        class UserPage extends React.Component {
+            constructor(props){
+                super(props);
+            }
+
+            state = {
+                name: null,
+                weight: null,
+                sex: null,
+                tick: 0
+            }
+
+            shouldComponentUpdate(nextProps, nextState) {
+                if(nextProps.tick != this.props.tick || nextState.tick != this.state.tick){
+                    return true;
+                }
+                return false;
+            }
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
+                }
+                return "";
+            }
+
+            setName(event){
+                console.log("set name: " + event.target.value);
+                this.setState({name: event.target.value, tick: this.state.tick+1});
+            }
+
+            setWeight(event){
+                console.log("set weight: " + event.target.value);
+                this.setState({weight: event.target.value, tick: this.state.tick+1});
+            }
+
+            setSex(x){
+                console.log("set sex: " + x);
+                this.setState({sex: x, tick: this.state.tick+1});
+            }
+
+            update(){
+                var name = this.props.user.name;
+                if(this.state.name != null){
+                    name = this.state.name
+                }
+                var weight = this.props.user.weight;
+                if(this.state.weight != null){
+                    weight = this.state.weight
+                }
+                var sex = this.props.user.sex;
+                if(this.state.sex != null){
+                    sex = this.state.sex
+                }
+                var msg = {
+                    uuid: uuid,
+                    type: "user",
+                    name: name,
+                    weight: parseInt(weight),
+                    sex: sex
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
+            render() {
+                console.log("render user");
+                console.log(this.props);
+                console.log(this.state);
+
+                var name = this.props.user.name;
+                if(this.state.name != null){
+                    name = this.state.name
+                }
+                var weight = this.props.user.weight;
+                if(this.state.weight != null){
+                    weight = this.state.weight
+                }
+                var sex = this.props.user.sex;
+                if(this.state.sex != null){
+                    sex = this.state.sex
+                }
+                return e('div', {className: "user-page"}, [
+                    e('div', {key: 0, className: "user-name-label"}, "Name:"),
+                    e('input', {key: 1, type: "text", value: name, onChange: (event)=>this.setName(event), className:"user-name-input"}, null),
+                    e('div', {key: 2, className: "user-weight-label"}, "Weight (lb):"),
+                    e('input', {key: 3, type: "number", value: weight, onChange: (event)=>this.setWeight(event), className:"user-weight-input"}, null),
+                    e('div', {key: 4, className: "user-sex-label"}, "Sex:"),
+                    e('div', {key: 6, onClick: (event)=>this.setSex("male"), className: "user-male-input"+this.addText(sex == "male", " user-sex-active")}, "Male"),
+                    e('div', {key: 8, onClick: (event)=>this.setSex("female"), className: "user-female-input"+this.addText(sex == "female", " user-sex-active")}, "Female"), 
+                    e('div', {key: 9, className: "user-drinks-label"}, "Drinks:"),
+                    e('div', {key: 10, className: "user-drinks-value"}, this.props.user.drinks.toFixed(1)),
+                    e('div', {key: 11, className: "user-bac-label"}, "BAC:"),
+                    e('div', {key: 12, className: "user-bac-value"}, this.props.user.bac.toFixed(3) + " %"),
+                    e('div', {key: 13, onClick: (event)=>this.update(event), className: "user-update"}, "Update"),
+                ]);
+            }
+        }
+
+        class PageViewer extends React.Component {
+            constructor(props){
+                super(props);
+                this.item = React.createRef();
+                //this.item.onscroll = function(){myScript};
+            }
+
+            scroll(event){
+                //console.log(this.item.current.scrollLeft);
+                //this.item.current.scrollLeft = 500;
+                //event.stopPropagation();
+            }
+
+            updateState(newState){
+                this.setState(newState);
+            }
+
+            addText(condition, text) {
+                if(condition){
+                    return text;
+                }
+                return "";
+            }
+
+            render() {
+                return e('div', {ref: this.item, key: 0, className: "page-viewer" + " shift-"+this.props.tab}, [
+                    e(DrinkPage, {key: 1, drinks: this.props.drinks, status: this.props.status, ingredients: this.props.ingredients, tick: this.props.drinksTick, updateApp: this.props.updateApp}, null),
+                    e(IngredientPage, {key: 2, ingredients: this.props.ingredients, tick: this.props.drinksTick, updateApp: this.props.updateApp}, null),
+                    e(UserPage, {key: 3, user: this.props.user, tick: this.props.userTick, updateApp: this.props.updateApp}, null),
+                ]);
             }
         }
 
@@ -436,16 +692,26 @@
             }
 
             state = {
+                tab: "Drinks",
                 drinks: null,
+                drinksTick: 0,
                 ingredients: null,
                 status: {
                     users: 0,
                     position: false,
                     drink: false,
                     timer: false,
-                    progress: false,
-                    tick: 0
-                }
+                    progress: false
+                },
+                statusTick: 0,
+                user: {
+                    name: null,
+                    weight: null,
+                    sex: null,
+                    drinks: 0,
+                    bac: 0
+                },
+                userTick: 0
             }
 
             updateState(newState){
@@ -459,23 +725,20 @@
                     for(var key in msg){
                         switch(key){
                             case 'drinks': 
-                                this.setState({ drinks: msg.drinks, ingredients: msg.ingredients });
-                                console.log(msg);
+                                this.setState({ drinks: msg.drinks, ingredients: msg.ingredients, drinksTick: this.state.drinksTick+1});
                                 break;
                             case 'ingredients': 
                                 //this.setState({ ingredients: msg.ingredients });
                                 break;
                             case 'status': 
-                                //console.log("users: "+msg.status.users);
-                                //console.log("position: "+msg.status.position);
-                                //console.log("drink: "+msg.status.drink);
-                                //console.log("timer: "+msg.status.timer);
-                                console.log("progress: "+msg.status.progress);
-                                //console.log("");
                                 if(msg.status.timer){
                                     msg.status.timer += Date.now()/1000;
                                 }
-                                this.setState({ status: msg.status });
+                                this.setState({ status: msg.status, statusTick: this.state.statusTick+1 });
+                                break;
+                            case 'user': 
+                                this.setState({ user: msg.user, userTick: this.state.userTick+1 });
+                                break;
                             default:
                                 break;
                         }
@@ -487,8 +750,9 @@
 
             render() {
                 return [
-                    e(DrinkList, {key: 0, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, updateApp: this.updateState.bind(this)}, null),
-                    e(Status, {key: 1, status: this.state.status}, null)
+                    e(Header, {key: 0, tab: this.state.tab, updateApp: this.updateState.bind(this)}, null),
+                    e(PageViewer, {key: 1, tab: this.state.tab, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, drinksTick: this.state.drinksTick, user: this.state.user, userTick: this.state.userTick, updateApp: this.updateState.bind(this)}, null),
+                    e(Status, {key: 2, status: this.state.status, tick: this.state.statusTick}, null)
                 ];
             }
         }
@@ -517,16 +781,280 @@
         #root{
             height: calc(var(--vh, 1vh) * 100);
         }
-        .list{
-            height: 90%;
+        .header{
+            height: 7%;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
+        }
+        .tab{
+            position: absolute;
+            background-color: hsla(0, 0%, 100%, 10%);
+            color: hsl(0deg 0% 100% / 100%);
+            border-bottom: solid 0vh hsl(340deg 80% 27%);
+            box-sizing: border-box;
+            font-size: 2.5vh;
+            height: 100%;
+            top: 0;
+            width: calc(100%/3);
+            line-height: 280%;
+            overflow: hidden;
+            text-align: center;
+        }
+        .tab-selected{
+            animation: tab-anim 500ms 0s 1;
+            border-bottom: solid 0.5vh hsl(340deg 80% 35%);
+            font-weight: 1000;
+        }
+        .tab-Drinks{
+            left: 0%;
+        }
+        .tab-Ingredients{
+            left: calc(100%/3);
+        }
+        .tab-User{
+            right: 0%;
+        }
+        .shift-Drinks{
+            transform: translateX(0%);
+        }
+        .shift-Ingredients{
+            transform: translateX(-100%);
+        }
+        .shift-User{
+            transform: translateX(-200%);
+        }
+        .page-viewer{
+            height: 83%;
+            width: 100%;
+            position: fixed;
+            top: 7%;
+            transition: 250ms;
+        }
+        .drink-page{
+            height: 100%;
+            width: 100%;
+            left: 0%;
+            position: absolute;
             overflow-y: auto;
         }
-        .item-wrapper{
+        .ingredient-page{
+            height: 100%;
+            width: 100%;
+            left: 100%;
+            position: absolute;
+            overflow-y: auto;
+        }
+        .user-page{
+            height: 100%;
+            width: 100%;
+            left: 200%;
+            position: absolute;
+            overflow-y: auto;
+        }
+        .user-name-label{
+            position: absolute;
+            left: 10%;
+            top: 8%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-name-input{
+            position: absolute;
+            right: 10%;
+            top: 8%;
+            width: 45%;
+            height: 8%;
+            background-color: hsl(0deg 0% 100% / 10%);
+            border: none;
+            color: white;
+            font-size: 2.5vh;
+            border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+            border-radius: 1vh;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+        }
+        .user-weight-label{
+            position: absolute;
+            left: 10%;
+            top: 20%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-weight-input{
+            position: absolute;
+            right: 10%;
+            top: 20%;
+            width: 45%;
+            height: 8%;
+            background-color: hsl(0deg 0% 100% / 10%);
+            border: none;
+            color: white;
+            font-size: 2.5vh;
+            border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+            border-radius: 1vh;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .user-sex-label{
+            position: absolute;
+            left: 10%;
+            top: 32%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-male-input{
+            position: absolute;
+            right: 35%;
+            top: 32%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: hsl(0deg 0% 100% / 10%);
+            line-height: 250%;
+            color: white;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        .user-female-input{
+            position: absolute;
+            right: 10%;
+            top: 32%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: hsl(0deg 0% 100% / 10%);
+            line-height: 250%;
+            color: white;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        .user-sex-active{
+            background-color: hsl(340deg 80% 27%);
+        }
+        
+        .user-drinks-label{
+            position: absolute;
+            left: 10%;
+            top: 56%;
+            width: 30%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-drinks-value{
+            position: absolute;
+            right: 10%;
+            top: 56%;
+            width: 45%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-bac-label{
+            position: absolute;
+            left: 10%;
+            top: 64%;
+            width: 30%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-bac-value{
+            position: absolute;
+            right: 10%;
+            top: 64%;
+            width: 45%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            color: white;
+            font-size: 2.5vh;
+        }
+        .user-update{
+            position: absolute;
+            left: 30%;
+            top: 80%;
+            width: 40%;
+            height: 10%;
+            color: white;
+            font-size: 2.5vh;
+            background-color: hsl(180deg 80% 27%);
+            border-radius: 1vh;
+            text-align: center;
+            line-height: 300%;
+        }
+
+        .ingredient-item{
+            position: relative;
+            height: 11%;
+            margin: 1vh;
+            color: hsl(0deg 0% 100% / 100%);
+        }
+        .ingredient-title{
+            position: absolute;
+            width: 55%;
+            height: 32%;
+            top: 34%;
+            left: 5%;
+            line-height: 100%;
+            font-size: 3vh;
+        }
+        .ingredient-port{
+            position: absolute;
+            width: 10%;
+            height: 80%;
+            top: 10%;
+            left: 60%;
+            line-height: 350%;
+            font-size: 2vh;
+        }
+        .ingredient-button-full{
+            position: absolute;
+            width: 25%;
+            height: 80%;
+            top: 10%;
+            right: 5%;
+            line-height: 350%;
+            font-size: 2vh;
+            background-color: hsl(180deg 80% 27%);
+            border-radius: 1vh;
+            transition: 200ms;
+            text-align: center;
+        }
+        .ingredient-button-empty{
+            position: absolute;
+            width: 25%;
+            height: 80%;
+            top: 10%;
+            right: 5%;
+            line-height: 350%;
+            font-size: 2vh;
+            background-color: hsl(340deg 80% 27%);
+            border-radius: 1vh;
+            transition: 200ms;
+            text-align: center;
+        }
+        .drink-item-wrapper{
             transition: 200ms;
             height: 11%;
             margin: 1vh;
         }
-        .item{
+        .drink-item{
             position: relative;
             transition-property: transform, opacity;
             transition-duration: 200ms;
@@ -628,11 +1156,11 @@
         }
         .button-add{
             left: 5%;
-            background-color: hsl(340deg 85% 25%);
+            background-color: hsl(340deg 80% 27%);
         }
         .button-pour{
             right: 5%;
-            background-color: hsl(180deg 85% 25%);
+            background-color: hsl(180deg 80% 27%);
         }
         .button-item:active{
             transform: scale(0.97);
@@ -645,7 +1173,8 @@
             color: hsl(0deg 0% 100% / 100%);
             font-size: 3vh;
             height: 10%;
-            position: sticky;
+            width: 100%;
+            position: fixed;
             bottom: 0;
             box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
         }
@@ -839,6 +1368,15 @@
             }
             to {
                 filter: saturate(50%);
+            }
+        }
+
+        @keyframes tab-anim {
+            from {
+                background-color: hsla(0, 0%, 100%, 20%);
+            }
+            to {
+                background-color: hsla(0, 0%, 100%, 10%);
             }
         }
 

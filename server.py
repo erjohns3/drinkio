@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import threading
 from types import new_class
 import pigpio
@@ -26,6 +27,61 @@ class State(Enum):
     CANCELLING = 4
     CLEANING = 5
 
+
+class User:
+    def __init__(self, uuid):
+        print("new user")
+        self.uuid = uuid
+        self.name = ""
+        self.weight = 0 # pounds
+        self.sex = ""
+        self.drinks = [] # shots
+        self.alcohol_prev = 0 # grams
+    
+    def add_drink(self, amount):
+        self.drinks.append({'amount': amount, 'time': time.time()})
+        print("add drink")
+
+    def get_drinks(self):
+        sum = 0
+        while len(self.drinks) > 0 and self.drinks[0]['time'] < time.time() - 43200:
+            self.drinks.pop(0)
+        for drink in self.drinks:
+            sum += drink['amount']
+        return sum
+
+    def get_bac(self):
+        # 1 shot = 1.5 fl oz * 40% = 17.74 grams
+        if len(self.drinks) > 0 and self.weight > 0:
+            if self.sex == "male":
+                sex_mult = 0.6
+            elif self.sex == "female":
+                sex_mult = 0.55
+            else:
+                return 0
+
+            alcohol = self.drinks[0]['amount'] * 17.74
+
+            for i in range(1, len(self.drinks)):
+                alcohol -= (0.015 * (self.weight*sex_mult*4.53592) * ((self.drinks[i]['time']-self.drinks[i-1]['time'])/3600))
+                if alcohol < 0:
+                    alcohol = 0
+                alcohol += self.drinks[i]['amount'] * 17.74
+                
+            alcohol -= (0.015 * (self.weight*sex_mult*4.53592) * ((time.time()-self.drinks[len(self.drinks)-1]['time'])/3600))
+            if alcohol < 0:
+                alcohol = 0
+            if self.sex == "male":
+                sex_mult = 0.68
+            elif self.sex == "female":
+                sex_mult = 0.55
+            else:
+                return 0
+            bac = alcohol / (self.weight * 453.592 * sex_mult) * 100
+            return bac
+        else:
+            return 0
+
 class AsyncTimer:
     def __init__(self, timeout, callback):
         self._timeout = timeout
@@ -45,6 +101,7 @@ connection_list = []
 user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
+users = {}
 args = False
 
 status = {
@@ -52,8 +109,7 @@ status = {
     "users": 0,
     "drink": False,
     "timer": False,
-    "progress": False,
-    "tick": 0
+    "progress": False
 }
 
 ################################################# Setup pi
@@ -142,24 +198,20 @@ def dump_ingredients_owned_to_file():
         print("----dump ingredients to to file done----", flush=True)
     
 
-
-global to_send_to_client
 to_send_to_client = {}
-
 
 # prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
 
-def load_config_from_files(config_lock):
-    config_lock.acquire()
+def load_config_from_files(lock):
+    lock.acquire()
     global to_send_to_client
+    global drinks
     global ingredients
 
     with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
         owned_ingredients = json.loads(f.read())
-
     with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
         drink_recipes = json.loads(f.read().decode("UTF-8"))
-
 
     # removes recipes we dont have from drinks
     # to_remove = set()
@@ -178,8 +230,9 @@ def load_config_from_files(config_lock):
 
     to_send_to_client['drinks'] = drink_recipes
     to_send_to_client['ingredients'] = owned_ingredients
-    ingredients = to_send_to_client['ingredients']
-    config_lock.release()
+    drinks = drink_recipes
+    ingredients = owned_ingredients
+    lock.release()
 
 
 load_config_from_files(config_lock)
@@ -458,11 +511,13 @@ async def send_status(socket, uuid):
         status["drink"] = False
         status["timer"] = False
         status["progress"] = False
-    status["tick"] = status["tick"] + 1
     status["users"] = len(user_queue)
     print(status, flush=True)
     try:
-        await socket.send('{"status":' +json.dumps(status) + '}')
+        message = {
+            'status': status
+        }
+        await socket.send(json.dumps(message))
     except:
         print("socket send failed", flush=True)
 
@@ -471,23 +526,40 @@ async def broadcast_status():
     
     i=0
     while i < len(connection_list):
-        if connection_list[i][0].closed:
+        if connection_list[i]['socket'].closed:
             connection_list.pop(i)
-        elif connection_list[i][1]:
-            await send_status(connection_list[i][0], connection_list[i][1])
+        elif connection_list[i]['user'] is not NULL:
+            await send_status(connection_list[i]['socket'], connection_list[i]['user'].uuid)
             i=i+1
 
 async def broadcast_config():
     global connection_list
-    global to_send_to_client
     
     i=0
     while i < len(connection_list):
-        if connection_list[i][0].closed:
+        if connection_list[i]['socket'].closed:
             connection_list.pop(i)
         else:
-            await connection_list[i][0].send(json.dumps(to_send_to_client))
+            message = {
+                'drinks': drinks,
+                'ingredients': ingredients
+            }
+            await connection_list[i]['socket'].send(json.dumps(message))
             i=i+1
+
+
+async def send_user(socket, uuid):
+    user = users[uuid]
+    message = {
+        'user': {
+            'name': user.name,
+            'weight': user.weight,
+            'sex': user.sex,
+            'drinks': user.get_drinks(),
+            'bac': user.get_bac()
+        }
+    }
+    await socket.send(json.dumps(message))
 
 #################################################
 
@@ -498,14 +570,17 @@ async def init(websocket, path):
     global cancel_pour
     global progress
     global ingredients
-    global to_send_to_client
 
     state_lock.acquire()
-    connection_list.append([websocket, False])
+    connection_list.append({'socket': websocket, 'user': NULL})
     print("init: " + websocket.remote_address[0], flush=True)
     state_lock.release()
     
-    await websocket.send(json.dumps(to_send_to_client))
+    message = {
+        'drinks': drinks,
+        'ingredients': ingredients
+    }
+    await websocket.send(json.dumps(message))
     while True:
         try:
             msg_string = await websocket.recv()
@@ -519,13 +594,34 @@ async def init(websocket, path):
             print("----local: " + str(args.local) + ", address: " + websocket.remote_address[0], flush=True)
             if msg['type'] == "query":
                 for connection in connection_list:
-                    if connection[0] == websocket:
-                        connection[1] = msg['uuid']
-                print("new uuid: {}".format(msg['uuid']), flush=True)
+                    if connection['socket'] == websocket:
+                        if msg['uuid'] in users:
+                            print("existing user")
+                            print(users[msg['uuid']])
+                            await send_user(websocket, msg['uuid'])
+                        else:
+                            print("new user")
+                            users[msg['uuid']] = User(msg['uuid'])
+                        connection['user'] = users[msg['uuid']]
                 await send_status(websocket, msg['uuid'])
 
             elif args.local and websocket.remote_address[0] != "192.168.86.1":
                 print("non local", flush=True)
+
+            elif msg['type'] == "user" and 'name' in msg and 'weight' in msg and 'sex' in msg:
+
+                users[msg['uuid']].name = msg['name']
+                users[msg['uuid']].weight = msg['weight']
+                users[msg['uuid']].sex = msg['sex']
+                await send_user(websocket, msg['uuid'])
+
+            elif msg['type'] == "ingredient" and 'name' in msg and 'empty' in msg:
+
+                config_lock.acquire()
+                ingredients[msg['name']]["empty"] = msg['empty']
+                dump_ingredients_owned_to_file()
+                config_lock.release()
+                await broadcast_config()
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add", flush=True)
@@ -567,8 +663,10 @@ async def init(websocket, path):
             elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
                 if state == State.STANDBY:
                     full = True
+                    alcohol = 0
                     config_lock.acquire()
                     for ingredient in msg['ingredients']:
+                        alcohol += msg['ingredients'][ingredient] * ingredients[ingredient]['abv'] / 0.6
                         if ingredients[ingredient]["empty"]:
                             full = False
                     config_lock.release()
@@ -584,12 +682,16 @@ async def init(websocket, path):
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
                         progress = 1
                         await broadcast_status()
+                        users[msg['uuid']].add_drink(alcohol)
+                        await send_user(websocket, msg['uuid'])
 
             elif msg['type'] == "pour" :
                 if state == State.READY and user_queue[0] == msg['uuid'] and user_queue[0] in user_drink_ingredients:
                     full = True
+                    alcohol = 0
                     config_lock.acquire()
                     for ingredient in user_drink_ingredients[user_queue[0]]:
+                        alcohol += user_drink_ingredients[user_queue[0]][ingredient] * ingredients[ingredient]['abv'] / 0.6
                         if ingredients[ingredient]["empty"]:
                             full = False
                     config_lock.release()
@@ -601,6 +703,8 @@ async def init(websocket, path):
                         asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
                         progress = 1
                         await broadcast_status()
+                        users[msg['uuid']].add_drink(alcohol)
+                        await send_user(websocket, msg['uuid'])
 
             elif msg['type'] == "cancel":
                 if state == State.POURING and user_queue[0] == msg['uuid']:
