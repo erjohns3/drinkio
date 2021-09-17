@@ -33,11 +33,11 @@ class DB:
         DB.create_if_not_exists()
         query_sql = f"""
             INSERT INTO user_pours (uuid, drink, ingredients)
-            VALUES (:uuid, :drink, :ingredient);
+            VALUES (:uuid, :drink, :ingredients);
         """
         connection = sqlalchemy.create_engine(f'sqlite:///{primary_db}')
         cursor = connection.connect()
-        return cursor.execute(query_sql, uuid=uuid, drink=drink, ingredient = json.dumps(ingredients))
+        return cursor.execute(query_sql, uuid=uuid, drink=drink, ingredients = json.dumps(ingredients))
 
     @staticmethod
     def getAll():
