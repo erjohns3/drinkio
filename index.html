@@ -103,13 +103,6 @@
                 tick: 0
             }
 
-            shouldComponentUpdate(nextProps, nextState){
-                if(nextProps.status.position == 1 && this.props.status.position != 1){
-                    window.navigator.vibrate(200);
-                }
-                return true;
-            }
-
             componentDidMount() {
                 this.interval = setInterval(() => {
                     if(this.props.status.timer !== false){
