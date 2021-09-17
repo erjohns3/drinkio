@@ -9,6 +9,7 @@ import pathlib
 import asyncio
 import websockets
 import http.server
+import tracking
 from enum import Enum
 import argparse
 from flow_tick_helper import amount_to_flow_ticks
@@ -162,6 +163,7 @@ def signal_handler(sig, frame):
     else:
         pi.write(PUMP_PIN, 1)
         pi.stop()
+    tracking.DB.backup_db()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -667,6 +669,8 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
+                        if 'uuid' in msg and 'name' in msg:
+                            tracking.DB.record_pour(msg['uuid'], msg['name'])
                         user_queue.append(msg['uuid'])
                         user_drink_name[msg['uuid']] = msg['name']
                         user_drink_ingredients[msg['uuid']] = msg['ingredients']
@@ -692,6 +696,8 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
+                        if 'uuid' in msg and 'name' in msg:
+                            tracking.DB.record_pour(msg['uuid'], msg['name'])
                         ready_timer.cancel()
                         state = State.POURING
                         print("----POURING----", flush=True)
