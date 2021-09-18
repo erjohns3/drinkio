@@ -42,7 +42,7 @@ class DB:
     @staticmethod
     def getAll():
         query_sql = """
-            SELECT uuid, drink, count(*) AS count 
+            SELECT uuid, drink, ingredients, count(*) AS count 
             FROM user_pours GROUP BY uuid, drink
         """
         return DB.doIt(query_sql)

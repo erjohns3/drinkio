@@ -1,8 +1,33 @@
 {
+  "fireball": {
+    "port": 0,
+    "empty": true,
+    "abv": 0.33
+  },
+  "peach schnapps": {
+    "port": 6,
+    "empty": true,
+    "abv": 0.15
+  },
+  "grenadine syrup": {
+    "port": 7,
+    "empty": true,
+    "abv": 0
+  },
   "tequila": {
     "port": 8,
     "empty": false,
     "abv": 0.4
+  },
+  "amaretto": {
+    "port": 9,
+    "empty": true,
+    "abv": 0.22
+  },
+  "kahlua": {
+    "port": 10,
+    "empty": true,
+    "abv": 0.2
   },
   "whiskey": {
     "port": 11,
@@ -17,6 +42,16 @@
   "cranberry juice": {
     "port": 13,
     "empty": false,
+    "abv": 0.0
+  },
+  "sprite": {
+    "port": 14,
+    "empty": true,
+    "abv": 0.0
+  },
+  "gingerale": {
+    "port": 15,
+    "empty": true,
     "abv": 0.0
   },
   "coke": {
@@ -59,51 +94,6 @@
     "empty": false,
     "abv": 0.4
   },
-  "simple syrup": {
-    "port": 33,
-    "empty": false,
-    "abv": 0.0
-  },
-  "triple sec": {
-    "port": 35,
-    "empty": false,
-    "abv": 0.4
-  },
-  "fireball": {
-    "port": 0,
-    "empty": true,
-    "abv": 0.33
-  },
-  "peach schnapps": {
-    "port": 6,
-    "empty": true,
-    "abv": 0.15
-  },
-  "grenadine syrup": {
-    "port": 7,
-    "empty": true,
-    "abv": 0
-  },
-  "amaretto": {
-    "port": 9,
-    "empty": true,
-    "abv": 0.22
-  },
-  "kahlua": {
-    "port": 10,
-    "empty": true,
-    "abv": 0.2
-  },
-  "sprite": {
-    "port": 14,
-    "empty": true,
-    "abv": 0.0
-  },
-  "gingerale": {
-    "port": 15,
-    "empty": true,
-    "abv": 0.0
-  },
   "maraschino": {
     "port": 26,
     "empty": true,
@@ -133,6 +123,16 @@
     "port": 32,
     "empty": true,
     "abv": 0.2
+  },
+  "simple syrup": {
+    "port": 33,
+    "empty": false,
+    "abv": 0.0
+  },
+  "triple sec": {
+    "port": 35,
+    "empty": false,
+    "abv": 0.4
   },
   "ginger beer": {
     "port": 36,
