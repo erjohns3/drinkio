@@ -1,32 +1,17 @@
 {
-	"Creek Water": {
-		"tequila": 0.3, 
-		"whiskey": 0.3, 
-		"gin": 0.3, 
-		"cranberry juice": 0.3, 
-		"coke": 0.3, 
-		"lime juice": 0.3, 
-		"lemon juice": 0.3, 
-		"orange juice": 0.3, 
-		"dark rum": 0.3, 
-		"vodka": 0.3, 
-		"white rum": 0.3, 
-		"simple syrup": 0.3, 
-		"triple sec": 0.3
-	},
-	"Vodka Sprite": {
+	"Vodka Fright": {
 		"vodka": 2,
 		"sprite": 4
 	},
-	"Rum and Coke": {
+	"Rum and Poke": {
 		"dark rum": 2,
 		"coke": 4
 	},
-	"Vodka Cranberry": {
+	"Vodka Cranbury": {
 		"vodka": 2,
 		"cranberry juice": 4
 	},
-	"Screwdriver": {
+	"Boo-driver": {
 		"vodka": 1.7,
 		"orange juice": 3.4
 	},
@@ -34,7 +19,7 @@
 		"gin": 2,
 		"tonic water": 4
 	},
-	"Margarita": {
+	"Murderita": {
 		"tequila": 1.2,
 		"triple sec": 0.7,
 		"lime juice": 0.7
@@ -44,7 +29,7 @@
 		"ginger beer": 3.4,
 		"lime juice": 0.5
 	},
-	"Moscow Mule": {
+	"Moscow Ghoul": {
 		"vodka": 2.0,
 		"ginger beer": 3.4,
 		"lime juice": 0.5
@@ -55,7 +40,7 @@
 		"lime juice": 0.5,
 		"cranberry juice": 1.0
 	},
-	"Long Island": {
+	"Shutter Island": {
 		"tequila": 0.5,
 		"vodka": 0.5,
 		"white rum": 0.5,
@@ -65,7 +50,7 @@
 		"simple syrup": 1.0,
 		"coke": 0.5
 	},
-	"Whiskey Sour": {
+	"Whiskey Devour": {
 		"whiskey": 1.5,
 		"lemon juice": 1.0,
 		"simple syrup": 0.5
@@ -82,7 +67,7 @@
 		"creme de la violet": 0.5,
 		"lemon juice": 0.8
 	},
-	"Tequila Sunrise": {
+	"Tequila Moonrise": {
 		"tequila": 1.5,
 		"orange juice": 3.0,
 		"grenadine syrup": 0.5
@@ -92,19 +77,19 @@
 		"lime juice": 0.8,
 		"simple syrup": 0.5
 	},
-	"Lemon Drop Martini": {
+	"Demon Drop Martini": {
 		"vodka": 0.8,
 		"triple sec": 0.7,
 		"lemon juice": 0.5
 	},
-	"Mai-tai": {
+	"Mai-die": {
 		"white rum": 1.4,
 		"dark rum": 0.7,
 		"triple sec": 0.5,
 		"simple syrup": 0.5,
 		"lime juice": 0.3
 	},
-	"Sex On The Beach": {
+	"Death On The Beach": {
 		"vodka": 1.4,
 		"peach schnapps": 0.7,
 		"cranberry juice": 1.4,
@@ -127,7 +112,7 @@
 		"simple syrup": 0.5,
 		"club soda": 2.0
 	},
-	"Cuba Libre": {
+	"Chupacabra Libre": {
 		"white rum": 1.7,
 		"coke": 4.1,
 		"lime juice": 0.3
@@ -147,20 +132,6 @@
 		"triple sec": 1.0,
 		"lime juice": 1.0
 	},
-	"The Richard": {
-		"white rum": 2.1,
-		"triple sec": 1.5,
-		"lemon juice": 0.3,
-		"lime juice": 0.3,
-		"cranberry juice": 1.3
-	},
-	"McCabe Special": {
-		"gin": 1.4,
-		"triple sec": 1.0,
-		"lemon juice": 0.5,
-		"lime juice": 0.5,
-		"cranberry juice": 2.5
-	},
 	"White Lady": {
 		"gin": 1.4,
 		"triple sec": 1.0,
@@ -176,20 +147,38 @@
 		"vodka": 1.7,
 		"kahlua": 0.7
 	},
-	"randys drink thing": {
-		"gingerale": 4,
-		"brandy": 2 
-	},
 	"Bacardi": {
 		"white rum": 1.5,
 		"lime juice": 0.7,
 		"grenadine syrup": 0.3
+	},
+	"Amaretto Dour": {
+		"amaretto": 1.5,
+		"lemon juice": 0.75
+	},
+	"Creek Water": {
+		"tequila": 0.3, 
+		"whiskey": 0.3, 
+		"gin": 0.3, 
+		"cranberry juice": 0.3, 
+		"coke": 0.3, 
+		"lime juice": 0.3, 
+		"peach schnapps": 0.3, 
+		"orange juice": 0.3, 
+		"dark rum": 0.3, 
+		"vodka": 0.3, 
+		"white rum": 0.3, 
+		"triple sec": 0.3
 	},
 	"Hemenway Special": {
 		"white rum": 2.0,
 		"cranberry juice": 1.4,
 		"lime juice": 0.5,
 		"maraschino": 0.5
+	},
+	"Randy Special": {
+		"gingerale": 4,
+		"brandy": 2 
 	},
 	"Eric Special": {
 		"fireball": 2,
@@ -200,9 +189,19 @@
 		"kahlua": 1.0,
 		"lime juice": 0.5
 	},
-	"Amaretto Sour": {
-		"amaretto": 1.5,
-		"lemon juice": 0.75
+	"McCabe Special": {
+		"gin": 1.4,
+		"triple sec": 1.0,
+		"lemon juice": 0.5,
+		"lime juice": 0.5,
+		"cranberry juice": 2.5
+	},
+	"The Richard": {
+		"white rum": 2.1,
+		"triple sec": 1.5,
+		"lemon juice": 0.3,
+		"lime juice": 0.3,
+		"cranberry juice": 1.3
 	},
 	"Vodka": {
 		"vodka": 1.5

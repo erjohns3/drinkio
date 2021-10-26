@@ -22,7 +22,7 @@
         function socketInit(){
             console.log("socket init");
 
-            socket = new WebSocket("ws://192.168.86.31:8765");
+            socket = new WebSocket("ws://makedrink.me:8765");
 
             socket.onopen = function () {
                 console.log("socket open");
@@ -347,7 +347,7 @@
             }
 
             expand(event){
-                var move = Math.round((document.documentElement.clientHeight * 0.08)-(this.item.current.getBoundingClientRect().y));
+                var move = Math.round((document.documentElement.clientHeight * 0.09)-(this.item.current.getBoundingClientRect().y));
                 this.style = {
                     transform: "translateY("+move+"px)"
                 }
@@ -765,7 +765,7 @@
         body{
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(to bottom right, hsl(180deg 100% 20%), hsl(340deg 100% 20%));
+            background-image: linear-gradient(to bottom right, hsl(270deg 100% 20%), hsl(120deg 100% 20%));
             background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
@@ -776,7 +776,7 @@
             height: calc(var(--vh, 1vh) * 100);
         }
         .header{
-            height: 7%;
+            height: 8%;
             width: 100%;
             position: fixed;
             top: 0;
@@ -786,19 +786,19 @@
             position: absolute;
             background-color: hsla(0, 0%, 100%, 10%);
             color: hsl(0deg 0% 100% / 100%);
-            border-bottom: solid 0vh hsl(340deg 80% 27%);
+            border-bottom: solid 0vh hsl(120deg 80% 27%);
             box-sizing: border-box;
-            font-size: 2.5vh;
+            font-size: 3vh;
             height: 100%;
             top: 0;
             width: calc(100%/3);
-            line-height: 280%;
+            line-height: 250%;
             overflow: hidden;
             text-align: center;
         }
         .tab-selected{
             animation: tab-anim 500ms 0s 1;
-            border-bottom: solid 0.5vh hsl(340deg 80% 35%);
+            border-bottom: solid 0.5vh hsl(120deg 80% 35%);
             font-weight: 1000;
         }
         .tab-Drinks{
@@ -820,10 +820,10 @@
             transform: translateX(-200%);
         }
         .page-viewer{
-            height: 83%;
+            height: 82%;
             width: 100%;
             position: fixed;
-            top: 7%;
+            top: 8%;
             transition: 250ms;
         }
         .drink-page{
@@ -940,7 +940,7 @@
             text-align: center;
         }
         .user-sex-active{
-            background-color: hsl(340deg 80% 27%);
+            background-color: hsl(120deg 80% 27%);
         }
         
         .user-drinks-label{
@@ -987,7 +987,7 @@
             height: 10%;
             color: white;
             font-size: 2.5vh;
-            background-color: hsl(180deg 80% 27%);
+            background-color: hsl(270deg 80% 27%);
             border-radius: 1vh;
             text-align: center;
             line-height: 300%;
@@ -1031,7 +1031,7 @@
             right: 5%;
             line-height: 350%;
             font-size: 2vh;
-            background-color: hsl(180deg 80% 27%);
+            background-color: hsl(270deg 80% 27%);
             border-radius: 1vh;
             transition: 200ms;
             text-align: center;
@@ -1042,10 +1042,10 @@
             transition: 0ms;
         }
         .ingredient-button-full{
-            background-color: hsl(180deg 80% 27%);
+            background-color: hsl(270deg 80% 27%);
         }
         .ingredient-button-empty{
-            background-color: hsl(340deg 80% 27%);
+            background-color: hsl(120deg 80% 27%);
         }
 
         .drink-item-wrapper{
@@ -1118,7 +1118,7 @@
         }
         .details{
             position: absolute;
-            height: 791%;
+            height: 788%;
             width: 100%;
             top: 100%;
             background-color: hsla(0, 0%, 100%, 10%);
@@ -1146,7 +1146,7 @@
             font-size: 2vh;
             height: 10%;
             bottom: 5%;
-            line-height: 360%;
+            line-height: 340%;
             width: 43%;
             overflow: hidden;
             border-radius: 1vh;
@@ -1155,11 +1155,11 @@
         }
         .button-add{
             left: 5%;
-            background-color: hsl(340deg 80% 27%);
+            background-color: hsl(120deg 80% 27%);
         }
         .button-pour{
             right: 5%;
-            background-color: hsl(180deg 80% 27%);
+            background-color: hsl(270deg 80% 27%);
         }
         .button-item:active{
             transform: scale(0.97);
@@ -1193,10 +1193,10 @@
         .status-pour{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(180deg 85% 25%);
+            background-color: hsl(270deg 85% 25%);
         }
         .status-cancel{
-            background-color: hsl(330deg 85% 25%);
+            background-color: hsl(120deg 85% 25%);
         }
         .status-button:active{
             transform: scale(0.97);
@@ -1235,12 +1235,12 @@
         .bar-timer{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(175deg 85% 40%);
+            background-color: hsl(270deg 85% 40%);
             transition-property: transform, opacity;
             transition-duration: 500ms;
         }
         .bar-progress{
-            background-color: hsl(330deg 85% 40%);
+            background-color: hsl(120deg 85% 40%);
             transition-property: transform, opacity;
             transition-duration: 500ms;
         }
@@ -1314,7 +1314,7 @@
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsla(175deg 85% 40% / 80%);
+            background: hsla(270deg 85% 40% / 80%);
             border-radius: 2vh;
             cursor: pointer;
         }
@@ -1333,7 +1333,7 @@
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsla(175deg 85% 40% / 80%);
+            background: hsla(270deg 85% 40% / 80%);
             border-radius: 2vh;
             cursor: pointer;
         }

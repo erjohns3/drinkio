@@ -6,7 +6,7 @@
   },
   "peach schnapps": {
     "port": 6,
-    "empty": true,
+    "empty": false,
     "abv": 0.15
   },
   "grenadine syrup": {
@@ -71,7 +71,7 @@
   },
   "lemon juice": {
     "port": 19,
-    "empty": false,
+    "empty": true,
     "abv": 0.0
   },
   "orange juice": {
@@ -126,7 +126,7 @@
   },
   "simple syrup": {
     "port": 33,
-    "empty": false,
+    "empty": true,
     "abv": 0.0
   },
   "triple sec": {

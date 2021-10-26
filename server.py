@@ -10,6 +10,8 @@ import asyncio
 import websockets
 import http.server
 import tracking
+import subprocess
+import vlc
 from enum import Enum
 import argparse
 from flow_tick_helper import amount_to_flow_ticks
@@ -17,7 +19,6 @@ import os
 from os import path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
 
 
 class State(Enum):
@@ -100,6 +101,7 @@ user_queue = []
 user_drink_name = {}
 user_drink_ingredients = {}
 users = {}
+song = vlc.MediaPlayer()
 args = False
 
 status = {
@@ -135,6 +137,9 @@ pan_curr = 495000
 tilt_curr = TILT_UP
 
 pi = None
+
+def speak(text):
+    subprocess.Popen(['espeak', '-s', '80', text])
 
 def flow_rise(pin, level, tick):
     global flow_tick
@@ -179,6 +184,10 @@ with open(path.join(drink_io_folder, 'rasp_pi_port_config.json'), 'r') as f:
     rasp_pi_port_config = json.loads(f.read())
 
 ports = rasp_pi_port_config['ports']
+
+
+with open(path.join(drink_io_folder, 'songs.json'), 'rb') as f:
+    drink_songs = json.loads(f.read().decode("UTF-8"))
 
 
 # helper functions
@@ -406,14 +415,21 @@ async def pour_drink(drink):
     await asyncio.sleep(8)
     pi.write(PUMP_PIN, 1)
 
-async def pour_cycle(drink):
+async def pour_cycle(drink, name):
     global state
     global cancel_pour
 
+    song.stop()
+    if drink_songs[name]:
+        song = vlc.MediaPlayer("songs/"drink_songs[name]+".mp4")
+    else:
+        song = vlc.MediaPlayer("songs/luigi.mp4")
+    song.play()
     print("pour drink:")
     print(drink, flush=True)
     await pour_drink(drink)
     print("drink done", flush=True)
+    song.stop()
 
     await asyncio.sleep(5)
 
@@ -438,7 +454,7 @@ async def pour_cycle(drink):
 
 #################################################
 
-PORT = 80
+PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
 def http_server(testing=False):
@@ -679,7 +695,7 @@ async def init(websocket, path):
                         print("pour now", flush=True)
                         #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
                         #pour_thread.start()
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]]))
                         progress = 1
                         await broadcast_status()
                         users[msg['uuid']].add_drink(alcohol)
@@ -702,7 +718,7 @@ async def init(websocket, path):
                         state = State.POURING
                         print("----POURING----", flush=True)
                         print("pour queue", flush=True)
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]]))
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]]))
                         progress = 1
                         await broadcast_status()
                         users[msg['uuid']].add_drink(alcohol)
@@ -725,7 +741,7 @@ def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    start_server = websockets.serve(init, "192.168.86.31", 8765)
+    start_server = websockets.serve(init, "0.0.0.0", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 
