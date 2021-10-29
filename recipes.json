@@ -1,11 +1,11 @@
 {
 	"Vodka Fright": {
-		"vodka": 2,
-		"sprite": 4
+		"vodka": 3,
+		"sprite": 3
 	},
-	"Rum and Poke": {
-		"dark rum": 2,
-		"coke": 4
+	"Rum and Coke": {
+		"dark rum": 3,
+		"coke": 3
 	},
 	"Vodka Cranbury": {
 		"vodka": 2,
@@ -15,7 +15,7 @@
 		"vodka": 1.7,
 		"orange juice": 3.4
 	},
-	"Gin and Tonic": {
+	"Grim and Tonic": {
 		"gin": 2,
 		"tonic water": 4
 	},
@@ -40,7 +40,7 @@
 		"lime juice": 0.5,
 		"cranberry juice": 1.0
 	},
-	"Shutter Island": {
+	"Long Island": {
 		"tequila": 0.5,
 		"vodka": 0.5,
 		"white rum": 0.5,
@@ -95,7 +95,7 @@
 		"cranberry juice": 1.4,
 		"orange juice": 1.4
 	},
-	"Sidecar": {
+	"Sidehearse": {
 		"brandy": 1.7,
 		"triple sec": 0.7,
 		"lemon juice": 0.7
@@ -117,11 +117,11 @@
 		"coke": 4.1,
 		"lime juice": 0.3
 	},
-	"Dry Martini": {
+	"Die Martini": {
 		"gin": 2.0,
 		"vermouth": 0.3
 	},
-	"Between The Sheets": {
+	"Between The Treats": {
 		"white rum": 1.0,
 		"brandy": 1.0,
 		"triple sec": 1.0,
@@ -137,7 +137,7 @@
 		"triple sec": 1.0,
 		"lemon juice": 0.7
 	},
-	"Gin Fizz": {
+	"Sin Fizz": {
 		"gin": 1.5,
 		"lemon juice": 1.0,
 		"simple syrup": 0.3,

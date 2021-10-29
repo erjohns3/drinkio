@@ -6,7 +6,7 @@
   },
   "peach schnapps": {
     "port": 6,
-    "empty": false,
+    "empty": true,
     "abv": 0.15
   },
   "grenadine syrup": {

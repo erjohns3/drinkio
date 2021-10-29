@@ -189,6 +189,8 @@ ports = rasp_pi_port_config['ports']
 with open(path.join(drink_io_folder, 'songs.json'), 'rb') as f:
     drink_songs = json.loads(f.read().decode("UTF-8"))
 
+with open(path.join(drink_io_folder, 'admins.json'), 'rb') as f:
+    admins = json.loads(f.read().decode("UTF-8"))
 
 # helper functions
 
@@ -262,8 +264,6 @@ event_handler = MyWatchdogMonitor(config_lock, load_config_from_files)
 observer = Observer()
 observer.schedule(event_handler, path=drink_io_folder, recursive=False)
 observer.start()
-
-
 
 ####################################
 
@@ -418,14 +418,19 @@ async def pour_drink(drink):
 async def pour_cycle(drink, name):
     global state
     global cancel_pour
+    global song
 
     song.stop()
-    if drink_songs[name]:
-        song = vlc.MediaPlayer("songs/"drink_songs[name]+".mp4")
+    print(drink_songs, flush=True)
+    print(name, flush=True)
+    if name in drink_songs:
+        song = vlc.MediaPlayer("songs/"+drink_songs[name]+".mp4")
+        print("playing custom", flush=True)
     else:
         song = vlc.MediaPlayer("songs/luigi.mp4")
+        print("playing default", flush=True)
     song.play()
-    print("pour drink:")
+    print("pour drink:", flush=True)
     print(drink, flush=True)
     await pour_drink(drink)
     print("drink done", flush=True)
@@ -630,12 +635,15 @@ async def init(websocket, path):
                 await send_user(websocket, msg['uuid'])
 
             elif msg['type'] == "ingredient" and 'name' in msg and 'empty' in msg:
-
-                config_lock.acquire()
-                ingredients[msg['name']]["empty"] = msg['empty']
-                dump_ingredients_owned_to_file()
-                config_lock.release()
-                await broadcast_config()
+                if msg['uuid'] in admins:
+                    print("admin: "+admins[msg['uuid']]+", "+msg['uuid'], flush=True)
+                    config_lock.acquire()
+                    ingredients[msg['name']]["empty"] = msg['empty']
+                    dump_ingredients_owned_to_file()
+                    config_lock.release()
+                    await broadcast_config()
+                else:
+                    print("not an admin: "+msg['uuid'], flush=True)
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add", flush=True)
