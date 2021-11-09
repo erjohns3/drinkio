@@ -48,6 +48,15 @@ class DB:
         return DB.doIt(query_sql)
         
     @staticmethod
+    def getAllWithDates():
+        query_sql = """
+            SELECT uuid, drink, ingredients, timestamp, count(*) AS count 
+            FROM user_pours GROUP BY uuid, drink
+            order by timestamp asc
+        """
+        return DB.doIt(query_sql)
+
+    @staticmethod
     def backup_db():
         # hides a db backup in the parent directory :)
         try:

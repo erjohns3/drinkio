@@ -1,12 +1,4 @@
 {
-	"Vodka Fright": {
-		"vodka": 3,
-		"sprite": 3
-	},
-	"Rum and Coke": {
-		"dark rum": 3,
-		"coke": 3
-	},
 	"Vodka Cranbury": {
 		"vodka": 2,
 		"cranberry juice": 4
@@ -50,6 +42,14 @@
 		"simple syrup": 1.0,
 		"coke": 0.5
 	},
+	"Vodka Fright": {
+		"vodka": 3,
+		"sprite": 3
+	},
+	"Rum and Coke": {
+		"dark rum": 3,
+		"coke": 3
+	},
 	"Whiskey Devour": {
 		"whiskey": 1.5,
 		"lemon juice": 1.0,
@@ -71,6 +71,11 @@
 		"tequila": 1.5,
 		"orange juice": 3.0,
 		"grenadine syrup": 0.5
+	},
+	"Mojito": {
+		"white rum": 1.5,
+		"lime juice": 1.0,
+		"mint syrup": 2.0 
 	},
 	"Daiquiri": {
 		"white rum": 1.5,

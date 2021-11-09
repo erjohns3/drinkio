@@ -260,10 +260,10 @@ class MyWatchdogMonitor(FileSystemEventHandler):
             print('{} has been changed, refreshing config with up to date values'.format(self.file_to_watch), flush=True)
             self.f_load_config_from_files(self.config_lock)
 
-event_handler = MyWatchdogMonitor(config_lock, load_config_from_files)
-observer = Observer()
-observer.schedule(event_handler, path=drink_io_folder, recursive=False)
-observer.start()
+#event_handler = MyWatchdogMonitor(config_lock, load_config_from_files)
+#observer = Observer()
+#observer.schedule(event_handler, path=drink_io_folder, recursive=False)
+#observer.start()
 
 ####################################
 
@@ -374,8 +374,8 @@ async def pour_drink(drink):
             if flow_tick >= flow_goal:
                 break
             
-            if elapsed > 8:
-                if flow_tick - flow_prev <= 3:
+            if elapsed > 16:
+                if flow_tick - flow_prev <= 6:
                     print("ingredient empty")
                     config_lock.acquire()
                     ingredients[ingredient]["empty"] = True
@@ -386,7 +386,7 @@ async def pour_drink(drink):
                     state_lock.release()
                     break
                 flow_prev = flow_tick
-                elapsed = 4
+                elapsed = 8
 
             elapsed = elapsed + FLOW_PERIOD
             flow_lock.release()
@@ -560,11 +560,14 @@ async def broadcast_config():
         if connection_list[i]['socket'].closed:
             connection_list.pop(i)
         else:
+            config_lock.acquire()
             message = {
                 'drinks': drinks,
                 'ingredients': ingredients
             }
-            await connection_list[i]['socket'].send(json.dumps(message))
+            dump = json.dumps(message)
+            config_lock.release()
+            await connection_list[i]['socket'].send(dump)
             i=i+1
 
 
@@ -596,11 +599,14 @@ async def init(websocket, path):
     print("init: " + websocket.remote_address[0], flush=True)
     state_lock.release()
     
+    config_lock.acquire()
     message = {
         'drinks': drinks,
         'ingredients': ingredients
     }
-    await websocket.send(json.dumps(message))
+    dump = json.dumps(message)
+    config_lock.release()
+    await websocket.send(dump)
     while True:
         try:
             msg_string = await websocket.recv()
@@ -641,9 +647,7 @@ async def init(websocket, path):
                     ingredients[msg['name']]["empty"] = msg['empty']
                     dump_ingredients_owned_to_file()
                     config_lock.release()
-                    await broadcast_config()
-                else:
-                    print("not an admin: "+msg['uuid'], flush=True)
+                    await broadcast_config()                    
 
             elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
                 print("queue add", flush=True)

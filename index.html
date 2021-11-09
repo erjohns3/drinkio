@@ -765,7 +765,7 @@
         body{
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(to bottom right, hsl(270deg 100% 20%), hsl(120deg 100% 20%));
+            background-image: linear-gradient(to bottom right, hsl(0deg 100% 20%), hsl(0deg 0% 20%));
             background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
@@ -786,7 +786,6 @@
             position: absolute;
             background-color: hsla(0, 0%, 100%, 10%);
             color: hsl(0deg 0% 100% / 100%);
-            border-bottom: solid 0vh hsl(120deg 80% 27%);
             box-sizing: border-box;
             font-size: 3vh;
             height: 100%;
@@ -798,7 +797,7 @@
         }
         .tab-selected{
             animation: tab-anim 500ms 0s 1;
-            border-bottom: solid 0.5vh hsl(120deg 80% 35%);
+            border-bottom: solid 0.5vh hsl(120deg 80% 27%);
             font-weight: 1000;
         }
         .tab-Drinks{
@@ -987,7 +986,7 @@
             height: 10%;
             color: white;
             font-size: 2.5vh;
-            background-color: hsl(270deg 80% 27%);
+            background-color: hsl(0deg 80% 27%);
             border-radius: 1vh;
             text-align: center;
             line-height: 300%;
@@ -1046,7 +1045,7 @@
             background-color: hsl(120deg 80% 27%);
         }
         .ingredient-button-empty{
-            background-color: hsl(270deg 80% 27%);
+            background-color: hsl(0deg 80% 27%);
         }
 
         .drink-item-wrapper{
@@ -1157,7 +1156,7 @@
         }
         .button-add{
             left: 5%;
-            background-color: hsl(270deg 80% 27%);
+            background-color: hsl(0deg 80% 27%);
         }
         .button-pour{
             right: 5%;
@@ -1196,10 +1195,10 @@
         .status-pour{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(120deg 85% 27%);
+            background-color: hsl(120deg 80% 27%);
         }
         .status-cancel{
-            background-color: hsl(270deg 85% 27%);
+            background-color: hsl(0deg 80% 27%);
         }
         .status-button:active{
             transform: scale(0.97);
@@ -1238,7 +1237,7 @@
         .bar-timer{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(270deg 85% 40%);
+            background-color: hsl(0deg 85% 40%);
             transition-property: transform, opacity;
             transition-duration: 500ms;
         }
@@ -1317,7 +1316,7 @@
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsla(120deg 85% 40% / 80%);
+            background: hsl(120deg 80% 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
@@ -1336,7 +1335,7 @@
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsla(120deg 85% 40% / 80%);
+            background: hsl(120deg 80% 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
