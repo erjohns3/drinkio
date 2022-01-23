@@ -12,6 +12,7 @@ import http.server
 import tracking
 import subprocess
 import vlc
+from omxplayer.player import OMXPlayer
 from enum import Enum
 import argparse
 from flow_tick_helper import amount_to_flow_ticks
@@ -102,6 +103,8 @@ user_drink_name = {}
 user_drink_ingredients = {}
 users = {}
 song = vlc.MediaPlayer()
+video_once = vlc.MediaPlayer()
+video_loop = False
 args = False
 
 status = {
@@ -400,7 +403,7 @@ async def pour_drink(drink):
             await asyncio.sleep(TILT_PERIOD)
 
         print("ingredient done")
-        print("tilt up", flush=True)
+        print("tilt up done", flush=True)
 
         await asyncio.sleep(2)
 
@@ -419,10 +422,14 @@ async def pour_cycle(drink, name):
     global state
     global cancel_pour
     global song
+    global video_once
 
     song.stop()
     print(drink_songs, flush=True)
     print(name, flush=True)
+    video_once.stop()
+    video_once = vlc.MediaPlayer("video/make.mp4")
+    video_once.play()
     if name in drink_songs:
         song = vlc.MediaPlayer("songs/"+drink_songs[name]+".mp4")
         print("playing custom", flush=True)
@@ -436,7 +443,15 @@ async def pour_cycle(drink, name):
     print("drink done", flush=True)
     song.stop()
 
+    video_once.stop()
+    video_once = vlc.MediaPlayer("video/serve.mp4")
+    video_once.play()
+
     await asyncio.sleep(5)
+
+    video_once.stop()
+    video_once = vlc.MediaPlayer("video/clean.mp4")
+    video_once.play()
 
     state_lock.acquire()
     state = State.CLEANING
@@ -456,6 +471,10 @@ async def pour_cycle(drink, name):
     state_lock.acquire()
     await state_reset()
     state_lock.release()
+
+    video_once.stop()
+    video_once = vlc.MediaPlayer("video/done.mp4")
+    video_once.play()
 
 #################################################
 
@@ -546,29 +565,25 @@ async def broadcast_status():
     
     i=0
     while i < len(connection_list):
-        if connection_list[i]['socket'].closed:
-            connection_list.pop(i)
-        elif connection_list[i]['user'] is not False:
+        if connection_list[i]['user'] is not False:
             await send_status(connection_list[i]['socket'], connection_list[i]['user'].uuid)
             i=i+1
+
 
 async def broadcast_config():
     global connection_list
     
     i=0
     while i < len(connection_list):
-        if connection_list[i]['socket'].closed:
-            connection_list.pop(i)
-        else:
-            config_lock.acquire()
-            message = {
-                'drinks': drinks,
-                'ingredients': ingredients
-            }
-            dump = json.dumps(message)
-            config_lock.release()
-            await connection_list[i]['socket'].send(dump)
-            i=i+1
+        config_lock.acquire()
+        message = {
+            'drinks': drinks,
+            'ingredients': ingredients
+        }
+        dump = json.dumps(message)
+        config_lock.release()
+        await connection_list[i]['socket'].send(dump)
+        i=i+1
 
 
 async def send_user(socket, uuid):
@@ -593,8 +608,17 @@ async def init(websocket, path):
     global cancel_pour
     global progress
     global ingredients
+    global video_once
+    global video_loop
+
+    #video_once.stop()
+    #video_once = vlc.MediaPlayer("video/hello.mp4")
+    #video_once.play()
 
     state_lock.acquire()
+    if len(connection_list) == 0:
+        print("first user on")
+        video_loop = OMXPlayer('video/idle.mp4', '--loop')
     connection_list.append({'socket': websocket, 'user': False})
     print("init: " + websocket.remote_address[0], flush=True)
     state_lock.release()
@@ -612,7 +636,23 @@ async def init(websocket, path):
             msg_string = await websocket.recv()
         except:
             print("socket recv failed", flush=True)
+            state_lock.acquire()
+            i=0
+            while i < len(connection_list):
+                if connection_list[i]['socket'] == websocket:
+                    connection_list.pop(i)
+                    #video_once.stop()
+                    #video_once = vlc.MediaPlayer("video/bye.mp4")
+                    #video_once.play()
+
+                    if len(connection_list) == 0:
+                        print("last user off")
+                        video_loop.quit()
+                    break
+                i=i+1
+            state_lock.release()
             break
+        print("socket recv")
         msg = json.loads(msg_string)
         print(msg, flush=True)
         state_lock.acquire()
@@ -630,7 +670,7 @@ async def init(websocket, path):
                         connection['user'] = users[msg['uuid']]
                 await send_status(websocket, msg['uuid'])
 
-            elif args.local and websocket.remote_address[0] != "192.168.86.1":
+            elif args.local and websocket.remote_address[0] != "192.168.86.1" and msg['uuid'] not in admins:
                 print("non local", flush=True)
 
             elif msg['type'] == "user" and 'name' in msg and 'weight' in msg and 'sex' in msg:
@@ -749,9 +789,15 @@ async def init(websocket, path):
 
         state_lock.release()
 
+def video_manager():
+    while True:
+        time.sleep(30)
+
 def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    #asyncio.create_task(video_manager())
 
     start_server = websockets.serve(init, "0.0.0.0", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)

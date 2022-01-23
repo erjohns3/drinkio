@@ -1,13 +1,13 @@
 {
-  "fireball": {
-    "port": 0,
-    "empty": false,
-    "abv": 0.33
-  },
   "peach schnapps": {
     "port": 6,
     "empty": false,
     "abv": 0.15
+  },
+  "fireball": {
+    "port": 7,
+    "empty": false,
+    "abv": 0.33
   },
   "grenadine syrup": {
     "port": 7,
@@ -66,7 +66,7 @@
   },
   "water": {
     "port": 18,
-    "empty": false,
+    "empty": true,
     "abv": 0.0
   },
   "lemon juice": {
@@ -101,7 +101,7 @@
   },
   "maraschino": {
     "port": 26,
-    "empty": true,
+    "empty": false,
     "abv": 0.32
   },
   "brandy": {
