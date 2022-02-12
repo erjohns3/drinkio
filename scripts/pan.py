@@ -23,12 +23,12 @@ TILT_DOWN = 500000
 TILT_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 200000 # pwm change per second
+PAN_SPEED = 100000 # pwm change per second
 PAN_PERIOD = 0.01
 
 #####################################
 
-f = open('rasp_pi_port_config.json', "r")
+f = open('../rasp_pi_port_config.json', "r")
 ports = json.loads(f.read())['ports']
 f.close()
 

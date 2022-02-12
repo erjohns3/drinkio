@@ -29,6 +29,10 @@ class State(Enum):
     CANCELLING = 4
     CLEANING = 5
 
+clear_time = {
+    "basement": 8
+    "hottub": 18
+}
 
 class User:
     def __init__(self, uuid):
@@ -117,15 +121,22 @@ status = {
 
 ################################################# Setup pi
 
+VALVE_PIN = 6
+
 PAN_PIN = 12
 TILT_PIN = 13
+
+ENABLE_PIN = 22
 PUMP_PIN = 27
+PUMP_FREQ = 320
+PUMP_CAL = 1043.17710018 / PUMP_FREQ
+
 FLOW_PIN = 17
-FLOW_PERIOD = 0.01
-FLOW_TIMEOUT = 5
+FLOW_PERIOD = 0.005
+FLOW_TIMEOUT = 15
 
 TILT_UP = 400000
-TILT_DOWN = 485000
+TILT_DOWN = 480000
 TILT_DOWN_SPEED = 50000 # pwm change per second
 TILT_UP_SPEED = 500000 # pwm change per second
 TILT_PERIOD = 0.01
@@ -133,23 +144,109 @@ TILT_PERIOD = 0.01
 PAN_SPEED = 150000 # pwm change per second
 PAN_PERIOD = 0.01
 
-flow_lock = threading.Lock()
-flow_tick = 0
-
 pan_curr = 495000
 tilt_curr = TILT_UP
 
 pi = None
 
+TRIGGER_PIN = 23
+ECHO_PIN = 24
+
+trigger_start = 0
+cup = True
+
+def echo(pin, level, tick):
+    global trigger_start
+    global cup
+    if level == 1:
+        trigger_start = tick
+    elif level == 0:
+        distance = pigpio.tickDiff(trigger_start, tick)
+        if distance > 50 and distance < 1200:
+            cup = True
+
+##########################################
+
+RED_PIN = 9
+GREEN_PIN = 10
+BLUE_PIN = 11
+
+async def light_making():
+    tick = 0
+    while True:
+        val = int(tick if (tick <= 100) else (200 - tick))
+        pi.set_PWM_dutycycle(GREEN_PIN, (0.5*val + 50)*0.2)
+        pi.set_PWM_dutycycle(BLUE_PIN, (0.5*val + 50))
+        tick = (tick + 25) % 200
+        await asyncio.sleep(0.02604)
+
+async def light_cleaning():
+    val = 0
+    while True:
+        pi.set_PWM_dutycycle(RED_PIN, val)
+        val = 100 - val
+        await asyncio.sleep(0.15)
+
+async def light_finished():
+    tick = 100
+    while True:
+        val = int(tick if (tick <= 100) else (200 - tick))
+        pi.set_PWM_dutycycle(GREEN_PIN, val)
+        tick = (tick + 20) % 200
+        await asyncio.sleep(0.05)
+
+async def light_reset():
+    pi.set_PWM_dutycycle(RED_PIN, 0)
+    pi.set_PWM_dutycycle(GREEN_PIN, 0)
+    pi.set_PWM_dutycycle(BLUE_PIN, 0)
+
+######################################
+
+BUZZ_PIN = 5
+
+async def buzzer_making():
+    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+    pi.set_PWM_frequency(BUZZ_PIN, 500)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 750)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 1000)
+    await asyncio.sleep(0.25)
+
+    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
+async def buzzer_finished():
+    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+    pi.set_PWM_frequency(BUZZ_PIN, 500)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 1000)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 500)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 1000)
+    await asyncio.sleep(0.25)
+
+    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
+async def buzzer_cleaning():
+    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+    pi.set_PWM_frequency(BUZZ_PIN, 1000)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 750)
+    await asyncio.sleep(0.25)
+    pi.set_PWM_frequency(BUZZ_PIN, 500)
+    await asyncio.sleep(0.25)
+
+    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
+#######################################
+
 def speak(text):
     subprocess.Popen(['espeak', '-s', '80', text])
 
-def flow_rise(pin, level, tick):
-    global flow_tick
-    flow_lock.acquire()
-    flow_tick = flow_tick + 1
-    flow_lock.release()
-    print("flow: {}".format(flow_tick))
 
 def setup_pigpio():
     global pi
@@ -157,19 +254,57 @@ def setup_pigpio():
     if not pi.connected:
         exit()
 
-    pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
-    pi.write(PUMP_PIN, 1)
+    pi.set_PWM_frequency(PUMP_PIN, PUMP_FREQ)
+    pi.set_PWM_dutycycle(PUMP_PIN, 0)
+
+    pi.set_mode(ENABLE_PIN, pigpio.OUTPUT)
+    pi.write(ENABLE_PIN, 1)
+
+    pi.set_mode(VALVE_PIN, pigpio.OUTPUT)
+    pi.write(VALVE_PIN, 1)
 
     pi.set_mode(FLOW_PIN, pigpio.INPUT)
-    pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_DOWN)
-    pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow_rise)
+    pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_OFF)
+
+    pi.set_mode(ECHO_PIN, pigpio.INPUT)
+    pi.set_pull_up_down(ECHO_PIN, pigpio.PUD_OFF)
+    pi.callback(ECHO_PIN, pigpio.EITHER_EDGE, echo)
+
+    pi.set_mode(TRIGGER_PIN, pigpio.OUTPUT)
+    pi.write(TRIGGER_PIN, 0)
+
+    pi.set_mode(RED_PIN, pigpio.OUTPUT)
+    pi.set_mode(GREEN_PIN, pigpio.OUTPUT)
+    pi.set_mode(BLUE_PIN, pigpio.OUTPUT)
+
+    pi.set_PWM_dutycycle(RED_PIN, 0)
+    pi.set_PWM_dutycycle(GREEN_PIN, 0)
+    pi.set_PWM_dutycycle(BLUE_PIN, 0)
+
+    pi.set_PWM_frequency(RED_PIN, 1000)
+    pi.set_PWM_frequency(GREEN_PIN, 1000)
+    pi.set_PWM_frequency(BLUE_PIN, 1000)
+
+    pi.set_mode(BUZZ_PIN, pigpio.OUTPUT)
+    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
 
 def signal_handler(sig, frame):
     print('SIG Handler: ' + str(sig), flush=True)
     if pi is None:
         print('signal_handler skipped for testing', flush=True)
     else:
-        pi.write(PUMP_PIN, 1)
+        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        pi.write(ENABLE_PIN, 1)
+
+        pi.write(VALVE_PIN, 1)
+        
+        pi.set_PWM_dutycycle(RED_PIN, 0)
+        pi.set_PWM_dutycycle(GREEN_PIN, 0)
+        pi.set_PWM_dutycycle(BLUE_PIN, 0)
+
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
         pi.stop()
     tracking.DB.backup_db()
     sys.exit(0)
@@ -277,6 +412,8 @@ clean = {
     "water": 3
 }
 
+
+
 async def check_cancel():
     if pi is None:
         return False
@@ -293,20 +430,23 @@ async def check_cancel():
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
         print("tilt up", flush=True)
-        await asyncio.sleep(8)
-        pi.write(PUMP_PIN, 1)
+        
+        await asyncio.sleep(1)
+
+        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        pi.write(ENABLE_PIN, 1)
+        
         return True
     cancel_lock.release()
     return False
 
-async def pour_drink(drink):
+async def pour_drink(drink, outlet):
     if pi is None:
         print("pour_drink() skipped for testing", flush=True)
         return
     global pan_curr
     global tilt_curr
     global progress
-    global flow_tick
     global ingredients
 
     ingredient_count = 0
@@ -315,7 +455,12 @@ async def pour_drink(drink):
         if drink[ingredient] > 0:
             ingredient_count += 1
 
-    pi.write(PUMP_PIN, 0)
+    if outlet == 'basement':
+        pi.write(VALVE_PIN, 1)
+    elif outlet == 'hottub':
+        pi.write(VALVE_PIN, 0)
+
+    pi.write(ENABLE_PIN, 0)
 
     for ingredient in drink:
         if await check_cancel(): return
@@ -323,14 +468,14 @@ async def pour_drink(drink):
         if drink[ingredient] <= 0: continue
         
         config_lock.acquire()
-        print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
-        config_lock.release()
-        
-        pause = 4
-        config_lock.acquire()
         pan_goal = ports[ingredients[ingredient]["port"]]
-        config_lock.release()
+        print("Ingredient: {}, Angle: {}, Amount: {}".format(ingredient, ports[ingredients[ingredient]["port"]], drink[ingredient]), flush=True)
         print("pan align: {} -> {}".format(pan_curr, pan_goal), flush=True)
+        config_lock.release()
+
+        await asyncio.sleep(1)
+
+        pause = 2
         while pan_curr != pan_goal:
             if await check_cancel(): return
             if pan_goal > pan_curr:
@@ -349,15 +494,10 @@ async def pour_drink(drink):
             await broadcast_status()
         state_lock.release()
 
-        flow_lock.acquire()
-        flow_tick = 0
-        flow_lock.release()
+        pi.set_PWM_dutycycle(PUMP_PIN, 0)
 
-        elapsed = 0
-        flow_prev = 0
-
-        flow_goal = amount_to_flow_ticks(drink[ingredient])
-        print("flow goal: {} - {}".format(drink[ingredient], flow_goal))
+        flow_time = (drink[ingredient] - 0.121) / 0.256
+        print("pump time: {} - {}".format(drink[ingredient], flow_time), flush=True)
 
         print("tilt down", flush=True)
         while tilt_curr != TILT_DOWN:
@@ -366,46 +506,42 @@ async def pour_drink(drink):
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
 
-        # linear formula
-        # flow_goal = max((drink[ingredient] - FLOW_BIAS) / FLOW_MULT, 4)
-        
-        # using LUT and linear formula. function is in "flow_tick_helper.py"
+        pi.set_PWM_dutycycle(PUMP_PIN, 50)
+        flow_start = False
+        elapsed = 0
 
         while True:
             if await check_cancel(): return
-            flow_lock.acquire()
-            if flow_tick >= flow_goal:
+
+            flow = pi.read(FLOW_PIN) == 1
+
+            if flow and not flow_start:
+                flow_start = time.time()
+                print("flowing: " + str(elapsed))
+
+            if flow_start and time.time() >= flow_start + flow_time:
                 break
             
-            if elapsed > 16:
-                if flow_tick - flow_prev <= 6:
-                    print("ingredient empty")
-                    config_lock.acquire()
-                    ingredients[ingredient]["empty"] = True
-                    dump_ingredients_owned_to_file()
-                    config_lock.release()
-                    state_lock.acquire()
-                    await broadcast_config()
-                    state_lock.release()
-                    break
-                flow_prev = flow_tick
-                elapsed = 8
+            if (elapsed > FLOW_TIMEOUT and not flow_start) or (not flow and flow_start):
+                print("ingredient empty")
+                config_lock.acquire()
+                ingredients[ingredient]["empty"] = True
+                dump_ingredients_owned_to_file()
+                config_lock.release()
+                state_lock.acquire()
+                await broadcast_config()
+                state_lock.release()
+                break
 
             elapsed = elapsed + FLOW_PERIOD
-            flow_lock.release()
             await asyncio.sleep(FLOW_PERIOD)
-
-        flow_lock.release()
 
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
 
-        print("ingredient done")
         print("tilt up done", flush=True)
-
-        await asyncio.sleep(2)
 
         state_lock.acquire()
         if state == State.POURING:
@@ -415,15 +551,18 @@ async def pour_drink(drink):
 
         ingredient_index = ingredient_index + 1
 
-    await asyncio.sleep(8)
-    pi.write(PUMP_PIN, 1)
+    await asyncio.sleep(clear_time[outlet])
+    pi.set_PWM_dutycycle(PUMP_PIN, 0)
+    pi.write(ENABLE_PIN, 1)
 
-async def pour_cycle(drink, name):
+async def pour_cycle(drink, name, outlet):
     global state
     global cancel_pour
     global song
     global video_once
+    global cup
 
+    #################################
     song.stop()
     print(drink_songs, flush=True)
     print(name, flush=True)
@@ -437,21 +576,43 @@ async def pour_cycle(drink, name):
         song = vlc.MediaPlayer("songs/luigi.mp4")
         print("playing default", flush=True)
     song.play()
+    ##############################
+
+    light_task = asyncio.create_task(light_making())
+    asyncio.create_task(buzzer_making())
+
     print("pour drink:", flush=True)
     print(drink, flush=True)
-    await pour_drink(drink)
+    await pour_drink(drink, outlet)
     print("drink done", flush=True)
     song.stop()
+
+    light_task.cancel()
+    await light_reset()
+
+    ###############################
 
     video_once.stop()
     video_once = vlc.MediaPlayer("video/serve.mp4")
     video_once.play()
 
-    await asyncio.sleep(5)
+    light_task = asyncio.create_task(light_finished())
+    asyncio.create_task(buzzer_finished())
+
+    cup = True
+    while cup:
+        pi.gpio_trigger(TRIGGER_PIN, 10, 1)
+        await asyncio.sleep(0.5)
+
+    light_task.cancel()
+    await light_reset()
 
     video_once.stop()
     video_once = vlc.MediaPlayer("video/clean.mp4")
     video_once.play()
+
+    light_task = asyncio.create_task(light_cleaning())
+    asyncio.create_task(buzzer_cleaning())
 
     state_lock.acquire()
     state = State.CLEANING
@@ -465,12 +626,15 @@ async def pour_cycle(drink, name):
 
     print("pour clean:")
     print(clean, flush=True)
-    await pour_drink(clean)
+    await pour_drink(clean, outlet)
     print("clean done", flush=True)
 
     state_lock.acquire()
     await state_reset()
     state_lock.release()
+
+    light_task.cancel()
+    await light_reset()
 
     video_once.stop()
     video_once = vlc.MediaPlayer("video/done.mp4")
@@ -744,10 +908,7 @@ async def init(websocket, path):
                         user_drink_ingredients[msg['uuid']] = msg['ingredients']
                         state = State.POURING
                         print("----POURING----", flush=True)
-                        print("pour now", flush=True)
-                        #pour_thread = threading.Thread(target=asyncio.run, args=pour_cycle(user_drink_ingredients[user_queue[0]]), daemon=True)
-                        #pour_thread.start()
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]]))
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]], msg['outlet']))
                         progress = 1
                         await broadcast_status()
                         users[msg['uuid']].add_drink(alcohol)
@@ -769,8 +930,7 @@ async def init(websocket, path):
                         ready_timer.cancel()
                         state = State.POURING
                         print("----POURING----", flush=True)
-                        print("pour queue", flush=True)
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]]))
+                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]], msg['outlet']))
                         progress = 1
                         await broadcast_status()
                         users[msg['uuid']].add_drink(alcohol)

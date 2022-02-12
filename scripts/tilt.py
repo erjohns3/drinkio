@@ -14,9 +14,12 @@ PUMP_PIN = 27
 FLOW_PIN = 17
 
 TILT_UP = 400000
-TILT_DOWN = 485000
-TILT_SPEED = 50000 # pwm change per second
+TILT_DOWN = 480000
+TILT_SPEED = 200000 # pwm change per second
 TILT_PERIOD = 0.01
+
+if len(sys.argv) == 3:
+    TILT_SPEED = int(sys.argv[2])
 
 ####################################
 
@@ -26,6 +29,7 @@ if sys.argv[1] == "down":
     while tilt_curr != TILT_DOWN:
         tilt_curr = min(tilt_curr + (TILT_SPEED * TILT_PERIOD), TILT_DOWN)
         pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+        print("tilt {}".format(tilt_curr))
         time.sleep(TILT_PERIOD)
 elif sys.argv[1] == "up":
     tilt_curr = TILT_DOWN
@@ -33,6 +37,7 @@ elif sys.argv[1] == "up":
     while tilt_curr != TILT_UP:
         tilt_curr = max(tilt_curr - (TILT_SPEED * TILT_PERIOD), TILT_UP)
         pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
+        print("tilt {}".format(tilt_curr))
         time.sleep(TILT_PERIOD)
 else:
     pi.hardware_PWM(TILT_PIN, 333, TILT_UP)
