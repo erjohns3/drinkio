@@ -2,23 +2,41 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>drink.io</title>
-    <link rel="icon" href="static/favicon.ico">
+    <meta name="theme-color" content="#006655"/>
+    <meta name="description" content="Have a robot make you a drink">
+    <title>Drink Maker New</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="static/icon48.png">
+    <link rel="apple-touch-icon" href="static/icon192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
-    <script src="react.production.min.js"></script>
-    <script src="react-dom.production.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap">
+
     <script type="module">
 
-        var socket = null;
-        const e = React.createElement;
-        
-        var socketTimer = null;
-        var socketMessageHandler = null;
-        
+        function visibility() {
+            if (document.hidden) {
+                let visibility = {
+                    uuid: uuid,
+                    type: "hidden"
+                };
+                socket.send(JSON.stringify(visibility));
+                console.log("hidden");
+            } else {
+                if(socket.readyState == WebSocket.CLOSED){
+                    socketInit();
+                }
+                let visibility = {
+                    uuid: uuid,
+                    type: "visible"
+                };
+                socket.send(JSON.stringify(visibility));
+                console.log("visible");
+            }
+        }
+
         function socketInit(){
             console.log("socket init");
 
@@ -26,21 +44,43 @@
 
             socket.onopen = function () {
                 console.log("socket open");
-                clearInterval(socketTimer);
-                var query = {
+
+                let query = {
                     uuid: uuid,
                     type: "query"
                 };
                 socket.send(JSON.stringify(query));
+
+                document.onvisibilitychange = visibility;
+                visibility();
+
+                socketAttempts = 0;
+
+                if(!socketConnected){
+                    socketConnected = true;
+                    statusConnection.textContent = "Connected";
+                    statusConnection.style.color = "green";
+                }
             }
 
             socket.onclose = function () {
                 console.log("socket close");
-                socketTimer = setInterval(()=>{
+                if(socketConnected){
+                    socketConnected = false;
+                    statusConnection.textContent = "Disconnected";
+                    statusConnection.style.color = "red";
+                }
+                let delay = 3000;
+                if(socketAttempts == 0){
+                    delay = 0;
+                }
+                setTimeout(()=>{
                     if(socket.readyState == WebSocket.CLOSED){
                         socketInit();
                     }
-                }, 2000);
+                }, delay);
+
+                socketAttempts++;
             }
 
             socket.onerror = function(){
@@ -48,744 +88,842 @@
                 socket.close();
             }
 
-            socket.onmessage = socketMessageHandler;
+            socket.onmessage = function(event){
+                console.log("socket message");
+                let msg = JSON.parse(event.data);
+                console.log(msg);
+                if(msg.drinks){
+
+                    drinks = msg.drinks;
+                    ingredients = msg.ingredients;
+
+                    for(let title in drinks){
+                        if(drinkElems[title] == null){
+
+                            let ingredientSummary = "";
+                            for(let ingredient in drinks[title]){
+                                ingredientSummary += ingredient + ", "
+                            }
+                            
+                            let item = document.importNode(drinkTemplate, true).content.querySelector("div");
+                            
+                            drinkElems[title] = {
+                                item: item,
+                                title: item.getElementsByClassName("drink-title")[0],
+                                ingredientSummary: item.getElementsByClassName("ingredient-summary")[0],
+                                empty: false
+                            };
+
+                            drinkElems[title].title.textContent = title;
+                            drinkElems[title].ingredientSummary.textContent = ingredientSummary;
+                            drinkElems[title].item.onclick = function(){
+                                event.stopPropagation(); 
+                                expandDetail(title)
+                            };
+
+                            drinkListElem.append(item);
+                            //console.log("create: " + title);
+                        }
+
+                        let empty = false;
+                        for(let ingredient in drinks[title]){
+                            if(ingredients[ingredient].empty){
+                                empty = true;
+                            }
+                        }
+                        if(empty && !drinkElems[title].empty){
+                            drinkElems[title].item.classList.add("drink-empty");
+                            drinkElems[title].empty = empty;
+                            if(title == expandedDrink.name){
+                                drinkDetailElem.classList.add("drink-empty");
+                                updateExpandedMenu();
+                            }
+                            //console.log("update: " + title);
+                        }else if(!empty && drinkElems[title].empty){
+                            drinkElems[title].item.classList.remove("drink-empty");
+                            drinkElems[title].empty = empty;
+                            if(title == expandedDrink.name){
+                                drinkDetailElem.classList.remove("drink-empty");
+                                updateExpandedMenu();
+                            }
+                            //console.log("update: " + title);
+                        }
+                    }
+                    
+                    for(let title in ingredients){
+                        if(ingredientElems[title] == null){
+                            let item = document.importNode(ingredientTemplate, true).content.querySelector("div");
+                            
+                            ingredientElems[title] = {
+                                item: item,
+                                title: item.getElementsByClassName("ingredient-title")[0],
+                                volume: item.getElementsByClassName("ingredient-volume")[0],
+                                plus: item.getElementsByClassName("ingredient-plus")[0],
+                                minus: item.getElementsByClassName("ingredient-minus")[0],
+                                empty: false,
+                                amount: 0
+                            };
+
+                            ingredientElems[title].title.textContent = title;
+                            ingredientElems[title].volume.textContent = 0 + " oz";
+                            ingredientElems[title].plus.onclick = function(){
+                                ingredientPlus(title)
+                            };
+                            ingredientElems[title].minus.onclick = function(){
+                                ingredientMinus(title)
+                            };
+
+                            ingredientsPage.append(item);
+                            //console.log("create: " + title);
+                        }
+
+                        if(ingredients[title].empty && !ingredientElems[title].empty){
+                            ingredientElems[title].empty = true;
+                            ingredientElems[title].item.classList.add("ingredient-empty");
+                            //console.log("update: " + title);
+                        }
+                        else if(!ingredients[title].empty && ingredientElems[title].empty){
+                            ingredientElems[title].empty = false;
+                            ingredientElems[title].item.classList.remove("ingredient-empty");
+                            //console.log("update: " + title);
+                        }
+                    }
+                }
+                if(msg.status){
+
+                    if(msg.status.userState != userState){
+                        userState = msg.status.userState;
+                        if(expandedDrink.name){
+                            updateExpandedButtons();
+                        }
+                        clearInterval(statusTimer);
+
+                        if(userState == "FRONTLINE"){
+                            //msg.status.timer += Date.now()/1000;
+                            statusBase.classList.remove("bar-progress");
+                            statusBase.classList.add("bar-timer");
+                            statusTimer = setInterval(()=>{
+                                statusTime -= 1;
+                                if(statusTime < 0){
+                                    clearInterval(statusTimer);
+                                }else{
+                                    statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
+                                }
+                            }, 1000);
+
+                            statusButton.classList.remove("grey", "cancel");
+                            statusButton.classList.add("pour");
+                            statusButton.textContent = "Pour";
+                        }else if(userState == "POURING"){
+                            statusBase.classList.remove("bar-timer");
+                            statusBase.classList.add("bar-progress");
+
+                            statusButton.classList.remove("grey", "pour");
+                            statusButton.classList.add("cancel");
+                            statusButton.textContent = "Cancel";
+                        }else{
+                            statusBase.style.transform = "scaleX(0)";
+
+                            statusButton.classList.add("grey");
+                            statusButton.classList.remove("cancel", "pour");
+                            statusButton.textContent = "Pour";
+                        }
+                    } 
+                    if(userState == "FRONTLINE"){
+                        statusTime = msg.status.timer;
+                        statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
+                    }
+                    if(userState == "POURING"){
+                        statusBase.style.transform = "scaleX("+ msg.status.progress+"%)";
+                    }
+
+                    if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
+                        statusQueue.textContent = "Queue: " + msg.status.position + "/" + msg.status.size;
+                        statusDrink.textContent = queuedDrink.name;
+                        statusOutlet.textContent = queuedDrink.outlet;
+                    }else{
+                        statusQueue.textContent = "Queue: " + msg.status.size;
+                        statusDrink.textContent = "";
+                        statusOutlet.textContent = "";
+                    }
+
+                    statusState.textContent = msg.status.makerState;
+                }
+                if(msg.user){
+                    userDrinks.textContent = decimal(msg.user.drinks, 1);
+                    userBAC.textContent = decimal(msg.user.bac, 3);
+
+                    userNameInput.value = msg.user.name;
+                    userWeightInput.value = msg.user.weight;
+
+                    userSex = msg.user.sex;
+                    if(userSex == "male"){
+                        userFemaleButton.classList.remove("active");
+                        userMaleButton.classList.add("active");
+                    }else if(userSex == "female"){
+                        userMaleButton.classList.remove("active");
+                        userFemaleButton.classList.add("active");
+                    }
+                }
+            };
         }
+
+        var customDrink
+
+        function ingredientPlus(title){
+            if(!ingredients[title].empty){
+                ingredientElems[title].amount = Math.min(ingredientElems[title].amount + 0.1, 8);
+                ingredientElems[title].volume.textContent = decimal(ingredientElems[title].amount, 1) + " oz";
+            }
+        }
+
+        function ingredientMinus(title){
+            if(!ingredients[title].empty){
+                ingredientElems[title].amount = Math.max(ingredientElems[title].amount - 0.1, 0);
+                ingredientElems[title].volume.textContent = decimal(ingredientElems[title].amount, 1) + " oz";
+            }
+        }
+
+        function updateCustomDrink(){
+            let drink
+            for(let title in ingredients){
+                if(ingredientElems[title].amount > 0){
+
+                }
+            }
+        }
+
+        function statusClick(){
+            if(userState == "FRONTLINE"){
+                let msg = {
+                    uuid: uuid,
+                    type: "pour",
+                    name: queuedDrink.name,
+                    ingredients: queuedDrink.ingredients,
+                    outlet: queuedDrink.outlet
+                };
+                socket.send(JSON.stringify(msg));
+            }else if(userState == "POURING"){
+                let msg = {
+                    uuid: uuid,
+                    type: "cancel"
+                };
+                socket.send(JSON.stringify(msg));
+            }   
+        }
+
+        function updateExpandedMenu(){
+            updateExpandedInfo();
+            updateExpandedButtons();
+        }
+
+        function updateExpandedInfo(){
+            let alcoholMult = detailAlcoholSlider.value;
+            let nonalcoholMult = detailNonalcoholSlider.value;
+            let totalVolume = 0;
+            let alcoholVolume = 0;
+            sameDrink = true;
+            if(expandedDrink.name != queuedDrink.name){
+                sameDrink = false;
+            }
+            let i = 0;
+            for (let ingredient in drinks[expandedDrink.name]){
+                let abv = ingredients[ingredient].abv;
+                let volume = 0;
+                if(abv > 0){
+                    volume = drinks[expandedDrink.name][ingredient] * alcoholMult;
+                    alcoholVolume += volume * abv;
+                }else{
+                    volume = drinks[expandedDrink.name][ingredient] * nonalcoholMult;
+                }
+                expandedDrink.ingredients[ingredient] = volume;
+                if(expandedDrink.ingredients[ingredient] != queuedDrink.ingredients[ingredient]){
+                    sameDrink = false;
+                }
+                totalVolume += volume;
+                if(ingredients[ingredient].empty){
+                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz (EMPTY)";
+                }else{
+                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz";
+                }
+                i++;
+            }
+
+            detailVolume.textContent = "total: " + decimal(totalVolume, 2) + " oz";
+            detailAlcohol.textContent = "drinks: " + decimal(alcoholVolume / 0.6, 1);
+            if(totalVolume > 0){
+                detailABV.textContent = "ABV: " + decimal(alcoholVolume * 100 / totalVolume, 1) + "%";
+            }else{
+                detailABV.textContent = "ABV: 0%";
+            }
+
+            detailAlcoholMult.textContent = "Alcohol: " + alcoholMult + "x";
+            detailNonalcoholMult.textContent = "Non-alcohol: " + nonalcoholMult + "x";
+            
+        }
+
+        function detailClick(outlet){
+            event.stopPropagation();
+            if(drinkElems[expandedDrink.name].empty){
+                return;
+            }
+            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
+                changeQueue(outlet);
+                addQueue(); 
+            }
+            else if(userState == "INLINE" || userState == "FRONTLINE"){
+                if(sameDrink && queuedDrink.outlet == outlet){
+                    removeQueue(); 
+                }else{
+                    changeQueue(outlet);
+                    updateExpandedButtons();
+                }
+            }
+        }
+
+        function updateExpandedButtons(){
+            
+            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
+                basementButton.textContent = "Add Basement";
+                tubButton.textContent = "Add Hot Tub";
+            }
+            else if(userState == "INLINE" || userState == "FRONTLINE"){
+                if(sameDrink && queuedDrink.outlet == 'basement'){
+                    basementButton.textContent = "Remove Basement";
+                    tubButton.textContent = "Change Hot Tub";
+                }else if(sameDrink && queuedDrink.outlet == 'hottub'){
+                    basementButton.textContent = "Change Basement";
+                    tubButton.textContent = "Remove Hot Tub";
+                }else{
+                    basementButton.textContent = "Change Basement";
+                    tubButton.textContent = "Change Hot Tub";
+                }
+            }
+        }
+
+        function expandDetail(title){
+
+            if(expandedDrink.name != ""){
+                return;
+            }
+
+            expandedDrink.name = title;
+
+            detailAlcoholSlider.value = 1;
+            detailNonalcoholSlider.value = 1;
+            updateExpandedMenu();
+
+            detailTitle.textContent = title;
+            //detailIngredientSummary.textContent = drinkElems[title].ingredientSummary.textContent;
+            //detailIngredientSummary.classList.add("transparent");
+            detailIngredientBox.style.height = (3.5 * bigVH * Object.keys(drinks[title]).length) + "px";
+
+            //var start = drinkElems[title].item.offsetTop - vh;
+            let y = -drinkElems[title].item.getBoundingClientRect().top + drinksPage.getBoundingClientRect().top + bigVH;
+
+            if(drinkElems[title].empty){
+                drinkDetailElem.classList.add("drink-empty");
+            }else if(!drinkElems[title].empty){
+                drinkDetailElem.classList.remove("drink-empty");
+            }
+
+            detailBody.classList.remove("shrunk");
+
+            drinksPage.classList.add("noscroll");
+            drinkListElem.classList.add("notouch", "transparent");
+            drinkElems[title].item.classList.add("transparent");
+            
+            drinkDetailElem.style.top = drinkElems[title].item.offsetTop - bigVH + "px";
+            drinkDetailElem.classList.remove("notouch", "transparent");
+            drinkDetailElem.style.transform = "translateY("+ y +"px)";
+        }
+
+        function collapseDetail(){
+            let title = expandedDrink.name;
+
+            drinkDetailElem.style.transform = "translateY(0px)";
+            drinkDetailElem.classList.add("notouch");
+            detailBody.classList.add("shrunk");
+            
+            drinksPage.classList.remove("noscroll");
+            drinkListElem.classList.remove("notouch", "transparent");
+
+            setTimeout(()=>{
+                drinkElems[title].item.classList.remove("transparent");
+                drinkDetailElem.classList.add("transparent");
+                drinkDetailElem.style.top = "0px";
+                expandedDrink.name = "";
+                expandedDrink.ingredients = {};
+            }, 200);
+        }
+
+        function decimal(num, place){
+            return Math.round(num*Math.pow(10,place)) / Math.pow(10,place)
+        }
+
+        function setDrinksTab(){
+            drinksPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setIngredientsTab(){
+            ingredientsPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setUserTab(){
+            userPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setTheme(x, store){
+            theme = x;
+            if(theme == "light"){
+                userDarkButton.classList.remove("active");
+                userLightButton.classList.add("active");
+                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 100%, 10%)");
+            }else if(theme == "dark"){
+                userLightButton.classList.remove("active");
+                userDarkButton.classList.add("active");
+                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 0%, 25%)");
+            }
+            if(store){
+                localStorage.setItem('theme', theme);
+            }
+        }
+
+        /////////////////////////////////////////
+
+        var drinksTab = document.getElementById("drinks-tab");
+        drinksTab.onclick = setDrinksTab;
+
+        var ingredientsTab = document.getElementById("ingredients-tab");
+        ingredientsTab.onclick = setIngredientsTab;
+
+        var userTab = document.getElementById("user-tab");
+        userTab.onclick = setUserTab;
+
+        var pageView = document.getElementById("page-view");
+
+        /////////////////////////////////////////
+
+        var drinksPage = document.getElementById("drinks-page");
+        var drinkElems = {};
+
+        var drinkListElem = document.getElementById("drink-list");
+        var drinkDetailElem = document.getElementById("drink-detail");
+
+        var drinkTemplate = document.getElementById("template-drink-item");
+
+        drinkDetailElem.onclick = collapseDetail;
+        
+        var detailItem = drinkDetailElem.getElementsByClassName("drink-item")[0];
+        var detailTitle = drinkDetailElem.getElementsByClassName("drink-title")[0];
+        var detailIngredientSummary = drinkDetailElem.getElementsByClassName("ingredient-summary")[0];
+
+        var detailBody = document.getElementById("drink-detail-body");
+        var detailIngredientBox = document.getElementById("ingredient-box");
+        var detailIngredients = [];
+        var template = document.getElementById("template-ingredient-amount");
+        for(var i=0; i<40; i++){
+            let item = document.importNode(template, true).content.querySelector("div");
+            detailIngredients[i] = item;
+            detailIngredientBox.append(item);
+        }
+
+        function sliderStart(){
+            pageView.classList.add("noscroll");
+        }
+
+        function sliderStop(){
+            pageView.classList.remove("noscroll");
+        }
+
+        var detailVolume = document.getElementById("volume-title");
+        var detailAlcohol = document.getElementById("alcohol-title");
+        var detailABV = document.getElementById("abv-title");
+
+        var detailAlcoholMult = document.getElementById("alcohol-label");
+        var detailAlcoholSlider = document.getElementById("alcohol-slider");
+        detailAlcoholSlider.oninput = updateExpandedMenu;
+        detailAlcoholSlider.ontouchstart = sliderStart;
+        detailAlcoholSlider.ontouchend = sliderStop;
+        detailAlcoholSlider.ontouchscancel = sliderStop;
+
+        var detailNonalcoholMult = document.getElementById("nonalcohol-label");
+        var detailNonalcoholSlider = document.getElementById("nonalcohol-slider");
+        detailNonalcoholSlider.oninput = updateExpandedMenu;
+        detailNonalcoholSlider.ontouchstart = sliderStart;
+        detailNonalcoholSlider.ontouchend = sliderStop;
+        detailNonalcoholSlider.ontouchscancel = sliderStop;
+
+        var tubButton = document.getElementById("tub-button");
+        var basementButton = document.getElementById("basement-button");
+
+        tubButton.onclick = function(){
+            detailClick("hottub");
+        }
+        basementButton.onclick = function(){
+            detailClick("basement");
+        }
+
+        function addQueue(){
+            let msg = {
+                uuid: uuid,
+                type: "queue"
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        function removeQueue(){
+            let msg = {
+                uuid: uuid,
+                type: "remove"
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        function changeQueue(outlet){
+            queuedDrink.name = expandedDrink.name;
+            queuedDrink.ingredients = {}
+            for(let ingredient in expandedDrink.ingredients){
+                queuedDrink.ingredients[ingredient] = expandedDrink.ingredients[ingredient]
+            }
+            queuedDrink.outlet = outlet;
+            if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
+                statusDrink.textContent = queuedDrink.name;
+                statusOutlet.textContent = queuedDrink.outlet;
+            }
+            sameDrink = true;
+        }
+
+        var userState = "";
+        var makerState = "";
+
+        var sameDrink = false;
+
+        /////////////////////////////////////////
+        
+        var ingredientsPage = document.getElementById("ingredients-page");
+        var ingredientElems = {};
+
+        var ingredientTemplate = document.getElementById("template-ingredient-item");
+
+        /////////////////////////////////////////
+
+        var userPage = document.getElementById("user-page");
+
+        var userNameInput = document.getElementById("user-name-input");
+        var userWeightInput = document.getElementById("user-weight-input");
+        var userMaleButton = document.getElementById("user-male-button");
+        var userFemaleButton = document.getElementById("user-female-button");
+
+        var userDrinks = document.getElementById("user-drinks-value");
+        var userBAC = document.getElementById("user-bac-value");
+
+        userMaleButton.onclick = function(){
+            userSex = "male";
+            userFemaleButton.classList.remove("active");
+            userMaleButton.classList.add("active");
+        }
+
+        userFemaleButton.onclick = function(){
+            userSex = "female";
+            userMaleButton.classList.remove("active");
+            userFemaleButton.classList.add("active");
+        }
+
+        var userUpdate = document.getElementById("user-update");
+        userUpdate.onclick = function(){
+            var msg = {
+                uuid: uuid,
+                type: "user",
+                name: userNameInput.value,
+                weight: userWeightInput.value,
+                sex: userSex
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        var userDarkButton = document.getElementById("user-dark-button");
+        var userLightButton = document.getElementById("user-light-button");
+
+        userDarkButton.onclick = function(){
+            setTheme('dark', true);
+        }
+
+        userLightButton.onclick = function(){
+            setTheme('light', true);
+        }
+
+        var userSex = "";
+
+        var theme = localStorage.getItem('theme');
+        if(theme == null){
+            theme = "light"
+            localStorage.setItem('theme', theme);
+        }
+        setTheme(theme, false);
+        
+        ////////////////////////////////////////////////////////////////
+
+        var statusBase = document.getElementById("status-bar");
+
+        var statusQueue = document.getElementById("status-queue");
+        var statusState = document.getElementById("status-state");
+        var statusConnection = document.getElementById("status-connection");
+
+        var statusDrink = document.getElementById("status-drink");
+        var statusOutlet = document.getElementById("status-outlet");
+
+        var statusButton = document.getElementById("status-button");
+        statusButton.onclick = statusClick;
+
+        var statusTimer = null;
+        var statusTime = 0;
+
+        var queuedDrink = {
+            name: "",
+            ingredients: {},
+            outlet: ""
+        };
+
+        ////////////////////////////////////////////////////////////////
+
+        pageView.onscroll = pageScrolled;
+        
+        function pageScrolled(){
+            let scroll = pageView.scrollLeft;
+
+            if(scroll < pageWidth*0.5){
+                if(currentPage != 0){
+                    currentPage = 0;
+                    drinksTab.classList.add("selected");
+                    ingredientsTab.classList.remove("selected");
+                    userTab.classList.remove("selected");
+                }
+            }else if(scroll < pageWidth*1.5){
+                if(currentPage != 1){
+                    currentPage = 1;
+                    drinksTab.classList.remove("selected");
+                    ingredientsTab.classList.add("selected");
+                    userTab.classList.remove("selected");
+                }
+            }else{
+                if(currentPage != 2){
+                    currentPage = 2;
+                    drinksTab.classList.remove("selected");
+                    ingredientsTab.classList.remove("selected");
+                    userTab.classList.add("selected");
+                }
+            }
+        };
+
+        var currentPage = 0;
+        var pageWidth = window.innerWidth;
+
+        var flareColors = [
+            "hsl(170, 100%, 20%)",
+        ];
+
+        var background = document.getElementById("background");
+        var flares = background.getElementsByClassName("flare");
+        var flareSize = background.clientWidth * 0.8;
+        var height = background.clientHeight + flareSize * 1;
+        var width = background.clientWidth + flareSize * 1;
+
+        var frameCount = 10;
+        var durationMin = 50000;
+        var durationMax = 70000;
+
+        var perimeter = width*2 + height*2;
+
+        for(var i=0; i<flares.length; i++){  
+            flares[i].style.setProperty("box-shadow", "0 "+flareSize*2+"px "+flareSize*0.5+"px " + flareColors[i % flareColors.length]);
+            let frames = [];
+            let rand = Math.random()*perimeter;
+            for(var j=0; j<frameCount; j++){
+                rand = (rand + (Math.random()*0.33 + 0.33)*perimeter) % perimeter;
+                let x = -flareSize*1.0;
+                let y = -flareSize*3.0;
+                if(rand < width){
+                    x += rand;
+                    y += 0;
+                }else if(rand < width + height){
+                    x += width;
+                    y += rand - width;
+                }else if(rand < width*2 + height){
+                    x += width - (rand - width - height);
+                    y += height;
+                }else{
+                    x += 0;
+                    y += height - (rand - width*2 - height);
+                }
+
+                frames.push({transform: 'translate('+ x +'px,'+ y +'px)'});
+            }
+            frames.push(frames[0]);
+
+            let effect = new KeyframeEffect(
+                flares[i],
+                frames,
+                {
+                    duration: durationMin + Math.random()*(durationMax - durationMin), 
+                    easing: "linear" ,
+                    iterations: Infinity
+                }
+            );
+
+            let animation = new Animation(effect);
+            //animation.currentTime = 0;
+            animation.currentTime = Math.random()*(durationMax);
+            animation.play();
+        }
+
+        ////////////////////////////////////////////////////////////////
+
+        var socket = null;
+        var socketConnected = false;
+        var socketAttempts = 0;
+
+        var drinks = {};
+        var ingredients = {};
+
+        var expandedDrink = {
+            name: "",
+            ingredients: {}
+        };
 
         var uuid = localStorage.getItem('uuid');
         if(uuid == null){
             uuid = Math.random();
             localStorage.setItem('uuid', uuid)
-            console.log("new user");
+            console.log("new user: " + uuid);
         }else{
-            console.log("existing user");
-        }
-        console.log("UUID: " + uuid);
-        
-
-        class Header extends React.Component{
-            constructor(props){
-                super(props);
-            }
-
-            render(){
-                return e('div', {key: 0, className: "header"},[
-                        e(Tab, {key: 1, title: "Drinks", selected: this.props.tab == "Drinks", updateApp: this.props.updateApp}, null),
-                        e(Tab, {key: 2, title: "Ingredients", selected: this.props.tab == "Ingredients", updateApp: this.props.updateApp}, null),
-                        e(Tab, {key: 3, title: "User", selected: this.props.tab == "User", updateApp: this.props.updateApp}, null)]);
-            }
+            console.log("existing user: " + uuid);
         }
 
-        class Tab extends React.Component{
-            constructor(props){
-                super(props);
-            }
+        drinksPage.onfocus = function(){
+            console.log("onfocus");
+        };
 
-            button(event){
-                this.props.updateApp({tab: this.props.title});
-            }
+        var smallVH = window.innerHeight * 0.01;
+        var bigVH = document.getElementById('ruler').clientHeight * 0.02;
 
-            render(){
-                if (this.props.selected){
-                    return e('div', {key: 0, className: "tab tab-selected tab-"+this.props.title}, this.props.title);
-                }
-                else{
-                    return e('div', {key: 0, onClick: (event)=>this.button(event), className: "tab tab-"+this.props.title}, this.props.title);
-                }
-            }
-        }
+        document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01)+"px");
+        document.documentElement.style.setProperty('--flare-size', flareSize+"px");
 
-        class Status extends React.Component{
-            constructor(props){
-                super(props);
-            }
+        socketInit();
 
-            state={
-                tick: 0
-            }
-
-            componentDidMount() {
-                this.interval = setInterval(() => {
-                    if(this.props.status.timer !== false){
-                        this.setState({tick: this.state.tick+1});
-                    }
-                }, 1000);
-            }
-
-            componentWillUnmount() {
-                clearInterval(this.interval);
-            }
-
-            getPosition(){
-                return this.props.status.position;
-            }
-
-            getDrink(){
-                return this.props.status.drink;
-            }
-
-            getTime(){
-                return this.state.timer;
-            }
-
-            button(event){
-                if(this.props.status.timer !== false){
-                    var msg = {
-                        uuid: uuid,
-                        type: "pour"
-                    };
-                    socket.send(JSON.stringify(msg));
-                }else if(this.props.status.progress !== false){
-                    var msg = {
-                        uuid: uuid,
-                        type: "cancel"
-                    };
-                    socket.send(JSON.stringify(msg));
-                }
-                event.stopPropagation()
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            render(){
-                if(this.props.status.progress !== false){
-                    var style = {
-                        transform: "scaleX("+ this.props.status.progress+"%)"
-                    }
-                    return e('div', {className: "status"}, [
-                        e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {key: 4, className: "bar-base bar-progress", style: style}, null),
-                        e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
-                        e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
-                        e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel"}, "Cancel")
-                    ]);
-                }else if(this.props.status.timer !== false){
-                    var remaining = Math.max(Math.round(this.props.status.timer - Date.now()/1000), 0);
-                    var style = {
-                        transform: "scaleX("+(remaining * 5)+"%)"
-                    }
-                    return e('div', {className: "status"}, [
-                        e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {key: 4, className: "bar-base bar-timer", style: style}, null),
-                        e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
-                        e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
-                        e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-pour"}, "Pour")
-                    ]);
-                }else if(this.props.status.position !== false){
-                    return e('div', {className: "status"}, [
-                        e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {key: 4, className: "bar-base invisible"}, null),
-                        e('div', {key: 0, className: "status-drink"}, "Drink: "+this.getDrink()),
-                        e('div', {key: 1, className: "status-position"}, "Position: "+this.getPosition()),
-                        e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
-                    ]);
-                }else{
-                    return e('div', {className: "status"}, [
-                        e('div', {key: 3, className: "bar-base"}, null),
-                        e('div', {key: 4, className: "bar-base invisible"}, null),
-                        e('div', {key: 0, className: "status-drink grey"}, "Drink: "),
-                        e('div', {key: 1, className: "status-position grey"}, "Position: "),
-                        e('div', {key: 5, onClick: (event)=>this.button(event), className: "status-button status-cancel grey"}, "Wait")
-                    ]);
-                }
-                
-            }
-        }
-
-        class DrinkDetails extends React.Component {
-            constructor(props){
-                super(props);
-                this.ingredients = {};
-                this.volume = 0;
-            }
-
-            state = {
-                alcoholMult: 1,
-                nonalcoholMult: 1
-            }
-
-            queueButton(event){
-                if(!this.props.status.progress){
-                    var msg = {}
-                    if((!this.props.status.position || this.props.name != this.props.status.drink) && this.volume > 0 && !this.props.empty){ // add/swap queue
-                        msg = {
-                            uuid: uuid,
-                            type: "queue",
-                            name: this.props.name,
-                            ingredients: this.ingredients
-                        };
-                        socket.send(JSON.stringify(msg));
-                    }else if(this.props.status.position && this.props.name == this.props.status.drink){ // remove from queue
-                        msg = {
-                            uuid: uuid,
-                            type: "remove"
-                        };
-                        socket.send(JSON.stringify(msg));
-                    }
-                    console.log("queue send");
-                    console.log(msg);
-                }else{
-                    console.log("queue else");
-                }
-                event.stopPropagation()
-            }
-
-            pourButton(event){
-                if((this.props.status.users == 0 || (this.props.status.position == 1 && !this.props.status.progress)) && this.volume > 0 && !this.props.empty){
-                    var msg = {
-                        uuid: uuid,
-                        type: "pour",
-                        name: this.props.name,
-                        ingredients: this.ingredients
-                    };
-                    socket.send(JSON.stringify(msg));
-                }else if(this.props.status.position == 1 && this.props.status.progress){
-                    var msg = {
-                        uuid: uuid,
-                        type: "cancel"
-                    };
-                    socket.send(JSON.stringify(msg));
-                }
-                event.stopPropagation()
-            }
-
-            queueLabel(){
-                if(!this.props.status.position){
-                    return "Add to Queue";
-                }else if(this.props.name != this.props.status.drink){
-                    return "Update Drink";
-                }
-                return "Remove from Queue";
-            }
-
-            pourLabel(){
-                if(this.props.status.progress){
-                    return "Cancel";
-                }
-                return "Pour Now";
-            }
-
-            queueClass(){
-                if(this.props.status.progress || this.volume == 0 || this.props.empty){
-                    return " grey";
-                }
-                return "";
-            }
-
-            pourClass(){
-                if((this.props.status.users > 0 && this.props.status.position != 1) || this.volume == 0 || this.props.empty){
-                    return " grey";
-                }
-                return "";
-            }
-
-            alcoholSlider(event){
-                this.setState({alcoholMult: event.target.value});
-            }
-
-            nonalcoholSlider(event){
-                this.setState({nonalcoholMult: event.target.value});
-            }
-
-            render(){
-                this.ingredients = {};
-                var ingredientDetails = [];
-                this.volume = 0;
-                var alcohol = 0;
-                var i = 100;
-
-                for(var key in this.props.drink){
-                    var empty = "";
-                    if(this.props.ingredients[key].abv > 0){
-                        this.ingredients[key] = this.props.drink[key] * this.state.alcoholMult;
-                        alcohol += this.ingredients[key] * this.props.ingredients[key].abv;
-                    }else{
-                        this.ingredients[key] = this.props.drink[key] * this.state.nonalcoholMult;
-                    }
-                    this.volume += this.ingredients[key];
-                    if(this.props.ingredients[key].empty){
-                        empty = "( EMPTY )";
-                    }
-                    ingredientDetails.push(e('div', {key: i, className: "ingredient"}, key + ": " + this.ingredients[key].toFixed(1) + " oz " + empty));
-                    i++;
-                }
-
-                return [
-                    e('div', {key: 0, className: "ingredient-wrapper"}, ingredientDetails),
-                    e('div', {key: 1, className: "volume-title"}, "Volume: " + this.volume.toFixed(1) + " oz"),
-                    e('div', {key: 2, className: "alcohol-title"}, "Drinks: " + (alcohol/0.6).toFixed(1)),
-                    e('div', {key: 3, className: "abv-title"}, "ABV: " + (alcohol/this.volume*100).toFixed(1) + "%"),
-                    e('div', {key: 4, className: "alcohol-label"}, "Alcohol: " + this.state.alcoholMult + "x"),
-                    e('input', {key: 5, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.alcoholSlider(event), className:"alcohol-slider", id:"slider1"}, null),
-                    e('div', {key: 6, className: "nonalcohol-label"}, "Non-alcohol: " + this.state.nonalcoholMult + "x"),
-                    e('input', {key: 7, type:"range", min:0, max:2, step:0.25, defaultValue:1, onInput: (event)=>this.nonalcoholSlider(event), className:"nonalcohol-slider", id:"slider2"}, null),
-                    
-                    e('div', {key: 8, onClick: (event)=>this.queueButton(event), className: "button-item button-add"+this.queueClass()}, this.queueLabel()),
-                    e('div', {key: 9, onClick: (event)=>this.pourButton(event), className: "button-item button-pour"+this.pourClass()}, this.pourLabel())
-                ];
-            }
-        }
-
-        class DrinkItem extends React.Component {
-            constructor(props){
-                super(props);
-                this.item = React.createRef();
-            }
-
-            shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.selected
-                    || (!nextProps.selected && this.props.selected)
-                    || nextProps.empty != this.props.empty)
-                {
-                    return true;
-                }
-                return false;
-            }
-
-            expand(event){
-                var move = Math.round((document.documentElement.clientHeight * 0.09)-(this.item.current.getBoundingClientRect().y));
-                this.style = {
-                    transform: "translateY("+move+"px)"
-                }
-                this.props.updateList({selected: this.props.name});
-                console.log("expand: " + this.props.name);
-            }
-
-            collapse(event){
-                this.props.updateList({selected: null});
-                console.log("collapse: " + this.props.name);
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            render() {
-                console.log("render drink item: " + this.props.name);
-                this.ingredientSummary = "";
-                var i = 24;
-                for(var key in this.props.drink){
-                    this.ingredientSummary += key + ", ";
-                    i++;
-                }
-                if(this.props.selected){
-                    return e('div', {ref: this.item, onClick: (event)=>this.collapse(event), className: "drink-item border-flat"+this.addText(this.props.empty, " empty"), style: this.style}, [
-                        e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
-                        e('div', {key: 1, className: "ingredient-summary invisible"}, this.ingredientSummary),
-                        e('div', {key: 2, className: "arrow-wrapper"}, [
-                            e('div', {key: 3, className: "line-left line-left-close"}),
-                            e('div', {key: 4, className: "line-right line-right-close"})
-                        ]),
-                        e('div', {key: 6, className: "details"},
-                            e(DrinkDetails, {key: 7, name: this.props.name, drink: this.props.drink, empty: this.props.empty, status: this.props.status, ingredients: this.props.ingredients, updateApp: this.props.updateApp, updateList: this.props.updateList}, null)
-                        )
-                    ]);
-                }else{
-                    return e('div', {ref: this.item, onClick: (event)=>this.expand(event), className: "drink-item "+this.addText(this.props.empty, " empty")}, [
-                        e('div', {key: 0, className: "title"+this.addText(this.props.empty, " strike")}, this.props.name),
-                        e('div', {key: 1, className: "ingredient-summary"}, this.ingredientSummary),
-                        e('div', {key: 2, className: "arrow-wrapper"}, [
-                            e('div', {key: 3, className: "line-left"}),
-                            e('div', {key: 4, className: "line-right"})
-                        ]),
-                        e('div', {key: 6, className: "details shrunk"}, null)
-                    ]);
-                }
-            }
-        }
-
-        class DrinkPage extends React.Component {
-            constructor(props){
-                super(props);
-            }
-
-            state = {
-                selected: null
-            }
-
-            shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.drinksTick != this.props.drinksTick ||
-                    nextProps.statusTick != this.props.statusTick ||
-                    nextState.selected != this.state.selected)
-                {
-                    return true;
-                }
-                return false;
-            }
-
-            updateState(newState){
-                this.setState(newState);
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            render() {
-                console.log("render drink list");
-                this.list = [];
-                for(var name in this.props.drinks){
-                    var tmp = ""
-                    var empty = false;
-                    if(this.state.selected != null && this.state.selected != name){
-                        tmp = " invisible";
-                    }
-                    for(var key in this.props.drinks[name]){
-                        if(this.props.ingredients[key].empty){
-                            empty = true;
-                        }
-                    }
-                    this.list.push(e('div', {key: name+"wrapper", className: "drink-item-wrapper"+tmp},
-                        e(DrinkItem, {key: name, name: name, drink: this.props.drinks[name], status: this.props.status, ingredients: this.props.ingredients, selected: this.state.selected == name, empty: empty, updateApp: this.props.updateApp, updateList: this.updateState.bind(this)}, null))
-                    );
-                }
-                return e('div', {className: "drink-page"+this.addText(this.state.selected != null, " noscroll")}, this.list);
-            }
-        }
-
-        class IngredientItem extends React.Component {
-            constructor(props){
-                super(props);
-            }
-
-            shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.ingredient.empty != this.props.ingredient.empty){
-                    return true;
-                }
-                return false;
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            setFull(){
-                var msg = {
-                    uuid: uuid,
-                    type: "ingredient",
-                    name: this.props.name,
-                    empty: false
-                };
-                socket.send(JSON.stringify(msg));
-            }
-
-            setEmpty(){
-                var msg = {
-                    uuid: uuid,
-                    type: "ingredient",
-                    name: this.props.name,
-                    empty: true
-                };
-                socket.send(JSON.stringify(msg));
-            }
-
-            render() {
-                console.log("render ingredient item: " + this.props.name);
-                var button = e('div', {key: 2, onClick: (event)=>this.setEmpty(event), className: "ingredient-button ingredient-button-full"}, "Full");
-                if(this.props.ingredient.empty){
-                    button = e('div', {key: 2, onClick: (event)=>this.setFull(event), className: "ingredient-button ingredient-button-empty"}, "Empty");
-                }
-
-                return e('div', {className: "ingredient-item"}, [
-                    e('div', {key: 0, className: "ingredient-title"}, this.props.name),
-                    e('div', {key: 1, className: "ingredient-port"}, this.props.ingredient.port),
-                    button
-                ]);
-            }
-        }
-
-        class IngredientPage extends React.Component {
-            constructor(props){
-                super(props);
-            }
-
-            state = {
-                selected: null
-            }
-
-            shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.tick != this.props.tick){
-                    return true;
-                }
-                return false;
-            }
-
-            updateState(newState){
-                this.setState(newState);
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            render() {
-                console.log("render ingredient list");
-                this.list = [];
-                for(var name in this.props.ingredients){
-                    this.list.push(
-                        e(IngredientItem, {key: name, name: name, ingredient: this.props.ingredients[name], updateApp: this.props.updateApp}, null)
-                    );
-                }
-                return e('div', {className: "ingredient-page"}, this.list);
-            }
-        }
-
-        class UserPage extends React.Component {
-            constructor(props){
-                super(props);
-            }
-
-            state = {
-                name: null,
-                weight: null,
-                sex: null,
-                tick: 0
-            }
-
-            shouldComponentUpdate(nextProps, nextState) {
-                if(nextProps.tick != this.props.tick || nextState.tick != this.state.tick){
-                    return true;
-                }
-                return false;
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            setName(event){
-                console.log("set name: " + event.target.value);
-                this.setState({name: event.target.value, tick: this.state.tick+1});
-            }
-
-            setWeight(event){
-                console.log("set weight: " + event.target.value);
-                this.setState({weight: event.target.value, tick: this.state.tick+1});
-            }
-
-            setSex(x){
-                console.log("set sex: " + x);
-                this.setState({sex: x, tick: this.state.tick+1});
-            }
-
-            update(){
-                var name = this.props.user.name;
-                if(this.state.name != null){
-                    name = this.state.name
-                }
-                var weight = this.props.user.weight;
-                if(this.state.weight != null){
-                    weight = this.state.weight
-                }
-                var sex = this.props.user.sex;
-                if(this.state.sex != null){
-                    sex = this.state.sex
-                }
-                var msg = {
-                    uuid: uuid,
-                    type: "user",
-                    name: name,
-                    weight: parseInt(weight),
-                    sex: sex
-                };
-                socket.send(JSON.stringify(msg));
-            }
-
-            render() {
-                console.log("render user");
-                console.log(this.props);
-                console.log(this.state);
-
-                var name = this.props.user.name;
-                if(this.state.name != null){
-                    name = this.state.name
-                }
-                var weight = this.props.user.weight;
-                if(this.state.weight != null){
-                    weight = this.state.weight
-                }
-                var sex = this.props.user.sex;
-                if(this.state.sex != null){
-                    sex = this.state.sex
-                }
-                return e('div', {className: "user-page"}, [
-                    e('div', {key: 0, className: "user-name-label"}, "Name:"),
-                    e('input', {key: 1, type: "text", value: name, onChange: (event)=>this.setName(event), className:"user-name-input"}, null),
-                    e('div', {key: 2, className: "user-weight-label"}, "Weight (lb):"),
-                    e('input', {key: 3, type: "number", value: weight, onChange: (event)=>this.setWeight(event), className:"user-weight-input"}, null),
-                    e('div', {key: 4, className: "user-sex-label"}, "Sex:"),
-                    e('div', {key: 6, onClick: (event)=>this.setSex("male"), className: "user-male-input"+this.addText(sex == "male", " user-sex-active")}, "Male"),
-                    e('div', {key: 8, onClick: (event)=>this.setSex("female"), className: "user-female-input"+this.addText(sex == "female", " user-sex-active")}, "Female"), 
-                    e('div', {key: 9, className: "user-drinks-label"}, "Drinks:"),
-                    e('div', {key: 10, className: "user-drinks-value"}, this.props.user.drinks.toFixed(1)),
-                    e('div', {key: 11, className: "user-bac-label"}, "BAC:"),
-                    e('div', {key: 12, className: "user-bac-value"}, this.props.user.bac.toFixed(3) + " %"),
-                    e('div', {key: 13, onClick: (event)=>this.update(event), className: "user-update"}, "Update"),
-                ]);
-            }
-        }
-
-        class PageViewer extends React.Component {
-            constructor(props){
-                super(props);
-                this.item = React.createRef();
-                //this.item.onscroll = function(){myScript};
-            }
-
-            scroll(event){
-                //console.log(this.item.current.scrollLeft);
-                //this.item.current.scrollLeft = 500;
-                //event.stopPropagation();
-            }
-
-            updateState(newState){
-                this.setState(newState);
-            }
-
-            addText(condition, text) {
-                if(condition){
-                    return text;
-                }
-                return "";
-            }
-
-            render() {
-                return e('div', {ref: this.item, key: 0, className: "page-viewer" + " shift-"+this.props.tab}, [
-                    e(DrinkPage, {key: 1, drinks: this.props.drinks, status: this.props.status, ingredients: this.props.ingredients, drinksTick: this.props.drinksTick, statusTick: this.props.statusTick, updateApp: this.props.updateApp}, null),
-                    e(IngredientPage, {key: 2, ingredients: this.props.ingredients, tick: this.props.drinksTick, updateApp: this.props.updateApp}, null),
-                    e(UserPage, {key: 3, user: this.props.user, tick: this.props.userTick, updateApp: this.props.updateApp}, null),
-                ]);
-            }
-        }
-
-        class App extends React.Component {
-            constructor(){
-                super();
-                let vh = window.innerHeight * 0.01;
-                // Then we set the value in the --vh custom property to the root of the document
-                document.getElementById('root').style.setProperty('--vh', `${vh}px`);
-            }
-
-            state = {
-                tab: "Drinks",
-                drinks: null,
-                drinksTick: 0,
-                ingredients: null,
-                status: {
-                    users: 0,
-                    position: false,
-                    drink: false,
-                    timer: false,
-                    progress: false
-                },
-                statusTick: 0,
-                user: {
-                    name: null,
-                    weight: null,
-                    sex: null,
-                    drinks: 0,
-                    bac: 0
-                },
-                userTick: 0
-            }
-
-            updateState(newState){
-                this.setState(newState);
-            }
-
-            componentDidMount(){
-                socketMessageHandler = (event)=>{
-                    var msg = JSON.parse(event.data);
-                    console.log(msg);
-                    for(var key in msg){
-                        switch(key){
-                            case 'drinks': 
-                                this.setState({ drinks: msg.drinks, ingredients: msg.ingredients, drinksTick: this.state.drinksTick+1});
-                                break;
-                            case 'ingredients': 
-                                //this.setState({ ingredients: msg.ingredients });
-                                break;
-                            case 'status': 
-                                if(msg.status.timer){
-                                    msg.status.timer += Date.now()/1000;
-                                }
-                                this.setState({ status: msg.status, statusTick: this.state.statusTick+1 });
-                                break;
-                            case 'user': 
-                                this.setState({ user: msg.user, userTick: this.state.userTick+1 });
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                socketInit();
-            }
-
-            render() {
-                return [
-                    e(Header, {key: 0, tab: this.state.tab, updateApp: this.updateState.bind(this)}, null),
-                    e(PageViewer, {key: 1, tab: this.state.tab, drinks: this.state.drinks, status: this.state.status, ingredients: this.state.ingredients, drinksTick: this.state.drinksTick, statusTick: this.state.statusTick, user: this.state.user, userTick: this.state.userTick, updateApp: this.updateState.bind(this)}, null),
-                    e(Status, {key: 2, status: this.state.status, tick: this.state.statusTick}, null)
-                ];
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////
-
-        ReactDOM.render(
-            e(App, null, null), 
-            document.getElementById('root')
-        );
-
-        ////////////////////////////////////////////////////////////////
+        window.onload = function(){
+            
+        };
         
     </script>
     <style>
+        :root {
+            --panel-color: hsla(0, 0%, 100%, 10%);
+            --top-hue: 170;
+            --bottom-hue: 320;
+            --vh: 1vh;
+            --flare-size: 20vw;
+        }
+
+        #ruler{
+            position: absolute;
+            height: 50vh;
+            visibility: hidden;
+        }
+
         body{
+            color-scheme: dark;
+            height: calc(var(--vh) * 100);
             margin: 0;
             padding: 0;
-            background-image: linear-gradient(to bottom right, hsl(170deg 100% 20%), hsl(320deg 100% 20%));
-            background-attachment: fixed;
             touch-action: manipulation;
             user-select: none;
             font-family: 'Roboto', sans-serif;
             font-size: 0;
+            color: white;
         }
-        #root{
-            height: calc(var(--vh, 1vh) * 100);
+
+        #background{
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            background-color: hsl(320, 100%, 20%);
         }
-        .header{
+
+        .flare{
+            position: absolute;
+            /* clip-path: inset(150% -50% -250% -50%); */
+            top: 0;
+            left: 0;
+            opacity: 75%;
+            width: var(--flare-size);
+            height: var(--flare-size);
+            border-radius: 100%;
+            will-change: transform;
+        }
+        @keyframes nod {
+            0% {
+                transform: translateY(0vh);
+            }
+            100% {
+                transform: translateY(-100vh);
+            }
+        }
+        @keyframes shake {
+            0% {
+                transform: translateX(0vw);
+            }
+            100% {
+                transform: translateX(-100vw);
+            }
+        }
+
+        @keyframes wander {
+            0% {
+                transform: translate(0%, 0%);
+            }
+            10% {
+                transform: translate(0%, 0%);
+            }
+            20% {
+                transform: translate(0%, 0%);
+            }
+            30% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+        }
+
+        #header{
             height: 8%;
             width: 100%;
             position: fixed;
             top: 0;
-            box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
+            z-index: 10;
+            box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
         }
         .tab{
             position: absolute;
-            background-color: hsla(0, 0%, 100%, 10%);
-            color: hsl(0deg 0% 100% / 100%);
+            background-color: var(--panel-color);
             box-sizing: border-box;
             font-size: 3vh;
             height: 100%;
@@ -795,58 +933,91 @@
             overflow: hidden;
             text-align: center;
         }
-        .tab-selected{
-            animation: tab-anim 500ms 0s 1;
-            border-bottom: solid 0.5vh hsl(320deg 80% 35%);
-            font-weight: 1000;
+        .tab:active{
+            opacity: 50%;
         }
-        .tab-Drinks{
+        .tab.selected{
+            border-bottom: solid 0.5vh hsl(var(--bottom-hue), 80%, 35%);
+            font-weight: bold;
+        }
+        #drinks-tab{
             left: 0%;
         }
-        .tab-Ingredients{
+        #ingredients-tab{
             left: calc(100%/3);
         }
-        .tab-User{
+        #user-tab{
             right: 0%;
         }
-        .shift-Drinks{
-            transform: translateX(0%);
-        }
-        .shift-Ingredients{
-            transform: translateX(-100%);
-        }
-        .shift-User{
-            transform: translateX(-200%);
-        }
-        .page-viewer{
+        
+        #page-view{
             height: 82%;
             width: 100%;
-            position: fixed;
+            position: absolute;
             top: 8%;
-            transition: 250ms;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        .drink-page{
+
+        #page-view::-webkit-scrollbar {
+            display: none;
+        }
+
+        #drinks-page{
             height: 100%;
             width: 100%;
+            top: 0%;
             left: 0%;
             position: absolute;
             overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
         }
-        .ingredient-page{
+        #drink-list{
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            padding: 0 1vh 0 1vh;
+            box-sizing: border-box;
+            transition: opacity 200ms linear;
+            will-change: opacity;
+        }
+        #drink-detail{
+            position: absolute;
+            top: 0%;
+            left: 0%;
             height: 100%;
             width: 100%;
+            padding: 0 1vh 0 1vh;
+            box-sizing: border-box;
+            transition: transform 200ms;
+            will-change: transform, opacity;
+        }
+        #ingredients-page{
+            height: 100%;
+            width: 100%;
+            top: 0%;
             left: 100%;
             position: absolute;
             overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
         }
-        .user-page{
+        #user-page{
             height: 100%;
             width: 100%;
+            top: 0%;
             left: 200%;
             position: absolute;
             overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
         }
-        .user-name-label{
+        #user-name-label{
             position: absolute;
             left: 10%;
             top: 8%;
@@ -854,26 +1025,25 @@
             height: 8%;
             line-height: 250%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-name-input{
+        #user-name-input{
             position: absolute;
             right: 10%;
             top: 8%;
             width: 45%;
             height: 8%;
-            background-color: hsl(0deg 0% 100% / 10%);
+            background-color: var(--panel-color);
             border: none;
-            color: white;
             font-size: 2.5vh;
             border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
             border-radius: 1vh;
             text-align: center;
             padding: 0;
             margin: 0;
+            font-family: 'Roboto', sans-serif;
         }
-        .user-weight-label{
+        #user-weight-label{
             position: absolute;
             left: 10%;
             top: 20%;
@@ -881,27 +1051,26 @@
             height: 8%;
             line-height: 250%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-weight-input{
+        #user-weight-input{
             position: absolute;
             right: 10%;
             top: 20%;
             width: 45%;
             height: 8%;
-            background-color: hsl(0deg 0% 100% / 10%);
+            background-color: var(--panel-color);
             border: none;
-            color: white;
             font-size: 2.5vh;
             border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
             border-radius: 1vh;
             text-align: center;
             padding: 0;
             margin: 0;
+            font-family: 'Roboto', sans-serif;
         }
 
-        .user-sex-label{
+        #user-sex-label{
             position: absolute;
             left: 10%;
             top: 32%;
@@ -909,160 +1078,226 @@
             height: 8%;
             line-height: 250%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-male-input{
+        #user-male-button{
             position: absolute;
             right: 35%;
             top: 32%;
             width: 20%;
             height: 8%;
             border-radius: 1vh;
-            background-color: hsl(0deg 0% 100% / 10%);
+            background-color: var(--panel-color);
             line-height: 250%;
-            color: white;
             font-size: 2.5vh;
             text-align: center;
         }
-        .user-female-input{
+        #user-female-button{
             position: absolute;
             right: 10%;
             top: 32%;
             width: 20%;
             height: 8%;
             border-radius: 1vh;
-            background-color: hsl(0deg 0% 100% / 10%);
+            background-color: var(--panel-color);
             line-height: 250%;
-            color: white;
             font-size: 2.5vh;
             text-align: center;
         }
-        .user-sex-active{
-            background-color: hsl(170deg 80% 27%);
+        #user-male-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #user-female-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
         
-        .user-drinks-label{
+        #user-drinks-label{
             position: absolute;
             left: 10%;
-            top: 56%;
+            top: 48%;
             width: 30%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-drinks-value{
+        #user-drinks-value{
             position: absolute;
             right: 10%;
-            top: 56%;
+            top: 48%;
             width: 45%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-bac-label{
+        #user-bac-label{
             position: absolute;
             left: 10%;
-            top: 64%;
+            top: 54%;
             width: 30%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-bac-value{
+        #user-bac-value{
             position: absolute;
             right: 10%;
-            top: 64%;
+            top: 54%;
             width: 45%;
             background-color: hsl(0deg 0% 100% / 0%);
-            color: white;
             font-size: 2.5vh;
         }
-        .user-update{
+        #user-update{
             position: absolute;
             left: 30%;
-            top: 80%;
+            top: 64%;
             width: 40%;
             height: 10%;
-            color: white;
             font-size: 2.5vh;
-            background-color: hsl(320deg 80% 27%);
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
             border-radius: 1vh;
             text-align: center;
             line-height: 300%;
-            transition: 200ms;
-            box-shadow: hsl(0deg 0% 0% / 30%) 0 0 8px;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            /* will-change: transform, opacity; */
         }
-        .user-update:active{
+        #user-update:active{
             transform: scale(0.97);
-            opacity: 90%;
-            transition: 0ms;
+            opacity: 50%;
+        }
+
+        #user-theme-label{
+            position: absolute;
+            left: 10%;
+            top: 85%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-dark-button{
+            position: absolute;
+            right: 35%;
+            top: 85%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-light-button{
+            position: absolute;
+            right: 10%;
+            top: 85%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-dark-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #user-light-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
 
         .ingredient-item{
             position: relative;
-            height: 11%;
+            height: 10vh;
             margin: 1vh;
-            color: hsl(0deg 0% 100% / 100%);
         }
         .ingredient-title{
             position: absolute;
-            width: 55%;
-            height: 32%;
-            top: 34%;
+            width: 40%;
+            height: 3vh;
+            top: 3.5vh;
             left: 5%;
             line-height: 100%;
-            font-size: 3vh;
+            font-size: 2.5vh;
         }
-        .ingredient-port{
+        .ingredient-volume{
             position: absolute;
-            width: 10%;
-            height: 80%;
-            top: 10%;
+            width: 20%;
+            height: 2.5vh;
+            top: 3.75vh;
             left: 60%;
-            line-height: 350%;
-            font-size: 2vh;
+            line-height: 100%;
+            font-size: 2.5vh;
+            text-align: center;
         }
         .ingredient-button{
             position: absolute;
-            width: 25%;
-            height: 80%;
-            top: 10%;
-            right: 5%;
-            line-height: 350%;
-            font-size: 2vh;
+            top: 1vh;
+            width: 8vh;
+            height: 8vh;
+            line-height: 8vh;
+            font-size: 0vh;
             border-radius: 1vh;
-            transition: 200ms;
             text-align: center;
-            box-shadow: hsl(0deg 0% 0% / 30%) 0 0 8px;
+            box-shadow: hsl(0deg 0% 0%) 0 0 2px;
         }
         .ingredient-button:active{
             transform: scale(0.97);
-            opacity: 90%;
-            transition: 0ms;
+            opacity: 50%;
         }
-        .ingredient-button-full{
-            background-color: hsl(170deg 80% 27%);
+        .ingredient-plus{
+            right: 5%;
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
-        .ingredient-button-empty{
-            background-color: hsl(320deg 80% 27%);
+        .ingredient-plus:after{
+            content: "\002B";
+            font-size: 6vh;
+        }
+        .ingredient-minus{
+            right: 40%;
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+        .ingredient-minus:after{
+            content: "\2212";
+            font-size: 6vh;
+        }
+        
+        .ingredient-empty{
+            opacity: 40%;
         }
 
-        .drink-item-wrapper{
-            transition: 200ms;
-            height: 11%;
-            margin: 1vh;
+        .ingredient-empty .ingredient-title{
+            text-decoration: line-through;
         }
+
+        #drink-detail-body{
+            position: relative;
+            transition: transform 200ms;
+            height: calc(100% - 12vh);
+            background-color: var(--panel-color);
+            margin: 0;
+            border-radius: 0vh 0vh 1vh 1vh;
+            transform-origin: 50% 0%;
+            will-change: transform;
+        }
+        
         .drink-item{
             position: relative;
-            transition-property: transform, opacity;
-            transition-duration: 200ms;
-            background-color: hsla(0, 0%, 100%, 10%);
-            color: hsl(0deg 0% 100% / 100%);
-            height: 100%;
+            background-color: var(--panel-color);
+            height: 10vh;
             border-radius: 1vh;
+            margin: 1vh 0 1vh 0;
+            
         }
-        .title{
+        .drink-empty{
+            opacity: 40%;
+        }
+        .drink-empty .drink-title{
+            text-decoration: line-through;
+        }
+        .drink-item.flat{
+            border-radius: 1vh 1vh 0 0;
+            margin: 1vh 0 0 0;
+        }
+
+        .drink-title{
             position: absolute;
             width: 55%;
             height: 32%;
@@ -1071,37 +1306,34 @@
             line-height: 100%;
             font-size: 3vh;
         }
-        .arrow-wrapper{
+
+        .close{
             position: absolute;
-            width: 2vh;
-            height: 2vh;
-            top: 40%;
+            width: 4vh;
+            height: 4vh;
+            top: 34%;
             right: 5%;
+            text-align: center;
         }
-        .line-left{
-            height: 100%;
-            width: 1%;
+        .close:after{
+            content: "\2573";
+            font-size: 2vh;
+        }
+
+        .arrow{
             position: absolute;
-            left: 16%;
+            width: 4vh;
+            height: 4vh;
+            top: 25%;
+            right: 5%;
+            text-align: center;
             transform: rotateZ(-45deg);
-            background-color: hsl(0deg 0% 100% / 100%);
-            transition: 200ms;
         }
-        .line-right{
-            height: 100%;
-            width: 1%;
-            position: absolute;
-            right: 16%;
-            transform: rotateZ(45deg);
-            background-color: hsl(0deg 0% 100% / 100%);
-            transition: 200ms;
+        .arrow:after{
+            content: "\221F";
+            font-size: 3vh;
         }
-        .line-left-close{
-            transform: translateX(0.6vh) rotateZ(-45deg) scaleY(2);
-        }
-        .line-right-close{
-            transform: translateX(-0.8vh) rotateZ(45deg) scaleY(2);
-        }
+
         .ingredient-summary{
             position: absolute;
             width: 25%;
@@ -1110,24 +1342,14 @@
             left: 60%;
             line-height: 100%;
             font-size: 1.7vh;
-            color: hsl(0deg 0% 100% / 75%);
             text-overflow: clip;
             overflow: hidden;
             white-space: nowrap;
-            transition: 200ms;
+            transition: transform 200ms;
+            /* will-change: opacity; */
         }
-        .details{
-            position: absolute;
-            height: 788%;
-            width: 100%;
-            top: 100%;
-            background-color: hsla(0, 0%, 100%, 10%);
-            border-radius: 0 0 1vh 1vh;
-            transform-origin: 50% 0%;
-            transition: 200ms;
-        }
-        .ingredient-wrapper{
-            color: hsl(0deg 0% 100% / 100%);
+
+        #ingredient-wrapper{
             position: absolute;
             font-size: 2vh;
             height: 25%;
@@ -1135,50 +1357,58 @@
             width: 80%;
             overflow-y: auto;
         }
-        .ingredient{
+        #ingredient-box{
+            position: absolute;
+            left: 0%;
+            width: 100%;
+            overflow-y: hidden;
+        }
+        .ingredient-amount{
             line-height: 140%;
             font-size: 2.5vh;
-            height: 20%;
-            overflow: hidden;
+            height: 3.5vh;
+            overflow-x: hidden;
         }
-        .button-item{
+        .item-button{
             position: absolute;
             font-size: 2vh;
             height: 10%;
             bottom: 5%;
             line-height: 340%;
-            width: 43%;
+            width: 42%;
             overflow: hidden;
             border-radius: 1vh;
             text-align: center;
-            transition: 200ms;
-            box-shadow: hsl(0deg 0% 0% / 30%) 0 0 8px;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            /* will-change: transform, opacity; */
         }
-        .button-add{
+        #tub-button{
             left: 5%;
-            background-color: hsl(320deg 80% 27%);
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
         }
-        .button-pour{
+        #queue-button{
+            left: 36%;
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+        #basement-button{
             right: 5%;
-            background-color: hsl(170deg 80% 27%);
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
-        .button-item:active{
+        .item-button:active{
             transform: scale(0.97);
-            opacity: 90%;
-            transition: 0ms;
+            opacity: 50%;
         }
-        .status{
-            background-color: hsla(0, 0%, 100%, 10%);
+        #status{
+            background-color: var(--panel-color);
             text-align: center;
-            color: hsl(0deg 0% 100% / 100%);
             font-size: 3vh;
             height: 10%;
             width: 100%;
             position: fixed;
             bottom: 0;
-            box-shadow: 0 0 16px 2px rgb(0 0 0 / 50%);
+            box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
         }
-        .status-button{
+        #status-button{
             position: absolute;
             font-size: 2.5vh;
             height: 78%;
@@ -1189,64 +1419,95 @@
             overflow: hidden;
             border-radius: 1vh;
             text-align: center;
-            transition: 200ms;
-            box-shadow: hsl(0deg 0% 0% / 30%) 0 0 8px;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            will-change: opacity;
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
-        .status-pour{
+        #status-button.pour{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(170deg 80% 27%);
+            background-color: hsl(var(--top-hue), 80%, 27%);
         }
-        .status-cancel{
-            background-color: hsl(320deg 80% 27%);
+        #status-button.cancel{
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
         }
-        .status-button:active{
+        #status-button:active{
             transform: scale(0.97);
-            opacity: 90%;
-            transition: 0ms;
+            opacity: 50%;
         }
-        .status-drink{
+
+        #status-queue{
             position: absolute;
-            height: 24%;
+            height: 18%;
             line-height: 100%;
-            width: 55%;
+            width: 25%;
             text-align: left;
-            top: 20%;
-            left: 5%;
-            font-size: 2.5vh;
+            top: 10%;
+            left: 2%;
+            font-size: 2vh;
         }
-        .status-position{
+        #status-state{
             position: absolute;
-            height: 24%;
+            height: 18%;
             line-height: 100%;
-            width: 55%;
+            width: 25%;
             text-align: left;
-            bottom: 20%;
-            left: 5%;
-            font-size: 2.5vh;
+            bottom: 41%;
+            left: 2%;
+            font-size: 2vh;
         }
-        .bar-base{
+        #status-connection{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 25%;
+            text-align: left;
+            bottom: 10%;
+            left: 2%;
+            font-size: 2vh;
+            font-weight: bold;
+        }
+
+        #status-drink{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 34%;
+            text-align: left;
+            top: 23%;
+            left: 34%;
+            font-size: 2vh;
+        }
+        #status-outlet{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 34%;
+            text-align: left;
+            bottom: 23%;
+            left: 34%;
+            font-size: 2vh;
+        }
+
+        #status-bar{
             position: absolute;
             top: 0;
             width: 100%;
-            height: 3%;
-            background-color: hsla(0, 0%, 0%, 0%);
+            height: 5%;
             transform-origin: 0% 50%;
-            transform: scaleX(100%);
+            transition: transform 1000ms linear;
+            will-change: transform, opacity;
         }
         .bar-timer{
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(320deg 85% 40%);
-            transition-property: transform, opacity;
-            transition-duration: 500ms;
+            background-color: hsl(var(--top-hue), 85%, 40%);
         }
         .bar-progress{
-            background-color: hsl(170deg 85% 40%);
-            transition-property: transform, opacity;
-            transition-duration: 500ms;
+            background-color: hsl(var(--bottom-hue), 85%, 40%);
         }
-        .volume-title{
+
+        #volume-title{
             position: absolute;
             top: 30%;
             left: 10%;
@@ -1257,7 +1518,7 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        .alcohol-title{
+        #alcohol-title{
             position: absolute;
             top: 35%;
             left: 10%;
@@ -1268,7 +1529,7 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        .abv-title{
+        #abv-title{
             position: absolute;
             top: 40%;
             left: 10%;
@@ -1279,7 +1540,7 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        .alcohol-label{
+        #alcohol-label{
             position: absolute;
             top: 50%;
             left: 36%;
@@ -1290,7 +1551,7 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        .nonalcohol-label{
+        #nonalcohol-label{
             position: absolute;
             top: 65%;
             left: 31%;
@@ -1301,7 +1562,7 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        .alcohol-slider{
+        #alcohol-slider{
             position: absolute;
             top: 55%;
             left: 5%;
@@ -1311,16 +1572,16 @@
             background-color: hsl(0deg 0% 100% / 5%);
             border-radius: 2vh;
         }
-        .alcohol-slider::-webkit-slider-thumb {
+        #alcohol-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsl(170deg 80% 27%);
+            background: hsl(var(--top-hue), 80%, 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
-        .nonalcohol-slider{
+        #nonalcohol-slider{
             position: absolute;
             top: 70%;
             left: 5%;
@@ -1330,71 +1591,188 @@
             background-color: hsl(0deg 0% 100% / 5%);
             border-radius: 2vh;
         }
-        .nonalcohol-slider::-webkit-slider-thumb {
+        #nonalcohol-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsl(170deg 80% 27%);
+            background: hsl(var(--top-hue), 80%, 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
         
-        .empty{
-            opacity: 40%;
-        }
         .shrunk{
             transform: scaleY(0);
         }
-        .border-flat{
-            border-radius: 1vh 1vh 0 0;
-        }
-        .invisible{
+        .transparent{
             opacity: 0%;
+        }
+        .hidden{
+            visibility: hidden;
+        }
+        .notouch{
             pointer-events: none;
         }
-        .noscroll{
+        #drinks-page.noscroll{
             overflow-y: hidden;
         }
+
+        #page-view.noscroll{
+            overflow-x: hidden;
+        }
+
         .grey{
             opacity: 25%;
-        }
-        .strike{
-            text-decoration: line-through;
         }
         /* Animation Keyframes*/
         @keyframes flash {
             from {
-                filter: saturate(100%)
+                opacity: 100%;
             }
             to {
-                filter: saturate(50%);
-            }
-        }
-
-        @keyframes tab-anim {
-            from {
-                background-color: hsla(0, 0%, 100%, 20%);
-            }
-            to {
-                background-color: hsla(0, 0%, 100%, 10%);
-            }
-        }
-
-        @keyframes button-anim {
-            from {
-                background-color: hsla(0, 0%, 100%, 20%);
-            }
-            to {
-                background-color: hsla(0, 0%, 100%, 10%);
+                opacity: 50%;
             }
         }
 
     </style>
 </head>
 
+
+
 <body>
-    <div id="root"></div>
+    <template id="template-drink-item">
+        <div class="drink-item">
+            <div class="drink-title">Title</div>
+            <div class="ingredient-summary">Ingredients</div>
+            <div class="arrow"></div>
+        </div>
+    </template>
+
+    <template id="template-ingredient-amount">
+        <div class="ingredient-amount"></div>
+    </template>
+
+    <template id="template-ingredient-item">
+        <div class="ingredient-item">
+            <div class="ingredient-title"></div>
+            <div class="ingredient-button ingredient-minus"></div>
+            <div class="ingredient-volume"></div>
+            <div class="ingredient-button ingredient-plus"></div>
+        </div>
+    </template>
+
+    <div id="ruler"></div>
+
+    <div id="background">
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+    </div>
+
+    <div id="header">
+        <div id="drinks-tab" class="tab selected">Drinks</div>
+        <div id="ingredients-tab" class="tab">Ingredients</div>
+        <div id="user-tab" class="tab">User</div>
+    </div>
+    <div id="page-view">
+        <div id="drinks-page">
+            <div id="drink-list">
+
+            </div>
+            <div id="drink-detail" class="notouch transparent">
+                <div class="drink-item flat">
+                    <div class="drink-title">Title</div>
+                    <div class="ingredient-summary"></div>
+                    <div class="close"></div>
+                </div>
+                <div id="drink-detail-body" class="shrunk">
+                    <div id="ingredient-wrapper">
+                        <div id="ingredient-box">
+
+                        </div>
+                    </div>
+
+                    <div id="volume-title">Volume: </div>
+                    <div id="alcohol-title">Drinks: </div>
+                    <div id="abv-title">ABV: </div>
+
+                    <div id="alcohol-label">Alcohol: </div>
+                    <input id="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+                    <div id="nonalcohol-label">Non-alcohol: </div>
+                    <input id="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+
+                    <div id="tub-button" class="item-button">Pour Hot Tub</div>
+                    <div id="basement-button" class="item-button">Pour Basement</div>
+                </div>
+            </div>
+        </div>
+        <div id="ingredients-page">
+            <div id="ingredient-list">
+
+            </div>
+            <div class="drink-item flat">
+                <div class="drink-title">Custom Drink</div>
+                <div class="ingredient-summary"></div>
+                <div class="close"></div>
+            </div>
+            <div id="drink-detail-body" class="shrunk">
+                <div id="ingredient-wrapper">
+                    <div id="ingredient-box">
+
+                    </div>
+                </div>
+
+                <div id="volume-title">Volume: </div>
+                <div id="alcohol-title">Drinks: </div>
+                <div id="abv-title">ABV: </div>
+
+                <div id="alcohol-label">Alcohol: </div>
+                <input id="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+                <div id="nonalcohol-label">Non-alcohol: </div>
+                <input id="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+
+                <div id="tub-button" class="item-button">Pour Hot Tub</div>
+                <div id="basement-button" class="item-button">Pour Basement</div>
+            </div>
+        </div>
+        <div id="user-page">
+            <div id="user-name-label">Name: </div>
+            <input id="user-name-input" type="text">
+
+            <div id="user-weight-label">Weight (lb): </div>
+            <input id="user-weight-input" type="number" steps="1">
+
+            <div id="user-sex-label">Sex: </div>
+            <div id="user-male-button">Male</div>
+            <div id="user-female-button">Female</div>
+
+            <div id="user-drinks-label">Drinks: </div>
+            <div id="user-drinks-value"></div>
+            <div id="user-bac-label">BAC: </div>
+            <div id="user-bac-value"></div>
+
+            <div id="user-update">Update</div>
+
+            <div id="user-theme-label">Theme: </div>
+            <div id="user-dark-button">Dark</div>
+            <div id="user-light-button">Light</div>
+        </div>
+    </div>
+    <div id="status">
+        <div id="status-bar"></div>
+
+        <div id="status-queue"></div>
+        <div id="status-state"></div>
+        <div id="status-connection" class="disconnected"></div>
+
+        <div id="status-drink"></div>
+        <div id="status-outlet"></div>
+
+        <div id="status-button">Pour</div>
+    </div>        
 </body>
 
 </html>
