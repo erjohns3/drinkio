@@ -23,68 +23,63 @@ from watchdog.events import FileSystemEventHandler
 
 
 class State(Enum):
+    UNWATCHED = 0
     STANDBY = 1
-    READY = 2
+    QUEUED = 2
     POURING = 3
     CANCELLING = 4
-    CLEANING = 5
+    FINISHED = 5
+    CLEANING = 6
 
 clear_time = {
-    "basement": 8
-    "hottub": 18
+    "basement": 10,
+    "hottub": 100
 }
 
-class User:
-    def __init__(self, uuid):
-        print("new user")
-        self.uuid = uuid
-        self.name = ""
-        self.weight = 0 # pounds
-        self.sex = ""
-        self.drinks = [] # shots
-        self.alcohol_prev = 0 # grams
-    
-    def add_drink(self, amount):
-        self.drinks.append({'amount': amount, 'time': time.time()})
-        print("add drink")
+def get_drinks(uuid):
+    drinks = users[uuid]['drinks']
+    sum = 0
+    while len(drinks) > 0 and drinks[0]['time'] < time.time() - 43200:
+        drinks.pop(0)
+    for drink in drinks:
+        sum += drink['amount']
+    return sum
 
-    def get_drinks(self):
-        sum = 0
-        while len(self.drinks) > 0 and self.drinks[0]['time'] < time.time() - 43200:
-            self.drinks.pop(0)
-        for drink in self.drinks:
-            sum += drink['amount']
-        return sum
-
-    def get_bac(self):
-        # bac = (1 mg of alcohol) / (100 ml of blood)
-        if len(self.drinks) > 0 and self.weight > 0:
-            if self.sex == "male":
-                blood = self.weight * 0.453592 * 75
-            elif self.sex == "female":
-                blood = self.weight * 0.453592 * 65
-            else:
-                return 0
-
-            #alcohol_mult = 17.74 # ml of alcohol per drink
-            alcohol_mult = 14 # grams of alcohol per drink
-            alcohol = self.drinks[0]['amount'] * alcohol_mult
-
-            for i in range(1, len(self.drinks)):
-                alcohol -= (0.015 * (blood / 10) * ((self.drinks[i]['time']-self.drinks[i-1]['time'])/3600))
-                if alcohol < 0:
-                    alcohol = 0
-                alcohol += self.drinks[i]['amount'] * alcohol_mult
-                
-            alcohol -= (0.015 * (blood / 10) * ((time.time()-self.drinks[len(self.drinks)-1]['time'])/3600))
-
-            if alcohol < 0:
-                alcohol = 0
-
-            bac = alcohol / (blood / 10)
-            return bac
+def get_bac(uuid):
+    user = users[uuid]
+    # bac = (1 mg of alcohol) / (100 ml of blood)
+    if len(user['drinks']) > 0 and user['weight'] > 0:
+        if user['sex'] == "male":
+            blood = user['weight'] * 0.453592 * 75
+        elif user['sex'] == "female":
+            blood = user['weight'] * 0.453592 * 65
         else:
             return 0
+
+        drinks = user['drinks']
+        #alcohol_mult = 17.74 # ml of alcohol per drink
+        alcohol_mult = 14 # grams of alcohol per drink
+        alcohol = drinks[0]['amount'] * alcohol_mult
+
+        for i in range(1, len(drinks)):
+            alcohol -= (0.015 * (blood / 10) * ((drinks[i]['time']-drinks[i-1]['time'])/3600))
+            if alcohol < 0:
+                alcohol = 0
+            alcohol += drinks[i]['amount'] * alcohol_mult
+            
+        alcohol -= (0.015 * (blood / 10) * ((time.time()-drinks[len(drinks)-1]['time'])/3600))
+
+        if alcohol < 0:
+            alcohol = 0
+
+        bac = alcohol / (blood / 10)
+        return bac
+    else:
+        return 0
+
+def add_drink(uuid, amount):
+    users[uuid]['drinks'].append({'amount': amount, 'time': time.time()})
+    print("add drink")
 
 class AsyncTimer:
     def __init__(self, timeout, callback):
@@ -102,22 +97,14 @@ class AsyncTimer:
 state_lock = threading.Lock()
 config_lock = threading.Lock()
 connection_list = []
-user_queue = []
-user_drink_name = {}
-user_drink_ingredients = {}
+queue = []
 users = {}
+drinks = {}
+ingredients = {}
 song = vlc.MediaPlayer()
 video_once = vlc.MediaPlayer()
 video_loop = False
 args = False
-
-status = {
-    "position": False,
-    "users": 0,
-    "drink": False,
-    "timer": False,
-    "progress": False
-}
 
 ################################################# Setup pi
 
@@ -136,12 +123,12 @@ FLOW_PERIOD = 0.005
 FLOW_TIMEOUT = 15
 
 TILT_UP = 400000
-TILT_DOWN = 480000
+TILT_DOWN = 485000
 TILT_DOWN_SPEED = 50000 # pwm change per second
-TILT_UP_SPEED = 500000 # pwm change per second
+TILT_UP_SPEED = 50000 # pwm change per second
 TILT_PERIOD = 0.01
 
-PAN_SPEED = 150000 # pwm change per second
+PAN_SPEED = 100000 # pwm change per second
 PAN_PERIOD = 0.01
 
 pan_curr = 495000
@@ -155,6 +142,8 @@ ECHO_PIN = 24
 trigger_start = 0
 cup = True
 
+dirty = False
+
 def echo(pin, level, tick):
     global trigger_start
     global cup
@@ -164,83 +153,190 @@ def echo(pin, level, tick):
         distance = pigpio.tickDiff(trigger_start, tick)
         if distance > 50 and distance < 1200:
             cup = True
+        else:
+            cup = False
 
 ##########################################
+
+light_task = False
+
+async def set_state(new_state):
+    global state
+    global light_task
+
+    print("state: " + str(new_state))
+    old_state = state
+    state = new_state
+
+    await broadcast_status()
+
+    # if light_task:
+    #     light_task.cancel()
+    # light_task = asyncio.create_task(light())
+
+    # asyncio.create_task(buzzer(old_state, new_state))
+
+    #video(old_state, new_state)
+
+####################################
 
 RED_PIN = 9
 GREEN_PIN = 10
 BLUE_PIN = 11
 
-async def light_making():
+async def light():
+
     tick = 0
-    while True:
-        val = int(tick if (tick <= 100) else (200 - tick))
-        pi.set_PWM_dutycycle(GREEN_PIN, (0.5*val + 50)*0.2)
-        pi.set_PWM_dutycycle(BLUE_PIN, (0.5*val + 50))
-        tick = (tick + 25) % 200
-        await asyncio.sleep(0.02604)
 
-async def light_cleaning():
-    val = 0
-    while True:
-        pi.set_PWM_dutycycle(RED_PIN, val)
-        val = 100 - val
-        await asyncio.sleep(0.15)
-
-async def light_finished():
-    tick = 100
-    while True:
-        val = int(tick if (tick <= 100) else (200 - tick))
-        pi.set_PWM_dutycycle(GREEN_PIN, val)
-        tick = (tick + 20) % 200
-        await asyncio.sleep(0.05)
-
-async def light_reset():
     pi.set_PWM_dutycycle(RED_PIN, 0)
     pi.set_PWM_dutycycle(GREEN_PIN, 0)
-    pi.set_PWM_dutycycle(BLUE_PIN, 0)
+    pi.set_PWM_dutycycle(BLUE_PIN, 0)   
 
+    if state == State.STANDBY:
+        while True:
+            val = int(tick if (tick <= 100) else (200 - tick))
+            pi.set_PWM_dutycycle(RED_PIN, (0.8*val + 20))
+            pi.set_PWM_dutycycle(GREEN_PIN, (0.8*val + 20))
+            pi.set_PWM_dutycycle(BLUE_PIN, (0.8*val + 20))
+            tick = (tick + 5) % 200
+            await asyncio.sleep(0.05)            
+        
+    elif state == State.QUEUED:
+        while True:
+            val = int(tick if (tick <= 100) else (200 - tick))
+            pi.set_PWM_dutycycle(RED_PIN, val)
+            pi.set_PWM_dutycycle(BLUE_PIN, val)
+            tick = (tick + 10) % 200
+            await asyncio.sleep(0.05)
+        
+    elif state == State.POURING:
+        while True:
+            val = int(tick if (tick <= 100) else (200 - tick))
+            pi.set_PWM_dutycycle(GREEN_PIN, (0.5*val + 50)*0.2)
+            pi.set_PWM_dutycycle(BLUE_PIN, (0.5*val + 50))
+            tick = (tick + 25) % 200
+            await asyncio.sleep(0.02604)
+        
+    elif state == State.CANCELLING:
+        while True:
+            val = tick
+            pi.set_PWM_dutycycle(RED_PIN, val)
+            tick = 100 - tick
+            await asyncio.sleep(0.15)
+
+    elif state == State.FINISHED:
+        while True:
+            val = int(tick if (tick <= 100) else (200 - tick))
+            pi.set_PWM_dutycycle(GREEN_PIN, val)
+            tick = (tick + 10) % 200
+            await asyncio.sleep(0.05)
+
+    elif state == State.CLEANING:
+        while True:
+            val = tick
+            pi.set_PWM_dutycycle(RED_PIN, val)
+            pi.set_PWM_dutycycle(GREEN_PIN, val*0.06)
+            tick = 100 - tick
+            await asyncio.sleep(0.15)
+    
 ######################################
 
 BUZZ_PIN = 5
 
-async def buzzer_making():
-    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+async def buzzer(old_state, new_state):
 
-    pi.set_PWM_frequency(BUZZ_PIN, 500)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 750)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 1000)
-    await asyncio.sleep(0.25)
+    if new_state == State.UNWATCHED:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
 
-    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        pi.set_PWM_frequency(BUZZ_PIN, 800)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
 
-async def buzzer_finished():
-    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
 
-    pi.set_PWM_frequency(BUZZ_PIN, 500)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 1000)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 500)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 1000)
-    await asyncio.sleep(0.25)
+    if new_state == State.STANDBY:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
 
-    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 800)
+        await asyncio.sleep(0.2)
 
-async def buzzer_cleaning():
-    pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        
+    elif new_state == State.QUEUED:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
 
-    pi.set_PWM_frequency(BUZZ_PIN, 1000)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 750)
-    await asyncio.sleep(0.25)
-    pi.set_PWM_frequency(BUZZ_PIN, 500)
-    await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 1000)
+        await asyncio.sleep(0.2)
 
-    pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        
+    elif new_state == State.POURING:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+        pi.set_PWM_frequency(BUZZ_PIN, 800)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 1000)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 800)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 400)
+        await asyncio.sleep(0.5)
+
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+        
+    elif new_state == State.CANCELLING:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.2)
+
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
+    elif new_state == State.FINISHED:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 1000)
+        await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 1000)
+        await asyncio.sleep(0.25)
+
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+
+    elif new_state == State.CLEANING:
+        pi.set_PWM_dutycycle(BUZZ_PIN, 50)
+
+        pi.set_PWM_frequency(BUZZ_PIN, 1000)
+        await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 750)
+        await asyncio.sleep(0.25)
+        pi.set_PWM_frequency(BUZZ_PIN, 500)
+        await asyncio.sleep(0.25)
+
+        pi.set_PWM_dutycycle(BUZZ_PIN, 0)
+    
+def video(old_state, new_state):
+
+    video_once.stop()
+    video_once = vlc.MediaPlayer("video/make.mp4")
+    video_once.play()
+
+    video_loop = OMXPlayer('video/idle.mp4', '--loop')
+    video_loop.quit()
 
 #######################################
 
@@ -306,6 +402,7 @@ def signal_handler(sig, frame):
         pi.set_PWM_dutycycle(BUZZ_PIN, 0)
 
         pi.stop()
+
     tracking.DB.backup_db()
     sys.exit(0)
 
@@ -317,79 +414,58 @@ signal.signal(signal.SIGTERM, signal_handler)
 loc = pathlib.Path(__file__).parent.absolute()
 drink_io_folder = str(loc)
 
+with open(path.join(drink_io_folder, 'ports.json'), 'r') as f:
+    ports = json.loads(f.read())
 
-with open(path.join(drink_io_folder, 'rasp_pi_port_config.json'), 'r') as f:
-    rasp_pi_port_config = json.loads(f.read())
+def load_config():
+    config_lock.acquire()
 
-ports = rasp_pi_port_config['ports']
-
-
-with open(path.join(drink_io_folder, 'songs.json'), 'rb') as f:
-    drink_songs = json.loads(f.read().decode("UTF-8"))
-
-with open(path.join(drink_io_folder, 'admins.json'), 'rb') as f:
-    admins = json.loads(f.read().decode("UTF-8"))
-
-# helper functions
-
-# ASSUMES HAS ALREADY BEEN LOCKED
-def dump_ingredients_owned_to_file():
-    print("----dump ingredients to to file start----", flush=True)
-    with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'w') as f:
-        new_dict_to_dump = {}
-        # for k, v in ingredients.values():
-        for k in sorted(list(ingredients.keys()), key = lambda x: ingredients[x]['port']):
-            v = ingredients[k]
-            new_dict_to_dump[k] = v.copy()
-        
-        json.dump(new_dict_to_dump, f, indent=2)
-        print("----dump ingredients to to file done----", flush=True)
-    
-
-to_send_to_client = {}
-
-# prepping data from the "abs_of_ingredients.json", "recipes.json" and "ingredients_owned.json"
-
-def load_config_from_files(lock):
-    lock.acquire()
-    global to_send_to_client
     global drinks
     global ingredients
+    global songs
+    global users
 
-    with open(path.join(drink_io_folder, 'ingredients_owned.json'), 'r') as f:
-        owned_ingredients = json.loads(f.read())
-    with open(path.join(drink_io_folder, 'recipes.json'), 'rb') as f:
-        drink_recipes = json.loads(f.read().decode("UTF-8"))
+    with open(path.join(drink_io_folder, 'ingredients.json'), 'r') as f:
+        ingredients = json.loads(f.read())
 
-    # removes recipes we dont have from drinks
-    # to_remove = set()
-    # drinks_with_owned_ingredients = {}
-    # for key, value in drink_recipes.items():
-    #     drinks_with_owned_ingredients[key] = {}
-    #     for ingredient in value['ingredients']:
-    #         if 'ingredient' in ingredient and ingredient['ingredient'] not in owned_ingredients:
-    #             to_remove.add(key)
-    #             continue
-    #         if 'amount' in ingredient:
-    #             drinks_with_owned_ingredients[key][ingredient['ingredient']] = ingredient['amount']
+    with open(path.join(drink_io_folder, 'recipes.json'), 'r') as f:
+        drinks = json.loads(f.read())
 
-    # for i in to_remove:
-    #     del drinks_with_owned_ingredients[i]
+    with open(path.join(drink_io_folder, 'songs.json'), 'r') as f:
+        songs = json.loads(f.read())
 
-    to_send_to_client['drinks'] = drink_recipes
-    to_send_to_client['ingredients'] = owned_ingredients
-    drinks = drink_recipes
-    ingredients = owned_ingredients
-    lock.release()
+    with open(path.join(drink_io_folder, 'users.json'), 'r') as f:
+        users = json.loads(f.read())
+
+    config_lock.release()
+
+# helper functions
+    
+def sort_ingredients():
+    global ingredients
+    ingredients_sorted = {}
+    # for k, v in ingredients.values():
+    for k in sorted(list(ingredients.keys()), key = lambda x: ingredients[x]['port']):
+        v = ingredients[k]
+        ingredients_sorted[k] = v.copy()
+    ingredients = ingredients_sorted
+
+def save_ingredients():
+    print("----save ingredients start----", flush=True)
+    with open(path.join(drink_io_folder, 'ingredients.json'), 'w') as f:
+        json.dump(ingredients, f, indent=2)
+        print("----save ingredients done----", flush=True)
+
+def save_users():
+    print("----save user start----", flush=True)
+    with open(path.join(drink_io_folder, 'users.json'), 'w') as f:
+        json.dump(users, f, indent=2)
+        print("----save user done----", flush=True)
 
 
-load_config_from_files(config_lock)
-#dump_ingredients_owned_to_file()
-
-# watchdog for "ingredients_owned.json" list
 class MyWatchdogMonitor(FileSystemEventHandler):
     def __init__(self, _config_lock, f_load_config_from_files):
-        self.file_to_watch = 'ingredients_owned.json'
+        self.file_to_watch = 'ingredients.json'
         self.config_lock = _config_lock
         self.f_load_config_from_files = f_load_config_from_files
         
@@ -403,7 +479,9 @@ class MyWatchdogMonitor(FileSystemEventHandler):
 #observer.schedule(event_handler, path=drink_io_folder, recursive=False)
 #observer.start()
 
-####################################
+load_config()
+sort_ingredients()
+save_ingredients()
 
 cancel_lock = threading.Lock()
 cancel_pour = False
@@ -411,8 +489,6 @@ cancel_pour = False
 clean = {
     "water": 3
 }
-
-
 
 async def check_cancel():
     if pi is None:
@@ -448,6 +524,7 @@ async def pour_drink(drink, outlet):
     global tilt_curr
     global progress
     global ingredients
+    global dirty
 
     ingredient_count = 0
     ingredient_index = 0
@@ -457,8 +534,10 @@ async def pour_drink(drink, outlet):
 
     if outlet == 'basement':
         pi.write(VALVE_PIN, 1)
+        print("outlet: basement")
     elif outlet == 'hottub':
         pi.write(VALVE_PIN, 0)
+        print("outlet: hot tub")
 
     pi.write(ENABLE_PIN, 0)
 
@@ -490,13 +569,13 @@ async def pour_drink(drink, outlet):
 
         state_lock.acquire()
         if state == State.POURING:
-            progress = (ingredient_index + 0.5) / ingredient_count * 100
+            progress = (ingredient_index) / ingredient_count * 100 + 2
             await broadcast_status()
         state_lock.release()
 
         pi.set_PWM_dutycycle(PUMP_PIN, 0)
 
-        flow_time = (drink[ingredient] - 0.121) / 0.256
+        flow_time = (drink[ingredient] + 0.581) / 0.256
         print("pump time: {} - {}".format(drink[ingredient], flow_time), flush=True)
 
         print("tilt down", flush=True)
@@ -507,34 +586,36 @@ async def pour_drink(drink, outlet):
             await asyncio.sleep(TILT_PERIOD)
 
         pi.set_PWM_dutycycle(PUMP_PIN, 50)
-        flow_start = False
+        flow_start = time.time()
         elapsed = 0
+        dirty = True
 
         while True:
             if await check_cancel(): return
 
-            flow = pi.read(FLOW_PIN) == 1
+            #flow = pi.read(FLOW_PIN) == 1
+            # if flow and not flow_start:
+            #     flow_start = time.time()
+            #     print("flowing: " + str(elapsed))
 
-            if flow and not flow_start:
-                flow_start = time.time()
-                print("flowing: " + str(elapsed))
-
-            if flow_start and time.time() >= flow_start + flow_time:
+            if time.time() >= flow_start + flow_time:
                 break
             
-            if (elapsed > FLOW_TIMEOUT and not flow_start) or (not flow and flow_start):
-                print("ingredient empty")
-                config_lock.acquire()
-                ingredients[ingredient]["empty"] = True
-                dump_ingredients_owned_to_file()
-                config_lock.release()
-                state_lock.acquire()
-                await broadcast_config()
-                state_lock.release()
-                break
+            # if (elapsed > FLOW_TIMEOUT and not flow_start) or (not flow and flow_start):
+            #     print("ingredient empty")
+            #     config_lock.acquire()
+            #     ingredients[ingredient]["empty"] = True
+            #     save_ingredients()
+            #     config_lock.release()
+            #     state_lock.acquire()
+            #     await broadcast_config()
+            #     state_lock.release()
+            #     break
 
             elapsed = elapsed + FLOW_PERIOD
             await asyncio.sleep(FLOW_PERIOD)
+
+        pi.set_PWM_dutycycle(PUMP_PIN, 0)
 
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
@@ -543,34 +624,40 @@ async def pour_drink(drink, outlet):
 
         print("tilt up done", flush=True)
 
+        pi.set_PWM_dutycycle(PUMP_PIN, 50)
+
         state_lock.acquire()
         if state == State.POURING:
-            progress = (ingredient_index + 1.0) / ingredient_count * 100
+            progress = (ingredient_index + 0.5) / ingredient_count * 100
             await broadcast_status()
         state_lock.release()
 
-        ingredient_index = ingredient_index + 1
+        ingredient_index += 1
 
     await asyncio.sleep(clear_time[outlet])
     pi.set_PWM_dutycycle(PUMP_PIN, 0)
     pi.write(ENABLE_PIN, 1)
 
-async def pour_cycle(drink, name, outlet):
-    global state
+    state_lock.acquire()
+    if state == State.POURING:
+        progress = (ingredient_index) / ingredient_count * 100
+        await broadcast_status()
+    state_lock.release()
+
+
+async def pour_cycle(drink_name, ingredient_list, outlet):
     global cancel_pour
     global song
     global video_once
     global cup
+    global dirty
 
     #################################
     song.stop()
-    print(drink_songs, flush=True)
-    print(name, flush=True)
-    video_once.stop()
-    video_once = vlc.MediaPlayer("video/make.mp4")
-    video_once.play()
-    if name in drink_songs:
-        song = vlc.MediaPlayer("songs/"+drink_songs[name]+".mp4")
+    print(songs, flush=True)
+    print(drink_name, flush=True)
+    if drink_name in songs:
+        song = vlc.MediaPlayer("songs/"+songs[drink_name]+".mp4")
         print("playing custom", flush=True)
     else:
         song = vlc.MediaPlayer("songs/luigi.mp4")
@@ -578,67 +665,47 @@ async def pour_cycle(drink, name, outlet):
     song.play()
     ##############################
 
-    light_task = asyncio.create_task(light_making())
-    asyncio.create_task(buzzer_making())
-
     print("pour drink:", flush=True)
-    print(drink, flush=True)
-    await pour_drink(drink, outlet)
+    print(ingredient_list, flush=True)
+    #await pour_drink(ingredient_list, outlet)
+    await asyncio.sleep(10)
     print("drink done", flush=True)
     song.stop()
 
-    light_task.cancel()
-    await light_reset()
+    if dirty:
+        state_lock.acquire()
+        await set_state(State.FINISHED)
+        state_lock.release()
 
-    ###############################
+        if outlet == 'basement':
+            print("waiting for cup remove...")
+            cup = True
+            timeout = 0
+            while cup and timeout < 180:
+                pi.gpio_trigger(TRIGGER_PIN, 10, 1)
+                timeout += 0.5
+                await asyncio.sleep(0.5)
+                
+            print("cup removed")
 
-    video_once.stop()
-    video_once = vlc.MediaPlayer("video/serve.mp4")
-    video_once.play()
+        state_lock.acquire()
+        await set_state(State.CLEANING)
+        state_lock.release()
 
-    light_task = asyncio.create_task(light_finished())
-    asyncio.create_task(buzzer_finished())
+        cancel_lock.acquire()
+        cancel_pour = False
+        cancel_lock.release()
 
-    cup = True
-    while cup:
-        pi.gpio_trigger(TRIGGER_PIN, 10, 1)
-        await asyncio.sleep(0.5)
+        print("pour clean:")
+        print(clean, flush=True)
+        await pour_drink(clean, outlet)
+        print("clean done", flush=True)
 
-    light_task.cancel()
-    await light_reset()
-
-    video_once.stop()
-    video_once = vlc.MediaPlayer("video/clean.mp4")
-    video_once.play()
-
-    light_task = asyncio.create_task(light_cleaning())
-    asyncio.create_task(buzzer_cleaning())
-
-    state_lock.acquire()
-    state = State.CLEANING
-    print("----CLEANING----", flush=True)
-    await broadcast_status()
-    state_lock.release()
-
-    cancel_lock.acquire()
-    cancel_pour = False
-    cancel_lock.release()
-
-    print("pour clean:")
-    print(clean, flush=True)
-    await pour_drink(clean, outlet)
-    print("clean done", flush=True)
+        dirty = False
 
     state_lock.acquire()
     await state_reset()
     state_lock.release()
-
-    light_task.cancel()
-    await light_reset()
-
-    video_once.stop()
-    video_once = vlc.MediaPlayer("video/done.mp4")
-    video_once.play()
 
 #################################################
 
@@ -653,7 +720,7 @@ def http_server(testing=False):
 
 #################################################
 
-state = State.STANDBY
+state = State.UNWATCHED
 ready_wait = 20
 ready_timer = False
 ready_time = 0
@@ -674,71 +741,59 @@ async def ready_end():
     state_lock.release()
 
 async def state_reset():
-    global state
-    global user_queue
+    global queue
 
-    user_queue.pop(0)
-    if len(user_queue) == 0:
-        state = State.STANDBY
-        print("----STANDBY----", flush=True)
-    else:
-        state = State.READY
-        print("----READY----", flush=True)
+    queue.pop(0)
+    if len(queue) > 0:
         await ready_start()
-    await broadcast_status()
-
-async def send_status(socket, uuid):
-    global status
-
-    i = 1
-    found = False
-    for user in user_queue:
-        if user == uuid:
-            found = True
-            break
-        i = i+1
-    if found:
-        status["position"] = i
-        status["drink"] = user_drink_name[user]
-        if state == State.READY and user_queue[0] == uuid:
-            status["timer"] = max(0, ready_time + ready_wait - time.time())
-            status["progress"] = False
-        elif state == State.POURING and user_queue[0] == uuid:
-            status["timer"] = False
-            status["progress"] = progress
-        else:
-            status["timer"] = False
-            status["progress"] = False
+        await set_state(State.QUEUED)
+    elif watchers > 0:
+        await set_state(State.STANDBY)
     else:
-        status["position"] = False
-        status["drink"] = False
-        status["timer"] = False
-        status["progress"] = False
-    status["users"] = len(user_queue)
-    print(status, flush=True)
+        await set_state(State.UNWATCHED)
+
+# userState = NOLINE, OUTLINE, INLINE, FRONTLINE, POURING
+async def send_status(socket, uuid):
+    status = {}
+
+    if state == State.UNWATCHED or state == State.STANDBY:
+        status["userState"] = "NOLINE"
+    else:
+        status["userState"] = "OUTLINE"
+
+    for i in range(0, len(queue)):
+        if queue[i] == uuid:
+            status["position"] = i+1
+            if i == 0:
+                if state == State.QUEUED:
+                    status["userState"] = "FRONTLINE"
+                    status["timer"] = max(0, ready_time + ready_wait - time.time())
+                elif state == State.POURING:
+                    status["userState"] = "POURING"
+                    status["progress"] = progress
+            else:
+                status["userState"] = "INLINE"
+            break
+
+    status["size"] = len(queue)
+    status["makerState"] = state.name
+    message = {
+        'status': status
+    }
+    dump = json.dumps(message)
     try:
-        message = {
-            'status': status
-        }
-        await socket.send(json.dumps(message))
+        await socket.send(dump)
     except:
         print("socket send failed", flush=True)
 
 async def broadcast_status():
-    global connection_list
-    
-    i=0
-    while i < len(connection_list):
-        if connection_list[i]['user'] is not False:
-            await send_status(connection_list[i]['socket'], connection_list[i]['user'].uuid)
-            i=i+1
+    for connection in connection_list:
+        if connection['uuid'] is not False:
+            await send_status(connection['socket'], connection['uuid'])
 
 
 async def broadcast_config():
-    global connection_list
-    
-    i=0
-    while i < len(connection_list):
+    for connection in connection_list:
         config_lock.acquire()
         message = {
             'drinks': drinks,
@@ -746,45 +801,64 @@ async def broadcast_config():
         }
         dump = json.dumps(message)
         config_lock.release()
-        await connection_list[i]['socket'].send(dump)
-        i=i+1
+        try:
+            await connection['socket'].send(dump)
+        except:
+            print("socket send failed", flush=True)
 
 
 async def send_user(socket, uuid):
     user = users[uuid]
+    drinks = get_drinks(uuid)
+    bac = get_bac(uuid)
     message = {
         'user': {
-            'name': user.name,
-            'weight': user.weight,
-            'sex': user.sex,
-            'drinks': user.get_drinks(),
-            'bac': user.get_bac()
+            'name': user['name'],
+            'weight': user['weight'],
+            'sex': user['sex'],
+            'drinks': drinks,
+            'bac': bac
         }
     }
-    await socket.send(json.dumps(message))
+    dump = json.dumps(message)
+    try:
+        await socket.send(dump)
+    except:
+        print("socket send failed", flush=True)
+
+watchers = 0
+
+async def watched():
+    if state == State.UNWATCHED:
+        await set_state(State.STANDBY)
+    print("first watching user on")
+
+async def unwatched():
+    if state == State.STANDBY:
+        await set_state(State.UNWATCHED)
+    print("last watching user off")
 
 #################################################
 
 async def init(websocket, path):
     global state
-    global user_queue
+    global queue
     global ready_timer
     global cancel_pour
     global progress
     global ingredients
-    global video_once
-    global video_loop
-
-    #video_once.stop()
-    #video_once = vlc.MediaPlayer("video/hello.mp4")
-    #video_once.play()
+    global watchers
 
     state_lock.acquire()
     if len(connection_list) == 0:
         print("first user on")
-        video_loop = OMXPlayer('video/idle.mp4', '--loop')
-    connection_list.append({'socket': websocket, 'user': False})
-    print("init: " + websocket.remote_address[0], flush=True)
+    
+    connection_list.append({'socket': websocket, 'uuid': False, 'watching': True})
+    print("init - " + websocket.remote_address[0] + " : " + str(websocket.remote_address[1]), flush=True)
+    watchers += 1
+    print("watchers: " + str(watchers))
+    if watchers == 1:
+        await watched()
     state_lock.release()
     
     config_lock.acquire()
@@ -794,104 +868,149 @@ async def init(websocket, path):
     }
     dump = json.dumps(message)
     config_lock.release()
-    await websocket.send(dump)
+    try:
+        await websocket.send(dump)
+    except:
+        print("socket send failed", flush=True)
     while True:
         try:
             msg_string = await websocket.recv()
         except:
-            print("socket recv failed", flush=True)
+            print("socket recv FAILED - " + websocket.remote_address[0] + " : " + str(websocket.remote_address[1]), flush=True)
             state_lock.acquire()
             i=0
             while i < len(connection_list):
                 if connection_list[i]['socket'] == websocket:
-                    connection_list.pop(i)
-                    #video_once.stop()
-                    #video_once = vlc.MediaPlayer("video/bye.mp4")
-                    #video_once.play()
-
-                    if len(connection_list) == 0:
+                    if len(connection_list) == 1:
                         print("last user off")
-                        video_loop.quit()
+                    if connection_list[i]['watching'] == True:
+                        watchers -= 1
+                        print("watchers: " + str(watchers))
+                        if watchers == 0:
+                            await unwatched()
+                    connection_list.pop(i)
                     break
-                i=i+1
+                i += 1
             state_lock.release()
             break
-        print("socket recv")
+        print("socket recv - " + websocket.remote_address[0] + " : " + str(websocket.remote_address[1]), flush=True)
         msg = json.loads(msg_string)
         print(msg, flush=True)
         state_lock.acquire()
-        if 'type' in msg:
-            print("----local: " + str(args.local) + ", address: " + websocket.remote_address[0], flush=True)
+        if 'type' in msg and 'uuid' in msg:
             if msg['type'] == "query":
                 for connection in connection_list:
                     if connection['socket'] == websocket:
                         if msg['uuid'] in users:
-                            print("existing user")
+                            print("existing user: " + users[msg['uuid']]['name'])
                             await send_user(websocket, msg['uuid'])
                         else:
                             print("new user")
-                            users[msg['uuid']] = User(msg['uuid'])
-                        connection['user'] = users[msg['uuid']]
+                            users[msg['uuid']] = {
+                                'name': "",
+                                'weight': 0,
+                                'sex': "",
+                                'drinks': [],
+                                'admin': False
+                            }
+                        connection['uuid'] = msg['uuid']
+                        break
                 await send_status(websocket, msg['uuid'])
 
-            elif args.local and websocket.remote_address[0] != "192.168.86.1" and msg['uuid'] not in admins:
-                print("non local", flush=True)
+            elif msg['type'] == "visible":
+                for connection in connection_list:
+                    if connection['socket'] == websocket and connection['watching'] == False:
+                        connection['watching'] = True
+                        watchers += 1
+                        print("watchers: " + str(watchers))
+                        if watchers == 1:
+                            await watched()
+
+            elif msg['type'] == "hidden":
+                print("hidden")
+                for connection in connection_list:
+                    if connection['socket'] == websocket and connection['watching'] == True:
+                        connection['watching'] = False
+                        watchers -= 1
+                        print("watchers: " + str(watchers))
+                        if watchers == 0:
+                            await unwatched()
+
+            elif args.local and websocket.remote_address[0] != "192.168.86.1" and not users[msg['uuid']]['admin']:
+                print("non local, uer blocked from commands", flush=True)
 
             elif msg['type'] == "user" and 'name' in msg and 'weight' in msg and 'sex' in msg:
 
-                users[msg['uuid']].name = msg['name']
-                users[msg['uuid']].weight = msg['weight']
-                users[msg['uuid']].sex = msg['sex']
+                users[msg['uuid']]['name'] = msg['name']
+                try:
+                    weight = float(msg['weight'])
+                except:
+                    weight = 0
+                users[msg['uuid']]['weight'] = weight
+                users[msg['uuid']]['sex'] = msg['sex']
                 await send_user(websocket, msg['uuid'])
+                save_users()
 
-            elif msg['type'] == "ingredient" and 'name' in msg and 'empty' in msg:
-                if msg['uuid'] in admins:
-                    print("admin: "+admins[msg['uuid']]+", "+msg['uuid'], flush=True)
+            elif msg['type'] == "ingredient" and 'ingredient' in msg and 'empty' in msg:
+                if users[msg['uuid']]['admin']:
+                    print(msg['ingredient'] + " empty: "+msg['uuid'], flush=True)
                     config_lock.acquire()
-                    ingredients[msg['name']]["empty"] = msg['empty']
-                    dump_ingredients_owned_to_file()
+                    ingredients[msg['ingredient']]["empty"] = msg['empty']
+                    save_ingredients()
                     config_lock.release()
                     await broadcast_config()                    
 
-            elif msg['type'] == "queue" and 'name' in msg and 'ingredients' in msg:
+            elif msg['type'] == "queue":
                 print("queue add", flush=True)
                 
-                add_user = True
-                for user in user_queue:
-                    if user == msg['uuid']:
-                        add_user = False
-                        break
-                if add_user:
-                    user_queue.append(msg['uuid'])
-                    
-                user_drink_name[msg['uuid']] = msg['name']
-                user_drink_ingredients[msg['uuid']] = msg['ingredients']
-
-                if state == State.STANDBY:
-                    state = State.READY
-                    print("----READY----", flush=True)
+                if state == State.UNWATCHED or state == State.STANDBY:
+                    queue.append(msg['uuid'])
                     await ready_start()
-
-                await broadcast_status()
-            
-            elif msg['type'] == "remove":
-                found = False
-                i = 0
-                for user in user_queue:
-                    if user == msg['uuid']:
-                        found = True
-                        break
-                    i = i+1
-                if found:
-                    if i > 0:
-                        user_queue.remove(msg['uuid'])
+                    await set_state(State.QUEUED)
+                elif state == State.QUEUED:
+                    add_queue = True
+                    for i in range(0, len(queue)):
+                        if queue[i] == msg['uuid']:
+                            add_queue = False
+                            break
+                    if add_queue:
+                        queue.append(msg['uuid'])
                         await broadcast_status()
-                    elif state == State.READY:
-                        ready_timer.cancel()
-                        await state_reset()
+                else:
+                    add_queue = True
+                    for i in range(1, len(queue)):
+                        if queue[i] == msg['uuid']:
+                            add_queue = False
+                            break
+                    if add_queue:
+                        queue.append(msg['uuid'])
+                        await broadcast_status()
 
-            elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg:
-                if state == State.STANDBY:
+            elif msg['type'] == "remove":
+                print("queue remove", flush=True)
+                for i in range(0, len(queue)):
+                    if queue[i] == msg['uuid']:
+                        if i > 0:
+                            queue.pop(i)
+                            await broadcast_status()
+                        elif state == State.QUEUED:
+                            ready_timer.cancel()
+                            await state_reset()
+                        break
+
+            elif msg['type'] == "pour" and 'name' in msg and 'ingredients' in msg and 'outlet' in msg:
+                
+                pour = False
+                if state == State.UNWATCHED or state == State.STANDBY:
+                    queue.append(msg['uuid'])
+                    pour = True
+                elif state == State.QUEUED:
+                    for i in range(0, len(queue)):
+                        if queue[i] == msg['uuid']:
+                            ready_timer.cancel()
+                            pour = True
+                            break
+                if pour:
                     full = True
                     alcohol = 0
                     config_lock.acquire()
@@ -901,63 +1020,26 @@ async def init(websocket, path):
                             full = False
                     config_lock.release()
                     if full:
-                        if 'uuid' in msg and 'name' in msg and 'ingredients' in msg:
-                            tracking.DB.record_pour(msg['uuid'], msg['name'], msg['ingredients'])
-                        user_queue.append(msg['uuid'])
-                        user_drink_name[msg['uuid']] = msg['name']
-                        user_drink_ingredients[msg['uuid']] = msg['ingredients']
-                        state = State.POURING
-                        print("----POURING----", flush=True)
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]], msg['outlet']))
+                        tracking.DB.record_pour(msg['uuid'], msg['name'], msg['ingredients'])
                         progress = 1
-                        await broadcast_status()
-                        users[msg['uuid']].add_drink(alcohol)
-                        await send_user(websocket, msg['uuid'])
-
-            elif msg['type'] == "pour" :
-                if state == State.READY and user_queue[0] == msg['uuid'] and user_queue[0] in user_drink_ingredients:
-                    full = True
-                    alcohol = 0
-                    config_lock.acquire()
-                    for ingredient in user_drink_ingredients[user_queue[0]]:
-                        alcohol += user_drink_ingredients[user_queue[0]][ingredient] * ingredients[ingredient]['abv'] / 0.6
-                        if ingredients[ingredient]["empty"]:
-                            full = False
-                    config_lock.release()
-                    if full:
-                        if 'uuid' in msg and 'name' in msg and 'ingredients' in msg:
-                            tracking.DB.record_pour(msg['uuid'], msg['name'], msg['ingredients'])
-                        ready_timer.cancel()
-                        state = State.POURING
-                        print("----POURING----", flush=True)
-                        asyncio.create_task(pour_cycle(user_drink_ingredients[user_queue[0]], user_drink_name[user_queue[0]], msg['outlet']))
-                        progress = 1
-                        await broadcast_status()
-                        users[msg['uuid']].add_drink(alcohol)
+                        await set_state(State.POURING)
+                        asyncio.create_task(pour_cycle(msg['name'], msg['ingredients'], msg['outlet']))
+                        add_drink(msg['uuid'], alcohol)
                         await send_user(websocket, msg['uuid'])
 
             elif msg['type'] == "cancel":
-                if state == State.POURING and user_queue[0] == msg['uuid']:
-                    state = State.CANCELLING
-                    print("----CANCELLING----", flush=True)
-                    print("pour cancel", flush=True)
+                if state == State.POURING and queue[0] == msg['uuid']:
                     cancel_lock.acquire()
                     cancel_pour = True
                     cancel_lock.release()
-                    user_queue[0] = "cancelled"
-                    await broadcast_status()
+                    queue[0] = "cancelled"
+                    await set_state(State.CANCELLING)
 
         state_lock.release()
-
-def video_manager():
-    while True:
-        time.sleep(30)
 
 def run_asyncio():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
-    #asyncio.create_task(video_manager())
 
     start_server = websockets.serve(init, "0.0.0.0", 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
@@ -980,7 +1062,6 @@ def main():
     http_thread.start()
 
     run_asyncio()
-
 
 
 if __name__ == "__main__":
