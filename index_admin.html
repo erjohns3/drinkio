@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#006655"/>
+    <meta name="description" content="Have a robot make you a drink">
+    <title>Drink Maker New</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="static/icon48.png">
+    <link rel="apple-touch-icon" href="static/icon192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap">
+
+    <script type="module">
+
+        function visibility() {
+            if (document.hidden) {
+                var visibility = {
+                    uuid: uuid,
+                    type: "hidden"
+                };
+                socket.send(JSON.stringify(visibility));
+                console.log("hidden");
+            } else {
+                if(socket.readyState == WebSocket.CLOSED){
+                    socketInit();
+                }
+                var visibility = {
+                    uuid: uuid,
+                    type: "visible"
+                };
+                socket.send(JSON.stringify(visibility));
+                console.log("visible");
+            }
+        }
+
+        function socketInit(){
+            console.log("socket init");
+
+            socket = new WebSocket("ws://makedrink.me:8765");
+
+            socket.onopen = function () {
+                console.log("socket open");
+
+                var query = {
+                    uuid: uuid,
+                    type: "query"
+                };
+                socket.send(JSON.stringify(query));
+
+                document.onvisibilitychange = visibility;
+                visibility();
+
+                socketAttempts = 0;
+
+                if(!socketConnected){
+                    socketConnected = true;
+                    statusConnection.textContent = "Connected";
+                    statusConnection.style.color = "green";
+                }
+            }
+
+            socket.onclose = function () {
+                console.log("socket close");
+                if(socketConnected){
+                    socketConnected = false;
+                    statusConnection.textContent = "Disconnected";
+                    statusConnection.style.color = "red";
+                }
+                var delay = 3000;
+                if(socketAttempts == 0){
+                    delay = 0;
+                }
+                setTimeout(()=>{
+                    if(socket.readyState == WebSocket.CLOSED){
+                        socketInit();
+                    }
+                }, delay);
+
+                socketAttempts++;
+            }
+
+            socket.onerror = function(){
+                console.log("socket error");
+                socket.close();
+            }
+
+            socket.onmessage = function(event){
+                console.log("socket message");
+                var msg = JSON.parse(event.data);
+                console.log(msg);
+                if(msg.drinks){
+
+                    drinks = msg.drinks;
+                    ingredients = msg.ingredients;
+
+                    for(let title in drinks){
+                        if(drinkElems[title] == null){
+
+                            var ingredientSummary = "";
+                            for(var ingredient in drinks[title]){
+                                ingredientSummary += ingredient + ", "
+                            }
+                            
+                            var item = document.importNode(drinkTemplate, true).content.querySelector("div");
+                            
+                            drinkElems[title] = {
+                                item: item,
+                                title: item.getElementsByClassName("drink-title")[0],
+                                ingredientSummary: item.getElementsByClassName("ingredient-summary")[0],
+                                empty: false
+                            };
+
+                            drinkElems[title].title.textContent = title;
+                            drinkElems[title].ingredientSummary.textContent = ingredientSummary;
+                            drinkElems[title].item.onclick = function(){
+                                event.stopPropagation(); 
+                                expandDetail(title)
+                            };
+
+                            drinkListElem.append(item);
+                            //console.log("create: " + title);
+                        }
+
+                        var empty = false;
+                        for(var ingredient in drinks[title]){
+                            if(ingredients[ingredient].empty){
+                                empty = true;
+                            }
+                        }
+                        if(empty && !drinkElems[title].empty){
+                            drinkElems[title].item.classList.add("drink-empty");
+                            drinkElems[title].empty = empty;
+                            if(title == expandedDrink.name){
+                                drinkDetailElem.classList.add("drink-empty");
+                                updateExpandedMenu();
+                            }
+                            //console.log("update: " + title);
+                        }else if(!empty && drinkElems[title].empty){
+                            drinkElems[title].item.classList.remove("drink-empty");
+                            drinkElems[title].empty = empty;
+                            if(title == expandedDrink.name){
+                                drinkDetailElem.classList.remove("drink-empty");
+                                updateExpandedMenu();
+                            }
+                            //console.log("update: " + title);
+                        }
+                    }
+                    
+                    for(let title in ingredients){
+                        if(ingredientElems[title] == null){
+                            var item = document.importNode(ingredientTemplate, true).content.querySelector("div");
+                            
+                            ingredientElems[title] = {
+                                item: item,
+                                title: item.getElementsByClassName("ingredient-title")[0],
+                                port: item.getElementsByClassName("ingredient-port")[0],
+                                button: item.getElementsByClassName("ingredient-button")[0],
+                                empty: false,
+                            };
+
+                            ingredientElems[title].title.textContent = title;
+                            ingredientElems[title].port.textContent = ingredients[title].port;
+                            ingredientElems[title].button.onclick = function(){
+                                event.stopPropagation(); 
+                                toggleIngredientEmpty(title)
+                            };
+
+                            ingredientsPage.append(item);
+                            //console.log("create: " + title);
+                        }
+
+                        if(ingredients[title].empty && !ingredientElems[title].empty){
+                            ingredientElems[title].empty = true;
+                            ingredientElems[title].button.textContent = "Empty";
+                            ingredientElems[title].button.classList.add("ingredient-empty");
+                            //console.log("update: " + title);
+                        }
+                        else if(!ingredients[title].empty && ingredientElems[title].empty){
+                            ingredientElems[title].empty = false;
+                            ingredientElems[title].button.textContent = "Full";
+                            ingredientElems[title].button.classList.remove("ingredient-empty");
+                            //console.log("update: " + title);
+                        }
+                    }
+                }
+                if(msg.status){
+
+                    if(msg.status.userState != userState){
+                        userState = msg.status.userState;
+                        if(expandedDrink.name){
+                            updateExpandedButtons();
+                        }
+                        clearInterval(statusTimer);
+
+                        if(userState == "FRONTLINE"){
+                            //msg.status.timer += Date.now()/1000;
+                            statusBase.classList.remove("bar-progress");
+                            statusBase.classList.add("bar-timer");
+                            statusTimer = setInterval(()=>{
+                                statusTime -= 1;
+                                if(statusTime < 0){
+                                    clearInterval(statusTimer);
+                                }else{
+                                    statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
+                                }
+                            }, 1000);
+
+                            statusButton.classList.remove("grey", "cancel");
+                            statusButton.classList.add("pour");
+                            statusButton.textContent = "Pour";
+                        }else if(userState == "POURING"){
+                            statusBase.classList.remove("bar-timer");
+                            statusBase.classList.add("bar-progress");
+
+                            statusButton.classList.remove("grey", "pour");
+                            statusButton.classList.add("cancel");
+                            statusButton.textContent = "Cancel";
+                        }else{
+                            statusBase.style.transform = "scaleX(0)";
+
+                            statusButton.classList.add("grey");
+                            statusButton.classList.remove("cancel", "pour");
+                            statusButton.textContent = "Pour";
+                        }
+                    } 
+                    if(userState == "FRONTLINE"){
+                        statusTime = msg.status.timer;
+                        statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
+                    }
+                    if(userState == "POURING"){
+                        statusBase.style.transform = "scaleX("+ msg.status.progress+"%)";
+                    }
+
+                    if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
+                        statusQueue.textContent = "Queue: " + msg.status.position + "/" + msg.status.size;
+                        statusDrink.textContent = queuedDrink.name;
+                        statusOutlet.textContent = queuedDrink.outlet;
+                    }else{
+                        statusQueue.textContent = "Queue: " + msg.status.size;
+                        statusDrink.textContent = "";
+                        statusOutlet.textContent = "";
+                    }
+
+                    statusState.textContent = msg.status.makerState;
+                }
+                if(msg.user){
+                    userDrinks.textContent = decimal(msg.user.drinks, 1);
+                    userBAC.textContent = decimal(msg.user.bac, 3);
+
+                    userNameInput.value = msg.user.name;
+                    userWeightInput.value = msg.user.weight;
+
+                    userSex = msg.user.sex;
+                    if(userSex == "male"){
+                        userFemaleButton.classList.remove("active");
+                        userMaleButton.classList.add("active");
+                    }else if(userSex == "female"){
+                        userMaleButton.classList.remove("active");
+                        userFemaleButton.classList.add("active");
+                    }
+                }
+            };
+        }
+
+        function statusClick(){
+            if(userState == "FRONTLINE"){
+                var msg = {
+                    uuid: uuid,
+                    type: "pour",
+                    name: queuedDrink.name,
+                    ingredients: queuedDrink.ingredients,
+                    outlet: queuedDrink.outlet
+                };
+                socket.send(JSON.stringify(msg));
+            }else if(userState == "POURING"){
+                var msg = {
+                    uuid: uuid,
+                    type: "cancel"
+                };
+                socket.send(JSON.stringify(msg));
+            }   
+        }
+
+        function updateExpandedMenu(){
+            updateExpandedInfo();
+            updateExpandedButtons();
+        }
+
+        function updateExpandedInfo(){
+            var alcoholMult = detailAlcoholSlider.value;
+            var nonalcoholMult = detailNonalcoholSlider.value;
+            var totalVolume = 0;
+            var alcoholVolume = 0;
+            var volume = 0;
+            var i = 0;
+            sameDrink = true;
+            if(expandedDrink.name != queuedDrink.name){
+                sameDrink = false;
+            }
+            for (var ingredient in drinks[expandedDrink.name]){
+                var abv = ingredients[ingredient].abv;
+                var volume = 0;
+                if(abv > 0){
+                    volume = drinks[expandedDrink.name][ingredient] * alcoholMult;
+                    alcoholVolume += volume * abv;
+                }else{
+                    volume = drinks[expandedDrink.name][ingredient] * nonalcoholMult;
+                }
+                expandedDrink.ingredients[ingredient] = volume;
+                if(expandedDrink.ingredients[ingredient] != queuedDrink.ingredients[ingredient]){
+                    sameDrink = false;
+                }
+                totalVolume += volume;
+                if(ingredients[ingredient].empty){
+                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz (EMPTY)";
+                }else{
+                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz";
+                }
+                i++;
+            }
+
+            detailVolume.textContent = "total: " + decimal(totalVolume, 2) + " oz";
+            detailAlcohol.textContent = "drinks: " + decimal(alcoholVolume / 0.6, 1);
+            if(totalVolume > 0){
+                detailABV.textContent = "ABV: " + decimal(alcoholVolume * 100 / totalVolume, 1) + "%";
+            }else{
+                detailABV.textContent = "ABV: 0%";
+            }
+
+            detailAlcoholMult.textContent = "Alcohol: " + alcoholMult + "x";
+            detailNonalcoholMult.textContent = "Non-alcohol: " + nonalcoholMult + "x";
+            
+        }
+
+        function detailClick(outlet){
+            event.stopPropagation();
+            if(drinkElems[expandedDrink.name].empty){
+                return;
+            }
+            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
+                changeQueue(outlet);
+                addQueue(); 
+            }
+            else if(userState == "INLINE" || userState == "FRONTLINE"){
+                if(sameDrink && queuedDrink.outlet == outlet){
+                    removeQueue(); 
+                }else{
+                    changeQueue(outlet);
+                    updateExpandedButtons();
+                }
+            }
+        }
+
+        function updateExpandedButtons(){
+            
+            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
+                basementButton.textContent = "Add Basement";
+                tubButton.textContent = "Add Hot Tub";
+            }
+            else if(userState == "INLINE" || userState == "FRONTLINE"){
+                if(sameDrink && queuedDrink.outlet == 'basement'){
+                    basementButton.textContent = "Remove Basement";
+                    tubButton.textContent = "Change Hot Tub";
+                }else if(sameDrink && queuedDrink.outlet == 'hottub'){
+                    basementButton.textContent = "Change Basement";
+                    tubButton.textContent = "Remove Hot Tub";
+                }else{
+                    basementButton.textContent = "Change Basement";
+                    tubButton.textContent = "Change Hot Tub";
+                }
+            }
+        }
+
+        function expandDetail(title){
+
+            if(expandedDrink.name != ""){
+                return;
+            }
+
+            expandedDrink.name = title;
+
+            detailAlcoholSlider.value = 1;
+            detailNonalcoholSlider.value = 1;
+            updateExpandedMenu();
+
+            detailTitle.textContent = title;
+            //detailIngredientSummary.textContent = drinkElems[title].ingredientSummary.textContent;
+            //detailIngredientSummary.classList.add("transparent");
+            detailIngredientBox.style.height = (3.5 * bigVH * Object.keys(drinks[title]).length) + "px";
+
+            //var start = drinkElems[title].item.offsetTop - vh;
+            var y = -drinkElems[title].item.getBoundingClientRect().top + drinksPage.getBoundingClientRect().top + bigVH;
+
+            if(drinkElems[title].empty){
+                drinkDetailElem.classList.add("drink-empty");
+            }else if(!drinkElems[title].empty){
+                drinkDetailElem.classList.remove("drink-empty");
+            }
+
+            detailBody.classList.remove("shrunk");
+
+            drinksPage.classList.add("noscroll");
+            drinkListElem.classList.add("notouch", "transparent");
+            drinkElems[title].item.classList.add("transparent");
+            
+            drinkDetailElem.style.top = drinkElems[title].item.offsetTop - bigVH + "px";
+            drinkDetailElem.classList.remove("notouch", "transparent");
+            drinkDetailElem.style.transform = "translateY("+ y +"px)";
+        }
+
+        function collapseDetail(){
+            let title = expandedDrink.name;
+
+            drinkDetailElem.style.transform = "translateY(0px)";
+            drinkDetailElem.classList.add("notouch");
+            detailBody.classList.add("shrunk");
+            
+            drinksPage.classList.remove("noscroll");
+            drinkListElem.classList.remove("notouch", "transparent");
+
+            setTimeout(()=>{
+                drinkElems[title].item.classList.remove("transparent");
+                drinkDetailElem.classList.add("transparent");
+                drinkDetailElem.style.top = "0px";
+                expandedDrink.name = "";
+                expandedDrink.ingredients = {};
+            }, 200);
+        }
+
+        function decimal(num, place){
+            return Math.round(num*Math.pow(10,place)) / Math.pow(10,place)
+        }
+
+        function toggleIngredientEmpty(title){
+            var msg = {
+                uuid: uuid,
+                type: "ingredient",
+                ingredient: title,
+                empty: !ingredientElems[title].empty
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        function setDrinksTab(){
+            drinksPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setIngredientsTab(){
+            ingredientsPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setUserTab(){
+            userPage.scrollIntoView({behavior: "smooth"});
+        }
+
+        function setTheme(x, store){
+            theme = x;
+            if(theme == "light"){
+                userDarkButton.classList.remove("active");
+                userLightButton.classList.add("active");
+                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 100%, 10%)");
+            }else if(theme == "dark"){
+                userLightButton.classList.remove("active");
+                userDarkButton.classList.add("active");
+                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 0%, 25%)");
+            }
+            if(store){
+                localStorage.setItem('theme', theme);
+            }
+        }
+
+        /////////////////////////////////////////
+
+        var drinksTab = document.getElementById("drinks-tab");
+        drinksTab.onclick = setDrinksTab;
+
+        var ingredientsTab = document.getElementById("ingredients-tab");
+        ingredientsTab.onclick = setIngredientsTab;
+
+        var userTab = document.getElementById("user-tab");
+        userTab.onclick = setUserTab;
+
+        var pageView = document.getElementById("page-view");
+
+        /////////////////////////////////////////
+
+        var drinksPage = document.getElementById("drinks-page");
+        var drinkElems = {};
+
+        var drinkListElem = document.getElementById("drink-list");
+        var drinkDetailElem = document.getElementById("drink-detail");
+
+        var drinkTemplate = document.getElementById("template-drink-item");
+
+        drinkDetailElem.onclick = collapseDetail;
+        
+        var detailItem = drinkDetailElem.getElementsByClassName("drink-item")[0];
+        var detailTitle = drinkDetailElem.getElementsByClassName("drink-title")[0];
+        var detailIngredientSummary = drinkDetailElem.getElementsByClassName("ingredient-summary")[0];
+
+        var detailBody = document.getElementById("drink-detail-body");
+        var detailIngredientBox = document.getElementById("ingredient-box");
+        var detailIngredients = [];
+        var template = document.getElementById("template-ingredient-amount");
+        for(var i=0; i<40; i++){
+            var item = document.importNode(template, true).content.querySelector("div");
+            detailIngredients[i] = item;
+            detailIngredientBox.append(item);
+        }
+
+        function sliderStart(){
+            pageView.classList.add("noscroll");
+        }
+
+        function sliderStop(){
+            pageView.classList.remove("noscroll");
+        }
+
+        var detailVolume = document.getElementById("volume-title");
+        var detailAlcohol = document.getElementById("alcohol-title");
+        var detailABV = document.getElementById("abv-title");
+
+        var detailAlcoholMult = document.getElementById("alcohol-label");
+        var detailAlcoholSlider = document.getElementById("alcohol-slider");
+        detailAlcoholSlider.oninput = updateExpandedMenu;
+        detailAlcoholSlider.ontouchstart = sliderStart;
+        detailAlcoholSlider.ontouchend = sliderStop;
+        detailAlcoholSlider.ontouchscancel = sliderStop;
+
+        var detailNonalcoholMult = document.getElementById("nonalcohol-label");
+        var detailNonalcoholSlider = document.getElementById("nonalcohol-slider");
+        detailNonalcoholSlider.oninput = updateExpandedMenu;
+        detailNonalcoholSlider.ontouchstart = sliderStart;
+        detailNonalcoholSlider.ontouchend = sliderStop;
+        detailNonalcoholSlider.ontouchscancel = sliderStop;
+
+        var tubButton = document.getElementById("tub-button");
+        var basementButton = document.getElementById("basement-button");
+
+        tubButton.onclick = function(){
+            detailClick("hottub");
+        }
+        basementButton.onclick = function(){
+            detailClick("basement");
+        }
+
+        function addQueue(){
+            var msg = {
+                uuid: uuid,
+                type: "queue"
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        function removeQueue(){
+            var msg = {
+                uuid: uuid,
+                type: "remove"
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        function changeQueue(outlet){
+            queuedDrink.name = expandedDrink.name;
+            queuedDrink.ingredients = {}
+            for(var ingredient in expandedDrink.ingredients){
+                queuedDrink.ingredients[ingredient] = expandedDrink.ingredients[ingredient]
+            }
+            queuedDrink.outlet = outlet;
+            if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
+                statusDrink.textContent = queuedDrink.name;
+                statusOutlet.textContent = queuedDrink.outlet;
+            }
+            sameDrink = true;
+        }
+
+        var userState = "";
+        var makerState = "";
+
+        var sameDrink = false;
+
+        /////////////////////////////////////////
+        
+        var ingredientsPage = document.getElementById("ingredients-page");
+        var ingredientElems = {};
+
+        var ingredientTemplate = document.getElementById("template-ingredient-item");
+
+        /////////////////////////////////////////
+
+        var userPage = document.getElementById("user-page");
+
+        var userNameInput = document.getElementById("user-name-input");
+        var userWeightInput = document.getElementById("user-weight-input");
+        var userMaleButton = document.getElementById("user-male-button");
+        var userFemaleButton = document.getElementById("user-female-button");
+
+        var userDrinks = document.getElementById("user-drinks-value");
+        var userBAC = document.getElementById("user-bac-value");
+
+        userMaleButton.onclick = function(){
+            userSex = "male";
+            userFemaleButton.classList.remove("active");
+            userMaleButton.classList.add("active");
+        }
+
+        userFemaleButton.onclick = function(){
+            userSex = "female";
+            userMaleButton.classList.remove("active");
+            userFemaleButton.classList.add("active");
+        }
+
+        var userUpdate = document.getElementById("user-update");
+        userUpdate.onclick = function(){
+            var msg = {
+                uuid: uuid,
+                type: "user",
+                name: userNameInput.value,
+                weight: userWeightInput.value,
+                sex: userSex
+            };
+            socket.send(JSON.stringify(msg));
+        }
+
+        var userDarkButton = document.getElementById("user-dark-button");
+        var userLightButton = document.getElementById("user-light-button");
+
+        userDarkButton.onclick = function(){
+            setTheme('dark', true);
+        }
+
+        userLightButton.onclick = function(){
+            setTheme('light', true);
+        }
+
+        var userSex = "";
+
+        var theme = localStorage.getItem('theme');
+        if(theme == null){
+            theme = "light"
+            localStorage.setItem('theme', theme);
+        }
+        setTheme(theme, false);
+        
+        ////////////////////////////////////////////////////////////////
+
+        var statusBase = document.getElementById("status-bar");
+
+        var statusQueue = document.getElementById("status-queue");
+        var statusState = document.getElementById("status-state");
+        var statusConnection = document.getElementById("status-connection");
+
+        var statusDrink = document.getElementById("status-drink");
+        var statusOutlet = document.getElementById("status-outlet");
+
+        var statusButton = document.getElementById("status-button");
+        statusButton.onclick = statusClick;
+
+        var statusTimer = null;
+        var statusTime = 0;
+
+        var queuedDrink = {
+            name: "",
+            ingredients: {},
+            outlet: ""
+        };
+
+        ////////////////////////////////////////////////////////////////
+
+        pageView.onscroll = pageScrolled;
+        
+        function pageScrolled(){
+            var scroll = pageView.scrollLeft;
+
+            if(scroll < pageWidth*0.5){
+                if(currentPage != 0){
+                    currentPage = 0;
+                    drinksTab.classList.add("selected");
+                    ingredientsTab.classList.remove("selected");
+                    userTab.classList.remove("selected");
+                }
+            }else if(scroll < pageWidth*1.5){
+                if(currentPage != 1){
+                    currentPage = 1;
+                    drinksTab.classList.remove("selected");
+                    ingredientsTab.classList.add("selected");
+                    userTab.classList.remove("selected");
+                }
+            }else{
+                if(currentPage != 2){
+                    currentPage = 2;
+                    drinksTab.classList.remove("selected");
+                    ingredientsTab.classList.remove("selected");
+                    userTab.classList.add("selected");
+                }
+            }
+        };
+
+        var currentPage = 0;
+        var pageWidth = window.innerWidth;
+
+        var flareColors = [
+            "hsl(170, 100%, 20%)",
+        ];
+
+        var background = document.getElementById("background");
+        var flares = background.getElementsByClassName("flare");
+        var flareSize = background.clientWidth * 1.2;
+        var height = background.clientHeight + flareSize * 1;
+        var width = background.clientWidth + flareSize * 1;
+
+        var frameCount = 10;
+        var durationMin = 50000;
+        var durationMax = 70000;
+
+        var perimeter = width*2 + height*2;
+
+        for(var i=0; i<flares.length; i++){  
+            flares[i].style.setProperty("box-shadow", "0 "+flareSize*2+"px "+flareSize*0.5+"px " + flareColors[i % flareColors.length]);
+            var frames = [];
+            var rand = Math.random()*perimeter;
+            for(var j=0; j<frameCount; j++){
+                rand = (rand + (Math.random()*0.33 + 0.33)*perimeter) % perimeter;
+                var x = -flareSize*1.0;
+                var y = -flareSize*3.0;
+                if(rand < width){
+                    x += rand;
+                    y += 0;
+                }else if(rand < width + height){
+                    x += width;
+                    y += rand - width;
+                }else if(rand < width*2 + height){
+                    x += width - (rand - width - height);
+                    y += height;
+                }else{
+                    x += 0;
+                    y += height - (rand - width*2 - height);
+                }
+
+                frames.push({transform: 'translate('+ x +'px,'+ y +'px)'});
+            }
+            frames.push(frames[0]);
+
+            var effect = new KeyframeEffect(
+                flares[i],
+                frames,
+                {
+                    duration: durationMin + Math.random()*(durationMax - durationMin), 
+                    easing: "linear" ,
+                    iterations: Infinity
+                }
+            );
+
+            var animation = new Animation(effect);
+            //animation.currentTime = 0;
+            animation.currentTime = Math.random()*(durationMax);
+            animation.play();
+        }
+
+
+        // var flareGroup = background.getElementsByClassName("flare-group");
+        // var flareSize = window.innerWidth * 0.6;
+
+        // for(var j=0; j<8; j++){
+        //     var flare = document.createElement("div");
+        //     flare.classList.add("flare");
+        //     flare.style.setProperty("box-shadow", "0 "+flareSize*2+"px "+flareSize*0.5+"px " + flareColors[j % flareColors.length]);
+        //     //flares[i].style.transform = "translate("+((Math.random()*window.innerWidth) - (flareSize*0.5))+"px, "+((Math.random()*window.innerHeight) - (flareSize*2.5)) + "px)";
+        //     flare.style.top = (Math.random() * (height - flareSize*3.5)) + "px";
+        //     flare.style.left = (Math.random() * (width - flareSize*2)) + flareSize*0.5 + "px";
+        //     flareGroup[i].appendChild(flare);
+        // }
+        // var duration = Math.random() * 60;
+        // flareGroup[i].appendChild(flare);
+
+        // for(var i=0; i<3; i++){
+        //     var height = flareGroup[i].clientHeight + flareSize*3.5;
+        //     var width = flareGroup[i].clientWidth + flareSize*2;
+        //     flareGroup[i].style.height = height + "px";
+        //     flareGroup[i].style.top = -flareSize*2.5 + "px";
+        //     flareGroup[i].style.width = width + "px";
+        //     flareGroup[i].style.left = -flareSize*1 + "px";
+        //     for(var j=0; j<5; j++){
+        //         var flare = document.createElement("div");
+        //         flare.classList.add("flare");
+        //         flare.style.setProperty("box-shadow", "0 "+flareSize*2+"px "+flareSize*0.5+"px " + flareColors[j % flareColors.length]);
+        //         //flares[i].style.transform = "translate("+((Math.random()*window.innerWidth) - (flareSize*0.5))+"px, "+((Math.random()*window.innerHeight) - (flareSize*2.5)) + "px)";
+        //         flare.style.top = (Math.random() * (height - flareSize*3.5)) + "px";
+        //         flare.style.left = (Math.random() * (width - flareSize*2)) + flareSize*0.5 + "px";
+        //         flareGroup[i].appendChild(flare);
+        //     }
+        //     var duration = Math.random() * 60;
+        //     flareGroup[i].appendChild(flare);
+        // }
+        // flareGroup[0].style.animation = "shake 3s 0s infinite alternate ease-in-out";
+        // flareGroup[1].style.animation = "nod 5s 0s infinite alternate-reverse ease-in-out";
+        // flareGroup[2].style.animation = "shake 4s 0s infinite alternate ease-in-out";
+        // flareGroup[3].style.animation = "nod 6s 0s infinite alternate-reverse ease-in-out";
+
+        ////////////////////////////////////////////////////////////////
+
+        var socket = null;
+        var socketConnected = false;
+        var socketAttempts = 0;
+
+        var drinks = {};
+        var ingredients = {};
+
+        var expandedDrink = {
+            name: "",
+            ingredients: {}
+        };
+
+        var uuid = localStorage.getItem('uuid');
+        if(uuid == null){
+            uuid = Math.random();
+            localStorage.setItem('uuid', uuid)
+            console.log("new user: " + uuid);
+        }else{
+            console.log("existing user: " + uuid);
+        }
+
+        drinksPage.onfocus = function(){
+            console.log("onfocus");
+        };
+
+        var smallVH = window.innerHeight * 0.01;
+        var bigVH = document.getElementById('ruler').clientHeight * 0.02;
+
+        document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01)+"px");
+        document.documentElement.style.setProperty('--flare-size', flareSize+"px");
+
+        window.onload = function(){
+            socketInit();
+        };
+        
+    </script>
+    <style>
+        :root {
+            --panel-color: hsla(0, 0%, 100%, 10%);
+            --top-hue: 170;
+            --bottom-hue: 320;
+            --vh: 1vh;
+            --flare-size: 20vw;
+        }
+
+        #ruler{
+            position: absolute;
+            height: 50vh;
+            visibility: hidden;
+        }
+
+        body{
+            color-scheme: dark;
+            height: calc(var(--vh) * 100);
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+            user-select: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0;
+            color: white;
+        }
+
+        #background{
+            top: 0;
+            left: 0;
+            z-index: -1;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            background-color: hsl(320, 100%, 20%);
+        }
+
+        .flare{
+            position: absolute;
+            /* clip-path: inset(150% -50% -250% -50%); */
+            top: 0;
+            left: 0;
+            opacity: 75%;
+            width: var(--flare-size);
+            height: var(--flare-size);
+            border-radius: 100%;
+            will-change: transform;
+        }
+        @keyframes nod {
+            0% {
+                transform: translateY(0vh);
+            }
+            100% {
+                transform: translateY(-100vh);
+            }
+        }
+        @keyframes shake {
+            0% {
+                transform: translateX(0vw);
+            }
+            100% {
+                transform: translateX(-100vw);
+            }
+        }
+
+        @keyframes wander {
+            0% {
+                transform: translate(0%, 0%);
+            }
+            10% {
+                transform: translate(0%, 0%);
+            }
+            20% {
+                transform: translate(0%, 0%);
+            }
+            30% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+            40% {
+                transform: translate(0%, 0%);
+            }
+        }
+
+        #header{
+            height: 8%;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
+        }
+        .tab{
+            position: absolute;
+            background-color: var(--panel-color);
+            box-sizing: border-box;
+            font-size: 3vh;
+            height: 100%;
+            top: 0;
+            width: calc(100%/3);
+            line-height: 250%;
+            overflow: hidden;
+            text-align: center;
+        }
+        .tab:active{
+            opacity: 50%;
+        }
+        .tab.selected{
+            border-bottom: solid 0.5vh hsl(var(--bottom-hue), 80%, 35%);
+            font-weight: bold;
+        }
+        #drinks-tab{
+            left: 0%;
+        }
+        #ingredients-tab{
+            left: calc(100%/3);
+        }
+        #user-tab{
+            right: 0%;
+        }
+        
+        #page-view{
+            height: 82%;
+            width: 100%;
+            position: absolute;
+            top: 8%;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #page-view::-webkit-scrollbar {
+            display: none;
+        }
+
+        #drinks-page{
+            height: 100%;
+            width: 100%;
+            top: 0%;
+            left: 0%;
+            position: absolute;
+            overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        #drink-list{
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            padding: 0 1vh 0 1vh;
+            box-sizing: border-box;
+            transition: opacity 200ms linear;
+            will-change: opacity;
+        }
+        #drink-detail{
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            height: 100%;
+            width: 100%;
+            padding: 0 1vh 0 1vh;
+            box-sizing: border-box;
+            transition: transform 200ms;
+            will-change: transform, opacity;
+        }
+        #ingredients-page{
+            height: 100%;
+            width: 100%;
+            top: 0%;
+            left: 100%;
+            position: absolute;
+            overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        #user-page{
+            height: 100%;
+            width: 100%;
+            top: 0%;
+            left: 200%;
+            position: absolute;
+            overflow-y: auto;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        #user-name-label{
+            position: absolute;
+            left: 10%;
+            top: 8%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-name-input{
+            position: absolute;
+            right: 10%;
+            top: 8%;
+            width: 45%;
+            height: 8%;
+            background-color: var(--panel-color);
+            border: none;
+            font-size: 2.5vh;
+            border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+            border-radius: 1vh;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        #user-weight-label{
+            position: absolute;
+            left: 10%;
+            top: 20%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-weight-input{
+            position: absolute;
+            right: 10%;
+            top: 20%;
+            width: 45%;
+            height: 8%;
+            background-color: var(--panel-color);
+            border: none;
+            font-size: 2.5vh;
+            border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+            border-radius: 1vh;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #user-sex-label{
+            position: absolute;
+            left: 10%;
+            top: 32%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-male-button{
+            position: absolute;
+            right: 35%;
+            top: 32%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-female-button{
+            position: absolute;
+            right: 10%;
+            top: 32%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-male-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #user-female-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        
+        #user-drinks-label{
+            position: absolute;
+            left: 10%;
+            top: 48%;
+            width: 30%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-drinks-value{
+            position: absolute;
+            right: 10%;
+            top: 48%;
+            width: 45%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-bac-label{
+            position: absolute;
+            left: 10%;
+            top: 54%;
+            width: 30%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-bac-value{
+            position: absolute;
+            right: 10%;
+            top: 54%;
+            width: 45%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-update{
+            position: absolute;
+            left: 30%;
+            top: 64%;
+            width: 40%;
+            height: 10%;
+            font-size: 2.5vh;
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+            border-radius: 1vh;
+            text-align: center;
+            line-height: 300%;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            /* will-change: transform, opacity; */
+        }
+        #user-update:active{
+            transform: scale(0.97);
+            opacity: 50%;
+        }
+
+        #user-theme-label{
+            position: absolute;
+            left: 10%;
+            top: 85%;
+            width: 30%;
+            height: 8%;
+            line-height: 250%;
+            background-color: hsl(0deg 0% 100% / 0%);
+            font-size: 2.5vh;
+        }
+        #user-dark-button{
+            position: absolute;
+            right: 35%;
+            top: 85%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-light-button{
+            position: absolute;
+            right: 10%;
+            top: 85%;
+            width: 20%;
+            height: 8%;
+            border-radius: 1vh;
+            background-color: var(--panel-color);
+            line-height: 250%;
+            font-size: 2.5vh;
+            text-align: center;
+        }
+        #user-dark-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #user-light-button.active{
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+
+        .ingredient-item{
+            position: relative;
+            height: 11%;
+            margin: 1vh;
+        }
+        .ingredient-title{
+            position: absolute;
+            width: 55%;
+            height: 32%;
+            top: 34%;
+            left: 5%;
+            line-height: 100%;
+            font-size: 3vh;
+        }
+        .ingredient-port{
+            position: absolute;
+            width: 10%;
+            height: 80%;
+            top: 10%;
+            left: 60%;
+            line-height: 350%;
+            font-size: 2vh;
+        }
+        .ingredient-button{
+            position: absolute;
+            width: 25%;
+            height: 80%;
+            top: 10%;
+            right: 5%;
+            line-height: 350%;
+            font-size: 2vh;
+            border-radius: 1vh;
+            text-align: center;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            background-color: hsl(var(--top-hue), 80%, 27%);
+            /* will-change: transform, opacity; */
+        }
+        .ingredient-button:active{
+            transform: scale(0.97);
+            opacity: 50%;
+        }
+        
+        .ingredient-empty{
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+
+        #drink-detail-body{
+            position: relative;
+            transition: transform 200ms;
+            height: calc(100% - 12vh);
+            background-color: var(--panel-color);
+            margin: 0;
+            border-radius: 0vh 0vh 1vh 1vh;
+            transform-origin: 50% 0%;
+            will-change: transform;
+        }
+        
+        .drink-item{
+            position: relative;
+            background-color: var(--panel-color);
+            height: 10vh;
+            border-radius: 1vh;
+            margin: 1vh 0 1vh 0;
+            
+        }
+        .drink-empty{
+            opacity: 40%;
+        }
+        .drink-empty .drink-title{
+            text-decoration: line-through;
+        }
+        .drink-item.flat{
+            border-radius: 1vh 1vh 0 0;
+            margin: 1vh 0 0 0;
+        }
+
+        .drink-title{
+            position: absolute;
+            width: 55%;
+            height: 32%;
+            top: 34%;
+            left: 5%;
+            line-height: 100%;
+            font-size: 3vh;
+        }
+
+        .close{
+            position: absolute;
+            width: 4vh;
+            height: 4vh;
+            top: 34%;
+            right: 5%;
+            text-align: center;
+        }
+        .close:after{
+            content: "\2573";
+            font-size: 2vh;
+        }
+
+        .arrow{
+            position: absolute;
+            width: 4vh;
+            height: 4vh;
+            top: 25%;
+            right: 5%;
+            text-align: center;
+            transform: rotateZ(-45deg);
+        }
+        .arrow:after{
+            content: "\221F";
+            font-size: 3vh;
+        }
+
+        .ingredient-summary{
+            position: absolute;
+            width: 25%;
+            height: 18%;
+            top: 41%;
+            left: 60%;
+            line-height: 100%;
+            font-size: 1.7vh;
+            text-overflow: clip;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: transform 200ms;
+            /* will-change: opacity; */
+        }
+
+        #ingredient-wrapper{
+            position: absolute;
+            font-size: 2vh;
+            height: 25%;
+            left: 10%;
+            width: 80%;
+            overflow-y: auto;
+        }
+        #ingredient-box{
+            position: absolute;
+            left: 0%;
+            width: 100%;
+            overflow-y: hidden;
+        }
+        .ingredient-amount{
+            line-height: 140%;
+            font-size: 2.5vh;
+            height: 3.5vh;
+            overflow-x: hidden;
+        }
+        .item-button{
+            position: absolute;
+            font-size: 2vh;
+            height: 10%;
+            bottom: 5%;
+            line-height: 340%;
+            width: 42%;
+            overflow: hidden;
+            border-radius: 1vh;
+            text-align: center;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            /* will-change: transform, opacity; */
+        }
+        #tub-button{
+            left: 5%;
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+        #queue-button{
+            left: 36%;
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+        #basement-button{
+            right: 5%;
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        .item-button:active{
+            transform: scale(0.97);
+            opacity: 50%;
+        }
+        #status{
+            background-color: var(--panel-color);
+            text-align: center;
+            font-size: 3vh;
+            height: 10%;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
+        }
+        #status-button{
+            position: absolute;
+            font-size: 2.5vh;
+            height: 78%;
+            top: 11%;
+            right: 2%;
+            width: 30%;
+            line-height: 280%;
+            overflow: hidden;
+            border-radius: 1vh;
+            text-align: center;
+            box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+            will-change: opacity;
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #status-button.pour{
+            animation: flash 200ms 0s infinite;
+            animation-direction: alternate;
+            background-color: hsl(var(--top-hue), 80%, 27%);
+        }
+        #status-button.cancel{
+            background-color: hsl(var(--bottom-hue), 80%, 27%);
+        }
+        #status-button:active{
+            transform: scale(0.97);
+            opacity: 50%;
+        }
+
+        #status-queue{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 25%;
+            text-align: left;
+            top: 10%;
+            left: 2%;
+            font-size: 2vh;
+        }
+        #status-state{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 25%;
+            text-align: left;
+            bottom: 41%;
+            left: 2%;
+            font-size: 2vh;
+        }
+        #status-connection{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 25%;
+            text-align: left;
+            bottom: 10%;
+            left: 2%;
+            font-size: 2vh;
+            font-weight: bold;
+        }
+
+        #status-drink{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 34%;
+            text-align: left;
+            top: 23%;
+            left: 34%;
+            font-size: 2vh;
+        }
+        #status-outlet{
+            position: absolute;
+            height: 18%;
+            line-height: 100%;
+            width: 34%;
+            text-align: left;
+            bottom: 23%;
+            left: 34%;
+            font-size: 2vh;
+        }
+
+        #status-bar{
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 5%;
+            transform-origin: 0% 50%;
+            transition: transform 1000ms linear;
+            will-change: transform, opacity;
+        }
+        .bar-timer{
+            animation: flash 200ms 0s infinite;
+            animation-direction: alternate;
+            background-color: hsl(var(--top-hue), 85%, 40%);
+        }
+        .bar-progress{
+            background-color: hsl(var(--bottom-hue), 85%, 40%);
+        }
+
+        #volume-title{
+            position: absolute;
+            top: 30%;
+            left: 10%;
+            width: 35%;
+            height: 4%;
+            line-height: 140%;
+            font-size: 2.5vh;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #alcohol-title{
+            position: absolute;
+            top: 35%;
+            left: 10%;
+            width: 35%;
+            height: 4%;
+            line-height: 140%;
+            font-size: 2.5vh;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #abv-title{
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            width: 35%;
+            height: 4%;
+            line-height: 140%;
+            font-size: 2.5vh;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #alcohol-label{
+            position: absolute;
+            top: 50%;
+            left: 36%;
+            width: 28%;
+            height: 4%;
+            line-height: 140%;
+            font-size: 2.5vh;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #nonalcohol-label{
+            position: absolute;
+            top: 65%;
+            left: 31%;
+            width: 38%;
+            height: 4%;
+            line-height: 140%;
+            font-size: 2.5vh;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #alcohol-slider{
+            position: absolute;
+            top: 55%;
+            left: 5%;
+            width: 90%;
+            height: 4vh;
+            appearance: none;
+            background-color: hsl(0deg 0% 100% / 5%);
+            border-radius: 2vh;
+        }
+        #alcohol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 4vh;
+            height: 4vh;
+            background: hsl(var(--top-hue), 80%, 27%);
+            border-radius: 2vh;
+            cursor: pointer;
+        }
+        #nonalcohol-slider{
+            position: absolute;
+            top: 70%;
+            left: 5%;
+            width: 90%;
+            height: 4vh;
+            appearance: none;
+            background-color: hsl(0deg 0% 100% / 5%);
+            border-radius: 2vh;
+        }
+        #nonalcohol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 4vh;
+            height: 4vh;
+            background: hsl(var(--top-hue), 80%, 27%);
+            border-radius: 2vh;
+            cursor: pointer;
+        }
+        
+        .shrunk{
+            transform: scaleY(0);
+        }
+        .transparent{
+            opacity: 0%;
+        }
+        .hidden{
+            visibility: hidden;
+        }
+        .notouch{
+            pointer-events: none;
+        }
+        #drinks-page.noscroll{
+            overflow-y: hidden;
+        }
+
+        #page-view.noscroll{
+            overflow-x: hidden;
+        }
+
+        .grey{
+            opacity: 25%;
+        }
+        /* Animation Keyframes*/
+        @keyframes flash {
+            from {
+                opacity: 100%;
+            }
+            to {
+                opacity: 50%;
+            }
+        }
+
+    </style>
+</head>
+
+
+
+<body>
+    <template id="template-drink-item">
+        <div class="drink-item">
+            <div class="drink-title">Title</div>
+            <div class="ingredient-summary">Ingredients</div>
+            <div class="arrow"></div>
+        </div>
+    </template>
+
+    <template id="template-ingredient-amount">
+        <div class="ingredient-amount"></div>
+    </template>
+
+    <template id="template-ingredient-item">
+        <div class="ingredient-item">
+            <div class="ingredient-title"></div>
+            <div class="ingredient-port"></div>
+            <div class="ingredient-button">Full</div>
+        </div>
+    </template>
+
+    <div id="ruler"></div>
+
+    <div id="background">
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+        <div class="flare"></div>
+    </div>
+
+    <div id="header">
+        <div id="drinks-tab" class="tab selected">Drinks</div>
+        <div id="ingredients-tab" class="tab">Ingredients</div>
+        <div id="user-tab" class="tab">User</div>
+    </div>
+    <div id="page-view">
+        <div id="drinks-page">
+            <div id="drink-list">
+
+            </div>
+            <div id="drink-detail" class="notouch transparent">
+                <div class="drink-item flat">
+                    <div class="drink-title">Title</div>
+                    <div class="ingredient-summary"></div>
+                    <div class="close"></div>
+                </div>
+                <div id="drink-detail-body" class="shrunk">
+                    <div id="ingredient-wrapper">
+                        <div id="ingredient-box">
+
+                        </div>
+                    </div>
+
+                    <div id="volume-title">Volume: </div>
+                    <div id="alcohol-title">Drinks: </div>
+                    <div id="abv-title">ABV: </div>
+
+                    <div id="alcohol-label">Alcohol: </div>
+                    <input id="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+                    <div id="nonalcohol-label">Non-alcohol: </div>
+                    <input id="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+
+                    <div id="tub-button" class="item-button">Pour Hot Tub</div>
+                    <div id="basement-button" class="item-button">Pour Basement</div>
+                </div>
+            </div>
+        </div>
+        <div id="ingredients-page"></div>
+        <div id="user-page">
+            <div id="user-name-label">Name: </div>
+            <input id="user-name-input" type="text">
+
+            <div id="user-weight-label">Weight (lb): </div>
+            <input id="user-weight-input" type="number" steps="1">
+
+            <div id="user-sex-label">Sex: </div>
+            <div id="user-male-button">Male</div>
+            <div id="user-female-button">Female</div>
+
+            <div id="user-drinks-label">Drinks: </div>
+            <div id="user-drinks-value"></div>
+            <div id="user-bac-label">BAC: </div>
+            <div id="user-bac-value"></div>
+
+            <div id="user-update">Update</div>
+
+            <div id="user-theme-label">Theme: </div>
+            <div id="user-dark-button">Dark</div>
+            <div id="user-light-button">Light</div>
+        </div>
+    </div>
+    <div id="status">
+        <div id="status-bar"></div>
+
+        <div id="status-queue"></div>
+        <div id="status-state"></div>
+        <div id="status-connection" class="disconnected"></div>
+
+        <div id="status-drink"></div>
+        <div id="status-outlet"></div>
+
+        <div id="status-button">Pour</div>
+    </div>        
+</body>
+
+</html>
