@@ -28,8 +28,8 @@ PAN_PERIOD = 0.01
 
 #####################################
 
-f = open('../rasp_pi_port_config.json', "r")
-ports = json.loads(f.read())['ports']
+f = open('../ports.json', "r")
+ports = json.loads(f.read())
 f.close()
 
 

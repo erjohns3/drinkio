@@ -47,9 +47,7 @@ pink = [1, 0, 0.2]
 
 white = [1, 1, 1]
 
-custom = [float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])]
 
-color = custom
 
 def pour():
     tick = 0
@@ -87,10 +85,10 @@ def done():
 
         pi.set_PWM_dutycycle(GREEN_PIN, val)
         
-        tick = (tick + 20) % 200
+        tick = (tick + 10) % 200
 
         time.sleep(0.05)
 
-done()
+pour()
 
 stop()

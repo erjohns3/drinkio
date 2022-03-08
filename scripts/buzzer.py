@@ -26,18 +26,30 @@ pi.set_PWM_dutycycle(BUZZ_PIN, 50)
 
 #################################################
 
-pi.set_PWM_frequency(BUZZ_PIN, 500)
-print(str(pi.get_PWM_frequency(BUZZ_PIN)))
-time.sleep(0.25)
-
-pi.set_PWM_frequency(BUZZ_PIN, 750)
-print(str(pi.get_PWM_frequency(BUZZ_PIN)))
-time.sleep(0.25)
-
+pi.set_PWM_frequency(BUZZ_PIN, 800)
+time.sleep(0.2)
 pi.set_PWM_frequency(BUZZ_PIN, 1000)
-print(str(pi.get_PWM_frequency(BUZZ_PIN)))
-time.sleep(0.25)
+time.sleep(0.2)
+pi.set_PWM_frequency(BUZZ_PIN, 500)
+time.sleep(0.2)
+pi.set_PWM_frequency(BUZZ_PIN, 800)
+time.sleep(0.2)
+pi.set_PWM_frequency(BUZZ_PIN, 400)
+time.sleep(0.5)
 
 #################################################
+
+# 100
+# 160
+# 200
+# 250
+# 320
+# 400
+# 500
+# 800
+# 1000
+# 1600
+# 2000
+# 4000
 
 stop()
