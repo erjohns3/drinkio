@@ -704,12 +704,12 @@
         var pageWidth = window.innerWidth;
 
         var flareColors = [
-            "hsl(170, 100%, 20%)",
+            "hsl(0, 100%, 100%)",
         ];
 
         var background = document.getElementById("background");
         var flares = background.getElementsByClassName("flare");
-        var flareSize = background.clientWidth * 1.2;
+        var flareSize = 200;
         var height = background.clientHeight + flareSize * 1;
         var width = background.clientWidth + flareSize * 1;
 
@@ -741,7 +741,7 @@
                     y += height - (rand - width*2 - height);
                 }
 
-                frames.push({transform: 'translate('+ x +'px,'+ y +'px)'});
+                frames.push({transform: 'translate('+ 100 +'px,'+ -100 +'px)'});
             }
             frames.push(frames[0]);
 
@@ -875,7 +875,7 @@
             width: 100%;
             height: 100%;
             position: fixed;
-            background-color: hsl(320, 100%, 20%);
+            background-color: black
         }
 
         .flare{
@@ -883,7 +883,7 @@
             /* clip-path: inset(150% -50% -250% -50%); */
             top: 0;
             left: 0;
-            opacity: 75%;
+            opacity: 100%;
             width: var(--flare-size);
             height: var(--flare-size);
             border-radius: 100%;
@@ -976,6 +976,7 @@
         #page-view{
             height: 82%;
             width: 100%;
+            opacity: 0;
             position: absolute;
             top: 8%;
             overflow-y: hidden;
@@ -1668,11 +1669,6 @@
     <div id="ruler"></div>
 
     <div id="background">
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
         <div class="flare"></div>
     </div>
 
