@@ -2,7 +2,7 @@
     "$schema": "https://json.schemastore.org/web-manifest-combined.json",
     "name": "Drink Maker",
     "short_name": "Drink",
-    "start_url": "index_vanilla.html",
+    "start_url": "index.html",
     "display": "standalone",
     "background_color": "#006655",
     "theme_color": "#006655",
