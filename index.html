@@ -3,15 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#006655"/>
+    <meta name="viewport"
+        content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#006655" />
     <meta name="description" content="Have a robot make you a drink">
-    <title>Drink Maker New</title>
+    <title>Drink Maker 2</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="static/icon48.png">
     <link rel="apple-touch-icon" href="static/icon192.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap">
 
     <script type="module">
@@ -25,7 +24,7 @@
                 socket.send(JSON.stringify(visibility));
                 console.log("hidden");
             } else {
-                if(socket.readyState == WebSocket.CLOSED){
+                if (socket.readyState == WebSocket.CLOSED) {
                     socketInit();
                 }
                 let visibility = {
@@ -37,10 +36,10 @@
             }
         }
 
-        function socketInit(){
+        function socketInit() {
             console.log("socket init");
 
-            socket = new WebSocket("ws://makedrink.me:8765");
+            socket = new WebSocket("ws://drinkr:8765");
 
             socket.onopen = function () {
                 console.log("socket open");
@@ -56,26 +55,26 @@
 
                 socketAttempts = 0;
 
-                if(!socketConnected){
+                if (!socketConnected) {
                     socketConnected = true;
                     statusConnection.textContent = "Connected";
-                    statusConnection.style.color = "green";
+                    statusConnection.style.color = "hsl(var(--hue-a), 100%, 40%)";
                 }
             }
 
             socket.onclose = function () {
                 console.log("socket close");
-                if(socketConnected){
+                if (socketConnected) {
                     socketConnected = false;
                     statusConnection.textContent = "Disconnected";
-                    statusConnection.style.color = "red";
+                    statusConnection.style.color = "hsl(var(--hue-f), 100%, 40%)";
                 }
                 let delay = 3000;
-                if(socketAttempts == 0){
+                if (socketAttempts == 0) {
                     delay = 0;
                 }
-                setTimeout(()=>{
-                    if(socket.readyState == WebSocket.CLOSED){
+                setTimeout(() => {
+                    if (socket.readyState == WebSocket.CLOSED) {
                         socketInit();
                     }
                 }, delay);
@@ -83,130 +82,70 @@
                 socketAttempts++;
             }
 
-            socket.onerror = function(){
+            socket.onerror = function () {
                 console.log("socket error");
                 socket.close();
             }
 
-            socket.onmessage = function(event){
+            socket.onmessage = function (event) {
                 console.log("socket message");
                 let msg = JSON.parse(event.data);
                 console.log(msg);
-                if(msg.drinks){
+                if (msg.drinks) {
 
                     drinks = msg.drinks;
                     ingredients = msg.ingredients;
 
-                    for(let title in drinks){
-                        if(drinkElems[title] == null){
+                    for (let name in drinks) {
+                        if (drinkElems[name] == null) {
 
-                            let ingredientSummary = "";
-                            for(let ingredient in drinks[title]){
-                                ingredientSummary += ingredient + ", "
-                            }
-                            
-                            let item = document.importNode(drinkTemplate, true).content.querySelector("div");
-                            
-                            drinkElems[title] = {
-                                item: item,
-                                title: item.getElementsByClassName("drink-title")[0],
-                                ingredientSummary: item.getElementsByClassName("ingredient-summary")[0],
-                                empty: false
-                            };
-
-                            drinkElems[title].title.textContent = title;
-                            drinkElems[title].ingredientSummary.textContent = ingredientSummary;
-                            drinkElems[title].item.onclick = function(){
-                                event.stopPropagation(); 
-                                expandDetail(title)
-                            };
-
-                            drinkListElem.append(item);
-                            //console.log("create: " + title);
+                            drinkElems[name] = new DrinkItem(name, 'drinks');
+                            drinkListElem.append(drinkElems[name]);
                         }
 
-                        let empty = false;
-                        for(let ingredient in drinks[title]){
-                            if(ingredients[ingredient].empty){
-                                empty = true;
-                            }
-                        }
-                        if(empty && !drinkElems[title].empty){
-                            drinkElems[title].item.classList.add("drink-empty");
-                            drinkElems[title].empty = empty;
-                            if(title == expandedDrink.name){
-                                drinkDetailElem.classList.add("drink-empty");
-                                updateExpandedMenu();
-                            }
-                            //console.log("update: " + title);
-                        }else if(!empty && drinkElems[title].empty){
-                            drinkElems[title].item.classList.remove("drink-empty");
-                            drinkElems[title].empty = empty;
-                            if(title == expandedDrink.name){
-                                drinkDetailElem.classList.remove("drink-empty");
-                                updateExpandedMenu();
-                            }
-                            //console.log("update: " + title);
-                        }
+                        drinkElems[name].updateEmpty();
                     }
-                    
-                    for(let title in ingredients){
-                        if(ingredientElems[title] == null){
-                            let item = document.importNode(ingredientTemplate, true).content.querySelector("div");
-                            
-                            ingredientElems[title] = {
-                                item: item,
-                                title: item.getElementsByClassName("ingredient-title")[0],
-                                volume: item.getElementsByClassName("ingredient-volume")[0],
-                                plus: item.getElementsByClassName("ingredient-plus")[0],
-                                minus: item.getElementsByClassName("ingredient-minus")[0],
-                                empty: false,
-                                amount: 0
-                            };
 
-                            ingredientElems[title].title.textContent = title;
-                            ingredientElems[title].volume.textContent = 0 + " oz";
-                            ingredientElems[title].plus.onclick = function(){
-                                ingredientPlus(title)
-                            };
-                            ingredientElems[title].minus.onclick = function(){
-                                ingredientMinus(title)
-                            };
+                    for (let name in ingredients) {
+                        if (ingredientElems[name] == null) {
 
-                            ingredientsPage.append(item);
-                            //console.log("create: " + title);
+                            ingredientElems[name] = new IngredientItem(name);
+                            ingredientListElem.append(ingredientElems[name]);
                         }
 
-                        if(ingredients[title].empty && !ingredientElems[title].empty){
-                            ingredientElems[title].empty = true;
-                            ingredientElems[title].item.classList.add("ingredient-empty");
-                            //console.log("update: " + title);
-                        }
-                        else if(!ingredients[title].empty && ingredientElems[title].empty){
-                            ingredientElems[title].empty = false;
-                            ingredientElems[title].item.classList.remove("ingredient-empty");
-                            //console.log("update: " + title);
-                        }
+                        ingredientElems[name].updateEmpty();
+                    }
+
+                    drinkElems['custom'].updateEmpty();
+
+                    if (detailElems['drinks'].expanded) {
+                        detailElems['drinks'].updateEmpty();
+                    }
+                    if (detailElems['ingredients'].expanded) {
+                        detailElems['ingredients'].updateEmpty();
                     }
                 }
-                if(msg.status){
+                if (msg.status) {
 
-                    if(msg.status.userState != userState){
+                    if (msg.status.userState != userState) {
                         userState = msg.status.userState;
-                        if(expandedDrink.name){
-                            updateExpandedButtons();
+                        if (detailElems['drinks'].expanded) {
+                            detailElems['drinks'].updateButtons();
+                        }
+                        if (detailElems['ingredients'].expanded) {
+                            detailElems['ingredients'].updateButtons();
                         }
                         clearInterval(statusTimer);
 
-                        if(userState == "FRONTLINE"){
+                        if (userState == "FRONTLINE") {
                             //msg.status.timer += Date.now()/1000;
                             statusBase.classList.remove("bar-progress");
                             statusBase.classList.add("bar-timer");
-                            statusTimer = setInterval(()=>{
+                            statusTimer = setInterval(() => {
                                 statusTime -= 1;
-                                if(statusTime < 0){
+                                if (statusTime < 0) {
                                     clearInterval(statusTimer);
-                                }else{
+                                } else {
                                     statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
                                 }
                             }, 1000);
@@ -214,34 +153,34 @@
                             statusButton.classList.remove("grey", "cancel");
                             statusButton.classList.add("pour");
                             statusButton.textContent = "Pour";
-                        }else if(userState == "POURING"){
+                        } else if (userState == "POURING") {
                             statusBase.classList.remove("bar-timer");
                             statusBase.classList.add("bar-progress");
 
                             statusButton.classList.remove("grey", "pour");
                             statusButton.classList.add("cancel");
                             statusButton.textContent = "Cancel";
-                        }else{
+                        } else {
                             statusBase.style.transform = "scaleX(0)";
 
                             statusButton.classList.add("grey");
                             statusButton.classList.remove("cancel", "pour");
                             statusButton.textContent = "Pour";
                         }
-                    } 
-                    if(userState == "FRONTLINE"){
+                    }
+                    if (userState == "FRONTLINE") {
                         statusTime = msg.status.timer;
                         statusBase.style.transform = "scaleX(" + statusTime * 5 + "%)";
                     }
-                    if(userState == "POURING"){
-                        statusBase.style.transform = "scaleX("+ msg.status.progress+"%)";
+                    if (userState == "POURING") {
+                        statusBase.style.transform = "scaleX(" + msg.status.progress + "%)";
                     }
 
-                    if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
+                    if (userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING") {
                         statusQueue.textContent = "Queue: " + msg.status.position + "/" + msg.status.size;
                         statusDrink.textContent = queuedDrink.name;
                         statusOutlet.textContent = queuedDrink.outlet;
-                    }else{
+                    } else {
                         statusQueue.textContent = "Queue: " + msg.status.size;
                         statusDrink.textContent = "";
                         statusOutlet.textContent = "";
@@ -249,7 +188,7 @@
 
                     statusState.textContent = msg.status.makerState;
                 }
-                if(msg.user){
+                if (msg.user) {
                     userDrinks.textContent = decimal(msg.user.drinks, 1);
                     userBAC.textContent = decimal(msg.user.bac, 3);
 
@@ -257,10 +196,10 @@
                     userWeightInput.value = msg.user.weight;
 
                     userSex = msg.user.sex;
-                    if(userSex == "male"){
+                    if (userSex == "male") {
                         userFemaleButton.classList.remove("active");
                         userMaleButton.classList.add("active");
-                    }else if(userSex == "female"){
+                    } else if (userSex == "female") {
                         userMaleButton.classList.remove("active");
                         userFemaleButton.classList.add("active");
                     }
@@ -268,33 +207,382 @@
             };
         }
 
-        var customDrink
+        var customDrink = null;
 
-        function ingredientPlus(title){
-            if(!ingredients[title].empty){
-                ingredientElems[title].amount = Math.min(ingredientElems[title].amount + 0.1, 8);
-                ingredientElems[title].volume.textContent = decimal(ingredientElems[title].amount, 1) + " oz";
+        class DrinkItem extends HTMLElement {
+            constructor(name, page) {
+                super();
+
+                this.appendChild(templateDrinkItem.content.cloneNode(true));
+
+                this.name = name;
+                if(drinks[name] != null){
+                    this.ingredients = drinks[name];
+                }else{
+                    this.ingredients = {};
+                }
+                
+                this.empty = false;
+                this.page = page;
+
+                let ingredientSummary = "";
+                for (let ingredient in this.ingredients) {
+                    ingredientSummary += ingredient + ", "
+                }
+
+                this.nameElem = this.querySelector(".drink-name");
+                this.nameElem.textContent = this.name;
+
+                this.ingredientsElem = this.querySelector(".ingredient-summary");
+                this.ingredientsElem.textContent = ingredientSummary;
+
+                this.onclick = function () {
+                    event.stopPropagation();
+                    this.expandDetail(this.name);
+                };
+            }
+
+            updateEmpty() {
+                let empty = false;
+                for (let ingredient in this.ingredients) {
+                    if (ingredients[ingredient].empty) {
+                        empty = true;
+                        break;
+                    }
+                }
+                if (empty && !this.empty) {
+                    this.classList.add("drink-empty");
+                    this.empty = empty;
+                } else if (!empty && this.empty) {
+                    this.classList.remove("drink-empty");
+                    this.empty = empty;
+                }
+            }
+
+            expandDetail() {
+                if (detailElems[this.page].expanded) {
+                    return;
+                }
+                detailElems[this.page].expanded = true;
+
+                detailElems[this.page].name = this.name;
+
+                detailElems[this.page].alcoholSlider.value = 1;
+                detailElems[this.page].nonalcoholSlider.value = 1;
+                detailElems[this.page].updateBody();
+
+                detailElems[this.page].nameElem.textContent = this.name;
+                detailElems[this.page].ingredientBoxElem.style.height = (3.5 * bigVH * Object.keys(this.ingredients).length) + "px";
+
+                let y = -this.getBoundingClientRect().top + drinksPage.getBoundingClientRect().top + bigVH;
+
+                detailElems[this.page].updateEmpty();
+
+                detailElems[this.page].bodyElem.classList.remove("shrunk");
+
+                drinksPage.classList.add("noscroll");
+                drinkListElem.classList.add("notouch", "transparent");
+                this.classList.add("transparent");
+
+                detailElems[this.page].style.top = this.offsetTop - bigVH + "px";
+                detailElems[this.page].classList.remove("notouch", "transparent");
+                detailElems[this.page].style.transform = "translateY(" + y + "px)";
             }
         }
+        customElements.define('drink-item', DrinkItem);
 
-        function ingredientMinus(title){
-            if(!ingredients[title].empty){
-                ingredientElems[title].amount = Math.max(ingredientElems[title].amount - 0.1, 0);
-                ingredientElems[title].volume.textContent = decimal(ingredientElems[title].amount, 1) + " oz";
+
+        class DrinkDetail extends HTMLElement {
+            constructor() {
+                super();
+
+                var templateDrinkDetail = document.getElementById("template-drink-detail").content;
+                this.appendChild(templateDrinkDetail.cloneNode(true));
+
+                this.expanded = false;
+                this.empty = false;
+                this.same = false;
+
+                this.nameElem = this.querySelector('.drink-name');
+                this.itemElem = this.querySelector('.drink-item');
+
+                this.bodyElem = this.querySelector('.drink-detail-body');
+                this.ingredientBoxElem = this.querySelector('.ingredient-box');
+
+                this.ingredients = {};
+                this.ingredientsElem = new Array(40);
+                var templateIngredientAmount = document.getElementById("template-ingredient-amount").content;
+                for (var i = 0; i < 40; i++) {
+                    let item = templateIngredientAmount.cloneNode(true).children[0];
+                    this.ingredientsElem[i] = item;
+                    this.ingredientBoxElem.append(item);
+                }
+
+                this.volume = this.querySelector('.volume-label');
+                this.alcohol = this.querySelector('.alcohol-label');
+                this.abv = this.querySelector('.abv-label');
+
+                this.alcoholMult = this.querySelector('.alcohol-mult');
+                this.alcoholSlider = this.querySelector('.alcohol-slider');
+                this.alcoholSlider.oninput = this.updateBody.bind(this);
+                this.alcoholSlider.addEventListener('touchstart', this.sliderStart, { passive: true });
+                this.alcoholSlider.addEventListener('touchend', this.sliderStop, { passive: true });
+                this.alcoholSlider.addEventListener('touchcancel', this.sliderStop, { passive: true });
+
+                this.nonalcoholMult = this.querySelector('.nonalcohol-mult');
+                this.nonalcoholSlider = this.querySelector('.nonalcohol-slider');
+                this.nonalcoholSlider.oninput = this.updateBody.bind(this);
+                this.nonalcoholSlider.addEventListener('touchstart', this.sliderStart, { passive: true });
+                this.nonalcoholSlider.addEventListener('touchend', this.sliderStop, { passive: true });
+                this.nonalcoholSlider.addEventListener('touchcancel', this.sliderStop, { passive: true });
+
+                this.tubButton = this.querySelector('.tub-button');
+                this.basementButton = this.querySelector('.basement-button');
+
+                this.tubButton.onclick = ()=>{
+                    this.detailClick('hottub');
+                }
+                this.basementButton.onclick = ()=>{
+                    this.detailClick('basement');
+                }
+
+                this.onclick = ()=>{
+                    event.stopPropagation();
+                    this.collapseDetail();
+                };
             }
-        }
 
-        function updateCustomDrink(){
-            let drink
-            for(let title in ingredients){
-                if(ingredientElems[title].amount > 0){
+            sliderStart() {
+                pageView.classList.add('noscroll');
+            }
 
+            sliderStop() {
+                pageView.classList.remove('noscroll');
+            }
+
+            addQueue() {
+                let msg = {
+                    uuid: uuid,
+                    type: "queue"
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
+            removeQueue() {
+                let msg = {
+                    uuid: uuid,
+                    type: "remove"
+                };
+                socket.send(JSON.stringify(msg));
+            }
+
+            changeQueue(outlet) {
+                queuedDrink.name = this.name;
+                queuedDrink.ingredients = {};
+                for (let ingredient in this.ingredients) {
+                    queuedDrink.ingredients[ingredient] = this.ingredients[ingredient];
+                }
+                queuedDrink.outlet = outlet;
+                if (userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING") {
+                    statusDrink.textContent = queuedDrink.name;
+                    statusOutlet.textContent = queuedDrink.outlet;
+                }
+                this.same = true;
+            }
+
+            updateBody() {
+                this.updateInfo();
+                this.updateButtons();
+            }
+
+            updateInfo() {
+                let alcoholMult = this.alcoholSlider.value;
+                let nonalcoholMult = this.nonalcoholSlider.value;
+                let totalVolume = 0;
+                let alcoholVolume = 0;
+                this.same = true;
+                if (this.name != queuedDrink.name) {
+                    this.same = false;
+                }
+                let i = 0;
+                this.ingredients = {};
+                for (let ingredient in drinkElems[this.name].ingredients) {
+                    let abv = ingredients[ingredient].abv;
+                    let volume = 0;
+                    if (abv > 0) {
+                        volume = drinkElems[this.name].ingredients[ingredient] * alcoholMult;
+                        alcoholVolume += volume * abv;
+                    } else {
+                        volume = drinkElems[this.name].ingredients[ingredient] * nonalcoholMult;
+                    }
+                    this.ingredients[ingredient] = volume;
+                    if (this.ingredients[ingredient] != queuedDrink.ingredients[ingredient]) {
+                        this.same = false;
+                    }
+                    totalVolume += volume;
+                    if (ingredients[ingredient].empty) {
+                        this.ingredientsElem[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz (EMPTY)";
+                    } else {
+                        this.ingredientsElem[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz";
+                    }
+                    i++;
+                }
+                
+                this.volume.textContent = "total: " + decimal(totalVolume, 2) + " oz";
+                this.alcohol.textContent = "drinks: " + decimal(alcoholVolume / 0.6, 1);
+                if (totalVolume > 0) {
+                    this.abv.textContent = "ABV: " + decimal(alcoholVolume * 100 / totalVolume, 1) + "%";
+                } else {
+                    this.abv.textContent = "ABV: 0%";
+                }
+
+                this.alcoholMult.textContent = "Alcohol: " + alcoholMult + "x";
+                this.nonalcoholMult.textContent = "Non-alcohol: " + nonalcoholMult + "x";
+            }
+
+            updateButtons() {
+                if (userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING") {
+                    this.basementButton.textContent = "Add Basement";
+                    this.tubButton.textContent = "Add Hot Tub";
+                }
+                else if (userState == "INLINE" || userState == "FRONTLINE") {
+                    if (this.same && queuedDrink.outlet == 'basement') {
+                        this.basementButton.textContent = "Remove Basement";
+                        this.tubButton.textContent = "Change Hot Tub";
+                    } else if (this.same && queuedDrink.outlet == 'hottub') {
+                        this.basementButton.textContent = "Change Basement";
+                        this.tubButton.textContent = "Remove Hot Tub";
+                    } else {
+                        this.basementButton.textContent = "Change Basement";
+                        this.tubButton.textContent = "Change Hot Tub";
+                    }
+                }
+            }
+
+            detailClick(outlet) {
+                event.stopPropagation();
+                if (this.empty) {
+                    return;
+                }
+                if (userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING") {
+                    this.changeQueue(outlet);
+                    this.addQueue();
+                }
+                else if (userState == "INLINE" || userState == "FRONTLINE") {
+                    if (this.same && queuedDrink.outlet == outlet) {
+                        this.removeQueue();
+                    } else {
+                        this.changeQueue(outlet);
+                        this.updateButtons();
+                    }
+                }
+            }
+
+            collapseDetail() {
+                let name = this.name;
+
+                this.style.transform = "translateY(0px)";
+                this.classList.add("notouch");
+                this.bodyElem.classList.add("shrunk");
+
+                drinksPage.classList.remove("noscroll");
+                drinkListElem.classList.remove("notouch", "transparent");
+
+                setTimeout(() => {
+                    drinkElems[name].classList.remove("transparent");
+                    this.classList.add("transparent");
+                    this.style.top = "0px";
+                    this.expanded = false;
+                }, 200);
+            }
+
+            updateEmpty() {
+                if (drinkElems[this.name].empty && !this.empty) {
+                    this.classList.add("drink-empty");
+                    this.empty = drinkElems[this.name].empty;
+                } else if (!drinkElems[this.name].empty && this.empty) {
+                    this.classList.remove("drink-empty");
+                    this.empty = drinkElems[this.name].empty;
                 }
             }
         }
+        customElements.define('drink-detail', DrinkDetail);
 
-        function statusClick(){
-            if(userState == "FRONTLINE"){
+
+        class IngredientItem extends HTMLElement {
+            constructor(name) {
+                super();
+
+                this.appendChild(templateIngredientItem.content.cloneNode(true));
+
+                this.name = name;
+                this.empty = false;
+                this.volume = 0;
+
+                this.nameElem = this.querySelector(".ingredient-name");
+                console.log(this);
+                this.nameElem.textContent = this.name;
+
+                this.plus = this.querySelector(".ingredient-plus");
+                this.minus = this.querySelector(".ingredient-minus");
+
+                this.volumeElem = this.querySelector(".ingredient-volume");
+                this.volumeElem.textContent = this.volume + " oz";
+
+                this.plus.onclick = this.ingredientPlus.bind(this);
+                this.minus.onclick = this.ingredientMinus.bind(this);
+            }
+
+            updateEmpty() {
+                if (ingredients[this.name].empty && !this.empty) {
+                    this.classList.add("drink-empty");
+                    this.empty = ingredients[this.name].empty;
+                } else if (!ingredients[this.name].empty && this.empty) {
+                    this.classList.remove("drink-empty");
+                    this.empty = ingredients[this.name].empty;
+                }
+            }
+
+            ingredientPlus() {
+                this.ingredientChange(Math.min(this.volume + 0.1, 8));
+            }
+
+            ingredientMinus() {
+                this.ingredientChange(Math.max(this.volume - 0.1, 0));
+            }
+
+            ingredientChange(volume){
+                if (!ingredients[this.name].empty) {
+                    this.volume = volume;
+                }else{
+                    this.volume = 0;
+                }
+                this.volumeElem.textContent = decimal(this.volume, 1) + " oz";
+
+                if(this.volume == 0){
+                    delete drinkElems['custom'].ingredients[this.name];
+                }else{
+                    drinkElems['custom'].ingredients[this.name] = this.volume;
+                }
+
+                drinkElems['custom'].updateEmpty();
+            }
+
+            updateCustomDrink() {
+                let drink
+                for (let name in ingredients) {
+                    if (this.volume > 0) {
+
+                    }
+                }
+            }
+        }
+        customElements.define('ingredient-item', IngredientItem);
+
+        
+
+        function statusClick() {
+            if (userState == "FRONTLINE") {
                 let msg = {
                     uuid: uuid,
                     type: "pour",
@@ -303,188 +591,43 @@
                     outlet: queuedDrink.outlet
                 };
                 socket.send(JSON.stringify(msg));
-            }else if(userState == "POURING"){
+            } else if (userState == "POURING") {
                 let msg = {
                     uuid: uuid,
                     type: "cancel"
                 };
                 socket.send(JSON.stringify(msg));
-            }   
-        }
-
-        function updateExpandedMenu(){
-            updateExpandedInfo();
-            updateExpandedButtons();
-        }
-
-        function updateExpandedInfo(){
-            let alcoholMult = detailAlcoholSlider.value;
-            let nonalcoholMult = detailNonalcoholSlider.value;
-            let totalVolume = 0;
-            let alcoholVolume = 0;
-            sameDrink = true;
-            if(expandedDrink.name != queuedDrink.name){
-                sameDrink = false;
-            }
-            let i = 0;
-            for (let ingredient in drinks[expandedDrink.name]){
-                let abv = ingredients[ingredient].abv;
-                let volume = 0;
-                if(abv > 0){
-                    volume = drinks[expandedDrink.name][ingredient] * alcoholMult;
-                    alcoholVolume += volume * abv;
-                }else{
-                    volume = drinks[expandedDrink.name][ingredient] * nonalcoholMult;
-                }
-                expandedDrink.ingredients[ingredient] = volume;
-                if(expandedDrink.ingredients[ingredient] != queuedDrink.ingredients[ingredient]){
-                    sameDrink = false;
-                }
-                totalVolume += volume;
-                if(ingredients[ingredient].empty){
-                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz (EMPTY)";
-                }else{
-                    detailIngredients[i].textContent = ingredient + ": " + decimal(volume, 2) + " oz";
-                }
-                i++;
-            }
-
-            detailVolume.textContent = "total: " + decimal(totalVolume, 2) + " oz";
-            detailAlcohol.textContent = "drinks: " + decimal(alcoholVolume / 0.6, 1);
-            if(totalVolume > 0){
-                detailABV.textContent = "ABV: " + decimal(alcoholVolume * 100 / totalVolume, 1) + "%";
-            }else{
-                detailABV.textContent = "ABV: 0%";
-            }
-
-            detailAlcoholMult.textContent = "Alcohol: " + alcoholMult + "x";
-            detailNonalcoholMult.textContent = "Non-alcohol: " + nonalcoholMult + "x";
-            
-        }
-
-        function detailClick(outlet){
-            event.stopPropagation();
-            if(drinkElems[expandedDrink.name].empty){
-                return;
-            }
-            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
-                changeQueue(outlet);
-                addQueue(); 
-            }
-            else if(userState == "INLINE" || userState == "FRONTLINE"){
-                if(sameDrink && queuedDrink.outlet == outlet){
-                    removeQueue(); 
-                }else{
-                    changeQueue(outlet);
-                    updateExpandedButtons();
-                }
             }
         }
 
-        function updateExpandedButtons(){
-            
-            if(userState == "NOLINE" || userState == "OUTLINE" || userState == "POURING"){
-                basementButton.textContent = "Add Basement";
-                tubButton.textContent = "Add Hot Tub";
-            }
-            else if(userState == "INLINE" || userState == "FRONTLINE"){
-                if(sameDrink && queuedDrink.outlet == 'basement'){
-                    basementButton.textContent = "Remove Basement";
-                    tubButton.textContent = "Change Hot Tub";
-                }else if(sameDrink && queuedDrink.outlet == 'hottub'){
-                    basementButton.textContent = "Change Basement";
-                    tubButton.textContent = "Remove Hot Tub";
-                }else{
-                    basementButton.textContent = "Change Basement";
-                    tubButton.textContent = "Change Hot Tub";
-                }
-            }
+        function decimal(num, place) {
+            return Math.round(num * Math.pow(10, place)) / Math.pow(10, place)
         }
 
-        function expandDetail(title){
-
-            if(expandedDrink.name != ""){
-                return;
-            }
-
-            expandedDrink.name = title;
-
-            detailAlcoholSlider.value = 1;
-            detailNonalcoholSlider.value = 1;
-            updateExpandedMenu();
-
-            detailTitle.textContent = title;
-            //detailIngredientSummary.textContent = drinkElems[title].ingredientSummary.textContent;
-            //detailIngredientSummary.classList.add("transparent");
-            detailIngredientBox.style.height = (3.5 * bigVH * Object.keys(drinks[title]).length) + "px";
-
-            //var start = drinkElems[title].item.offsetTop - vh;
-            let y = -drinkElems[title].item.getBoundingClientRect().top + drinksPage.getBoundingClientRect().top + bigVH;
-
-            if(drinkElems[title].empty){
-                drinkDetailElem.classList.add("drink-empty");
-            }else if(!drinkElems[title].empty){
-                drinkDetailElem.classList.remove("drink-empty");
-            }
-
-            detailBody.classList.remove("shrunk");
-
-            drinksPage.classList.add("noscroll");
-            drinkListElem.classList.add("notouch", "transparent");
-            drinkElems[title].item.classList.add("transparent");
-            
-            drinkDetailElem.style.top = drinkElems[title].item.offsetTop - bigVH + "px";
-            drinkDetailElem.classList.remove("notouch", "transparent");
-            drinkDetailElem.style.transform = "translateY("+ y +"px)";
+        function setDrinksTab() {
+            drinksPage.scrollIntoView({ behavior: "smooth" });
         }
 
-        function collapseDetail(){
-            let title = expandedDrink.name;
-
-            drinkDetailElem.style.transform = "translateY(0px)";
-            drinkDetailElem.classList.add("notouch");
-            detailBody.classList.add("shrunk");
-            
-            drinksPage.classList.remove("noscroll");
-            drinkListElem.classList.remove("notouch", "transparent");
-
-            setTimeout(()=>{
-                drinkElems[title].item.classList.remove("transparent");
-                drinkDetailElem.classList.add("transparent");
-                drinkDetailElem.style.top = "0px";
-                expandedDrink.name = "";
-                expandedDrink.ingredients = {};
-            }, 200);
+        function setIngredientsTab() {
+            ingredientsPage.scrollIntoView({ behavior: "smooth" });
         }
 
-        function decimal(num, place){
-            return Math.round(num*Math.pow(10,place)) / Math.pow(10,place)
+        function setUserTab() {
+            userPage.scrollIntoView({ behavior: "smooth" });
         }
 
-        function setDrinksTab(){
-            drinksPage.scrollIntoView({behavior: "smooth"});
-        }
-
-        function setIngredientsTab(){
-            ingredientsPage.scrollIntoView({behavior: "smooth"});
-        }
-
-        function setUserTab(){
-            userPage.scrollIntoView({behavior: "smooth"});
-        }
-
-        function setTheme(x, store){
+        function setTheme(x, store) {
             theme = x;
-            if(theme == "light"){
+            if (theme == "light") {
                 userDarkButton.classList.remove("active");
                 userLightButton.classList.add("active");
                 document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 100%, 10%)");
-            }else if(theme == "dark"){
+            } else if (theme == "dark") {
                 userLightButton.classList.remove("active");
                 userDarkButton.classList.add("active");
-                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 0%, 25%)");
+                document.documentElement.style.setProperty('--panel-color', "hsla(0, 0%, 0%, 35%)");
             }
-            if(store){
+            if (store) {
                 localStorage.setItem('theme', theme);
             }
         }
@@ -502,106 +645,33 @@
 
         var pageView = document.getElementById("page-view");
 
+        var tabBar = document.getElementById("tab-bar");
+
+        var drinks = {};
+        var ingredients = {};
+
         /////////////////////////////////////////
 
         var drinksPage = document.getElementById("drinks-page");
+        var drinkListElem = document.getElementById("drink-list");
         var drinkElems = {};
 
-        var drinkListElem = document.getElementById("drink-list");
-        var drinkDetailElem = document.getElementById("drink-detail");
+        var templateDrinkItem = document.getElementById("template-drink-item");
+        var templateIngredientItem = document.getElementById("template-ingredient-item");
 
-        var drinkTemplate = document.getElementById("template-drink-item");
-
-        drinkDetailElem.onclick = collapseDetail;
-        
-        var detailItem = drinkDetailElem.getElementsByClassName("drink-item")[0];
-        var detailTitle = drinkDetailElem.getElementsByClassName("drink-title")[0];
-        var detailIngredientSummary = drinkDetailElem.getElementsByClassName("ingredient-summary")[0];
-
-        var detailBody = document.getElementById("drink-detail-body");
-        var detailIngredientBox = document.getElementById("ingredient-box");
-        var detailIngredients = [];
-        var template = document.getElementById("template-ingredient-amount");
-        for(var i=0; i<40; i++){
-            let item = document.importNode(template, true).content.querySelector("div");
-            detailIngredients[i] = item;
-            detailIngredientBox.append(item);
-        }
-
-        function sliderStart(){
-            pageView.classList.add("noscroll");
-        }
-
-        function sliderStop(){
-            pageView.classList.remove("noscroll");
-        }
-
-        var detailVolume = document.getElementById("volume-title");
-        var detailAlcohol = document.getElementById("alcohol-title");
-        var detailABV = document.getElementById("abv-title");
-
-        var detailAlcoholMult = document.getElementById("alcohol-label");
-        var detailAlcoholSlider = document.getElementById("alcohol-slider");
-        detailAlcoholSlider.oninput = updateExpandedMenu;
-        detailAlcoholSlider.ontouchstart = sliderStart;
-        detailAlcoholSlider.ontouchend = sliderStop;
-        detailAlcoholSlider.ontouchscancel = sliderStop;
-
-        var detailNonalcoholMult = document.getElementById("nonalcohol-label");
-        var detailNonalcoholSlider = document.getElementById("nonalcohol-slider");
-        detailNonalcoholSlider.oninput = updateExpandedMenu;
-        detailNonalcoholSlider.ontouchstart = sliderStart;
-        detailNonalcoholSlider.ontouchend = sliderStop;
-        detailNonalcoholSlider.ontouchscancel = sliderStop;
-
-        var tubButton = document.getElementById("tub-button");
-        var basementButton = document.getElementById("basement-button");
-
-        tubButton.onclick = function(){
-            detailClick("hottub");
-        }
-        basementButton.onclick = function(){
-            detailClick("basement");
-        }
-
-        function addQueue(){
-            let msg = {
-                uuid: uuid,
-                type: "queue"
-            };
-            socket.send(JSON.stringify(msg));
-        }
-
-        function removeQueue(){
-            let msg = {
-                uuid: uuid,
-                type: "remove"
-            };
-            socket.send(JSON.stringify(msg));
-        }
-
-        function changeQueue(outlet){
-            queuedDrink.name = expandedDrink.name;
-            queuedDrink.ingredients = {}
-            for(let ingredient in expandedDrink.ingredients){
-                queuedDrink.ingredients[ingredient] = expandedDrink.ingredients[ingredient]
-            }
-            queuedDrink.outlet = outlet;
-            if(userState == "INLINE" || userState == "FRONTLINE" || userState == "POURING"){
-                statusDrink.textContent = queuedDrink.name;
-                statusOutlet.textContent = queuedDrink.outlet;
-            }
-            sameDrink = true;
-        }
+        var detailElems = {};
+        detailElems['drinks'] = document.getElementById("detail-drinks");
+        detailElems['ingredients'] = document.getElementById("detail-ingredients");
 
         var userState = "";
         var makerState = "";
 
-        var sameDrink = false;
+        drinkElems['custom'] = new DrinkItem('custom', 'ingredients');
 
         /////////////////////////////////////////
-        
+
         var ingredientsPage = document.getElementById("ingredients-page");
+        var ingredientListElem = document.getElementById("ingredient-list");
         var ingredientElems = {};
 
         var ingredientTemplate = document.getElementById("template-ingredient-item");
@@ -618,20 +688,20 @@
         var userDrinks = document.getElementById("user-drinks-value");
         var userBAC = document.getElementById("user-bac-value");
 
-        userMaleButton.onclick = function(){
+        userMaleButton.onclick = function () {
             userSex = "male";
             userFemaleButton.classList.remove("active");
             userMaleButton.classList.add("active");
         }
 
-        userFemaleButton.onclick = function(){
+        userFemaleButton.onclick = function () {
             userSex = "female";
             userMaleButton.classList.remove("active");
             userFemaleButton.classList.add("active");
         }
 
         var userUpdate = document.getElementById("user-update");
-        userUpdate.onclick = function(){
+        userUpdate.onclick = function () {
             var msg = {
                 uuid: uuid,
                 type: "user",
@@ -645,23 +715,23 @@
         var userDarkButton = document.getElementById("user-dark-button");
         var userLightButton = document.getElementById("user-light-button");
 
-        userDarkButton.onclick = function(){
+        userDarkButton.onclick = function () {
             setTheme('dark', true);
         }
 
-        userLightButton.onclick = function(){
+        userLightButton.onclick = function () {
             setTheme('light', true);
         }
 
         var userSex = "";
 
         var theme = localStorage.getItem('theme');
-        if(theme == null){
+        if (theme == null) {
             theme = "light"
             localStorage.setItem('theme', theme);
         }
         setTheme(theme, false);
-        
+
         ////////////////////////////////////////////////////////////////
 
         var statusBase = document.getElementById("status-bar");
@@ -688,26 +758,28 @@
         ////////////////////////////////////////////////////////////////
 
         pageView.onscroll = pageScrolled;
-        
-        function pageScrolled(){
-            let scroll = pageView.scrollLeft;
 
-            if(scroll < pageWidth*0.5){
-                if(currentPage != 0){
+        function pageScrolled() {
+            let scroll = pageView.scrollLeft;
+            let x = pageView.scrollLeft / windowWidth * 100;
+            tabBar.style.transform = "translateX(" + x + "%)";
+
+            if (scroll < windowWidth * 0.5) {
+                if (currentPage != 0) {
                     currentPage = 0;
                     drinksTab.classList.add("selected");
                     ingredientsTab.classList.remove("selected");
                     userTab.classList.remove("selected");
                 }
-            }else if(scroll < pageWidth*1.5){
-                if(currentPage != 1){
+            } else if (scroll < windowWidth * 1.5) {
+                if (currentPage != 1) {
                     currentPage = 1;
                     drinksTab.classList.remove("selected");
                     ingredientsTab.classList.add("selected");
                     userTab.classList.remove("selected");
                 }
-            }else{
-                if(currentPage != 2){
+            } else {
+                if (currentPage != 2) {
                     currentPage = 2;
                     drinksTab.classList.remove("selected");
                     ingredientsTab.classList.remove("selected");
@@ -717,65 +789,6 @@
         };
 
         var currentPage = 0;
-        var pageWidth = window.innerWidth;
-
-        var flareColors = [
-            "hsl(170, 100%, 20%)",
-        ];
-
-        var background = document.getElementById("background");
-        var flares = background.getElementsByClassName("flare");
-        var flareSize = background.clientWidth * 0.8;
-        var height = background.clientHeight + flareSize * 1;
-        var width = background.clientWidth + flareSize * 1;
-
-        var frameCount = 10;
-        var durationMin = 50000;
-        var durationMax = 70000;
-
-        var perimeter = width*2 + height*2;
-
-        for(var i=0; i<flares.length; i++){  
-            flares[i].style.setProperty("box-shadow", "0 "+flareSize*2+"px "+flareSize*0.5+"px " + flareColors[i % flareColors.length]);
-            let frames = [];
-            let rand = Math.random()*perimeter;
-            for(var j=0; j<frameCount; j++){
-                rand = (rand + (Math.random()*0.33 + 0.33)*perimeter) % perimeter;
-                let x = -flareSize*1.0;
-                let y = -flareSize*3.0;
-                if(rand < width){
-                    x += rand;
-                    y += 0;
-                }else if(rand < width + height){
-                    x += width;
-                    y += rand - width;
-                }else if(rand < width*2 + height){
-                    x += width - (rand - width - height);
-                    y += height;
-                }else{
-                    x += 0;
-                    y += height - (rand - width*2 - height);
-                }
-
-                frames.push({transform: 'translate('+ x +'px,'+ y +'px)'});
-            }
-            frames.push(frames[0]);
-
-            let effect = new KeyframeEffect(
-                flares[i],
-                frames,
-                {
-                    duration: durationMin + Math.random()*(durationMax - durationMin), 
-                    easing: "linear" ,
-                    iterations: Infinity
-                }
-            );
-
-            let animation = new Animation(effect);
-            //animation.currentTime = 0;
-            animation.currentTime = Math.random()*(durationMax);
-            animation.play();
-        }
 
         ////////////////////////////////////////////////////////////////
 
@@ -783,56 +796,217 @@
         var socketConnected = false;
         var socketAttempts = 0;
 
-        var drinks = {};
-        var ingredients = {};
-
-        var expandedDrink = {
-            name: "",
-            ingredients: {}
-        };
-
         var uuid = localStorage.getItem('uuid');
-        if(uuid == null){
-            uuid = Math.random();
+        if (uuid == null) {
+
+            let array = new Uint8Array(16);
+            self.crypto.getRandomValues(array);
+            var uuid = "";
+            for (let i = 0; i < 16; i++) {
+                if (i == 4 || i == 6 || i == 8 || i == 10) {
+                    uuid += "-";
+                }
+                uuid += array[i].toString(16);
+            };
+
             localStorage.setItem('uuid', uuid)
             console.log("new user: " + uuid);
-        }else{
-            console.log("existing user: " + uuid);
         }
 
-        drinksPage.onfocus = function(){
-            console.log("onfocus");
-        };
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
 
-        var smallVH = window.innerHeight * 0.01;
-        var bigVH = document.getElementById('ruler').clientHeight * 0.02;
+        const smallVH = windowHeight * 0.01;
+        const bigVH = document.getElementById('ruler').clientHeight * 0.02;
 
-        document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01)+"px");
-        document.documentElement.style.setProperty('--flare-size', flareSize+"px");
+        document.documentElement.style.setProperty('--vh', (windowHeight * 0.01) + "px");
 
         socketInit();
 
-        window.onload = function(){
-            
-        };
-        
+        ///////////////////////////////////////////////////////////////////////
+
+        const drawParticlesVS = `#version 300 es
+            in vec2 position;
+            in vec2 velocity;
+            in vec4 color;
+
+            uniform float ratio;
+            uniform float pointSize;
+            uniform vec2 dimensions;
+            uniform float time;
+            uniform vec2 bounds;
+
+            out vec2 v_center;
+            out vec4 v_color;
+
+            void main() {
+                vec2 farPosition = position + velocity*time + bounds*0.5;
+                vec2 modPosition = mod(mod(farPosition, bounds) + bounds, bounds) - bounds*0.5;
+
+                gl_Position = vec4(modPosition.x, modPosition.y*ratio, 1, 1);
+                gl_PointSize = pointSize;
+                
+                v_center = vec2((gl_Position.x + 1.0)*dimensions.x, (gl_Position.y + 1.0)*dimensions.y);
+                v_color = color;
+            }
+            `;
+
+        const drawParticlesFS = `#version 300 es
+            precision highp float;
+            out vec4 outColor;
+
+            uniform float deviation2;
+
+            in vec2 v_center;
+            in vec4 v_color;
+
+            void main() {
+                float amplitude = 0.4;
+                vec2 diff = gl_FragCoord.xy - v_center;
+                float length2 = (diff.x*diff.x) + (diff.y*diff.y);
+                float intensity = amplitude * pow(2.71828, -0.5*(length2 / deviation2));
+
+                outColor = vec4(v_color.rgb, intensity);
+            }
+            `;
+
+        // Get A WebGL context
+        /** @type {HTMLCanvasElement} */
+        const canvas = document.querySelector("#canvas");
+        const gl = canvas.getContext("webgl2");
+
+        gl.canvas.width = windowWidth;
+        gl.canvas.height = windowHeight;
+
+        const flareProgram = gl.createProgram();
+
+        const vshader = gl.createShader(gl.VERTEX_SHADER);
+        const fshader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(vshader, drawParticlesVS);
+        gl.shaderSource(fshader, drawParticlesFS);
+        gl.compileShader(vshader);
+        gl.compileShader(fshader);
+        gl.attachShader(flareProgram, vshader);
+        gl.attachShader(flareProgram, fshader);
+        gl.linkProgram(flareProgram);
+
+        const positionLoc = gl.getAttribLocation(flareProgram, 'position');
+        const velocityLoc = gl.getAttribLocation(flareProgram, 'velocity');
+        const colorLoc = gl.getAttribLocation(flareProgram, 'color');
+
+        const ratioLoc = gl.getUniformLocation(flareProgram, 'ratio');
+        const timeLoc = gl.getUniformLocation(flareProgram, 'time');
+        const boundsLoc = gl.getUniformLocation(flareProgram, 'bounds');
+        const deviationLoc = gl.getUniformLocation(flareProgram, 'deviation2');
+        const pointLoc = gl.getUniformLocation(flareProgram, 'pointSize');
+        const dimensionsLoc = gl.getUniformLocation(flareProgram, 'dimensions');
+
+
+
+        const flareCount = 100;
+        const flareSize = 0.8;
+        const flareSpeed = 0.2;
+
+        const colorOptions = [
+            0, 255, 213,
+            0, 170, 255,
+            0, 42, 255,
+            85, 0, 255,
+            212, 0, 255,
+            255, 0, 170,
+        ];
+
+        const ratioWH = gl.canvas.width / gl.canvas.height;
+        const ratioHW = 1 / ratioWH;
+
+
+
+        const buffer = new ArrayBuffer(flareCount * 28);
+        const dv = new DataView(buffer);
+
+        for (let i = 0; i < flareCount; i++) {
+            let x = (Math.random() * 2 - 1) * (1 + flareSize);
+            let y = (Math.random() * 2 - 1) * (ratioHW + flareSize);
+            dv.setFloat32(28 * i, x, true);
+            dv.setFloat32(28 * i + 4, y, true);
+
+            let num = Math.random() * Math.PI * 2;
+            dv.setFloat32(28 * i + 8, Math.cos(num) * flareSpeed, true);
+            dv.setFloat32(28 * i + 12, Math.sin(num) * flareSpeed, true);
+
+            num = i % (colorOptions.length / 3);
+            dv.setFloat32(28 * i + 16, colorOptions[num * 3] / 255.0 * 0.4, true);
+            dv.setFloat32(28 * i + 20, colorOptions[num * 3 + 1] / 255.0 * 0.4, true);
+            dv.setFloat32(28 * i + 24, colorOptions[num * 3 + 2] / 255.0 * 0.4, true);
+        }
+
+
+
+        const flareVertexArray = gl.createVertexArray();
+        gl.bindVertexArray(flareVertexArray);
+
+        const vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW);
+
+        gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 28, 0);
+        gl.enableVertexAttribArray(positionLoc);
+
+        gl.vertexAttribPointer(velocityLoc, 2, gl.FLOAT, false, 28, 8);
+        gl.enableVertexAttribArray(velocityLoc);
+
+        gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 28, 16);
+        gl.enableVertexAttribArray(colorLoc);
+
+
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA_SATURATE, gl.ONE);
+
+        gl.useProgram(flareProgram);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        gl.uniform2f(boundsLoc, 2 + 2 * flareSize, 2 * ratioHW + 2 * flareSize);
+        gl.uniform1f(ratioLoc, ratioWH);
+        gl.uniform1f(pointLoc, flareSize * gl.canvas.width);
+        gl.uniform1f(deviationLoc, Math.pow(flareSize * gl.canvas.width * 0.185, 2));
+        gl.uniform2f(dimensionsLoc, gl.canvas.width * 0.5, gl.canvas.height * 0.5);
+
+
+
+        function render(time) {
+
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.uniform1f(timeLoc, time * 0.001);
+            gl.drawArrays(gl.POINTS, 0, flareCount);
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+
     </script>
+
     <style>
         :root {
             --panel-color: hsla(0, 0%, 100%, 10%);
-            --top-hue: 170;
-            --bottom-hue: 320;
+            --hue-a: 170;
+            --hue-b: 200;
+            --hue-c: 230;
+            --hue-d: 260;
+            --hue-e: 290;
+            --hue-f: 320;
             --vh: 1vh;
             --flare-size: 20vw;
         }
 
-        #ruler{
+        #ruler {
             position: absolute;
             height: 50vh;
             visibility: hidden;
         }
 
-        body{
+        body {
             color-scheme: dark;
             height: calc(var(--vh) * 100);
             margin: 0;
@@ -844,7 +1018,14 @@
             color: white;
         }
 
-        #background{
+        #canvas {
+            top: 0;
+            left: 0;
+            position: fixed;
+            background-color: black;
+        }
+
+        #background {
             top: 0;
             left: 0;
             margin: 0;
@@ -855,7 +1036,7 @@
             background-color: hsl(320, 100%, 20%);
         }
 
-        .flare{
+        .flare {
             position: absolute;
             /* clip-path: inset(150% -50% -250% -50%); */
             top: 0;
@@ -866,18 +1047,22 @@
             border-radius: 100%;
             will-change: transform;
         }
+
         @keyframes nod {
             0% {
                 transform: translateY(0vh);
             }
+
             100% {
                 transform: translateY(-100vh);
             }
         }
+
         @keyframes shake {
             0% {
                 transform: translateX(0vw);
             }
+
             100% {
                 transform: translateX(-100vw);
             }
@@ -887,33 +1072,41 @@
             0% {
                 transform: translate(0%, 0%);
             }
+
             10% {
                 transform: translate(0%, 0%);
             }
+
             20% {
                 transform: translate(0%, 0%);
             }
+
             30% {
                 transform: translate(0%, 0%);
             }
+
             40% {
                 transform: translate(0%, 0%);
             }
+
             40% {
                 transform: translate(0%, 0%);
             }
+
             40% {
                 transform: translate(0%, 0%);
             }
+
             40% {
                 transform: translate(0%, 0%);
             }
+
             40% {
                 transform: translate(0%, 0%);
             }
         }
 
-        #header{
+        #header {
             height: 8%;
             width: 100%;
             position: fixed;
@@ -921,7 +1114,8 @@
             z-index: 10;
             box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
         }
-        .tab{
+
+        .tab {
             position: absolute;
             background-color: var(--panel-color);
             box-sizing: border-box;
@@ -933,27 +1127,42 @@
             overflow: hidden;
             text-align: center;
         }
-        .tab:active{
+
+        .tab:active {
             opacity: 50%;
         }
-        .tab.selected{
-            border-bottom: solid 0.5vh hsl(var(--bottom-hue), 80%, 35%);
+
+        .tab.selected {
             font-weight: bold;
         }
-        #drinks-tab{
+
+        #tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 0.5vh;
+            width: calc(100%/3);
+            background-color: hsl(var(--hue-f), 80%, 35%);
+            will-change: transform;
+        }
+
+        #drinks-tab {
             left: 0%;
         }
-        #ingredients-tab{
+
+        #ingredients-tab {
             left: calc(100%/3);
         }
-        #user-tab{
+
+        #user-tab {
             right: 0%;
         }
-        
-        #page-view{
+
+        #page-view {
             height: 82%;
             width: 100%;
             position: absolute;
+            /* opacity: 0; */
             top: 8%;
             overflow-y: hidden;
             scroll-behavior: smooth;
@@ -966,7 +1175,7 @@
             display: none;
         }
 
-        #drinks-page{
+        #drinks-page {
             height: 100%;
             width: 100%;
             top: 0%;
@@ -976,7 +1185,8 @@
             scroll-snap-align: start;
             scroll-snap-stop: always;
         }
-        #drink-list{
+
+        #drink-list {
             position: absolute;
             top: 0%;
             left: 0%;
@@ -986,7 +1196,9 @@
             transition: opacity 200ms linear;
             will-change: opacity;
         }
-        #drink-detail{
+
+        drink-detail {
+            display: block;
             position: absolute;
             top: 0%;
             left: 0%;
@@ -997,7 +1209,8 @@
             transition: transform 200ms;
             will-change: transform, opacity;
         }
-        #ingredients-page{
+
+        #ingredients-page {
             height: 100%;
             width: 100%;
             top: 0%;
@@ -1007,7 +1220,19 @@
             scroll-snap-align: start;
             scroll-snap-stop: always;
         }
-        #user-page{
+
+        #ingredient-list {
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            padding: 0 1vh 0 1vh;
+            box-sizing: border-box;
+            transition: opacity 200ms linear;
+            will-change: opacity;
+        }
+
+        #user-page {
             height: 100%;
             width: 100%;
             top: 0%;
@@ -1017,7 +1242,8 @@
             scroll-snap-align: start;
             scroll-snap-stop: always;
         }
-        #user-name-label{
+
+        #user-name-label {
             position: absolute;
             left: 10%;
             top: 8%;
@@ -1027,7 +1253,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-name-input{
+
+        #user-name-input {
             position: absolute;
             right: 10%;
             top: 8%;
@@ -1043,7 +1270,8 @@
             margin: 0;
             font-family: 'Roboto', sans-serif;
         }
-        #user-weight-label{
+
+        #user-weight-label {
             position: absolute;
             left: 10%;
             top: 20%;
@@ -1053,7 +1281,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-weight-input{
+
+        #user-weight-input {
             position: absolute;
             right: 10%;
             top: 20%;
@@ -1070,7 +1299,7 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        #user-sex-label{
+        #user-sex-label {
             position: absolute;
             left: 10%;
             top: 32%;
@@ -1080,7 +1309,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-male-button{
+
+        #user-male-button {
             position: absolute;
             right: 35%;
             top: 32%;
@@ -1092,7 +1322,8 @@
             font-size: 2.5vh;
             text-align: center;
         }
-        #user-female-button{
+
+        #user-female-button {
             position: absolute;
             right: 10%;
             top: 32%;
@@ -1104,14 +1335,16 @@
             font-size: 2.5vh;
             text-align: center;
         }
-        #user-male-button.active{
-            background-color: hsl(var(--top-hue), 80%, 27%);
+
+        #user-male-button.active {
+            background-color: hsl(var(--hue-a), 80%, 27%);
         }
-        #user-female-button.active{
-            background-color: hsl(var(--top-hue), 80%, 27%);
+
+        #user-female-button.active {
+            background-color: hsl(var(--hue-a), 80%, 27%);
         }
-        
-        #user-drinks-label{
+
+        #user-drinks-label {
             position: absolute;
             left: 10%;
             top: 48%;
@@ -1119,7 +1352,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-drinks-value{
+
+        #user-drinks-value {
             position: absolute;
             right: 10%;
             top: 48%;
@@ -1127,7 +1361,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-bac-label{
+
+        #user-bac-label {
             position: absolute;
             left: 10%;
             top: 54%;
@@ -1135,7 +1370,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-bac-value{
+
+        #user-bac-value {
             position: absolute;
             right: 10%;
             top: 54%;
@@ -1143,26 +1379,28 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-update{
+
+        #user-update {
             position: absolute;
             left: 30%;
             top: 64%;
             width: 40%;
             height: 10%;
             font-size: 2.5vh;
-            background-color: hsl(var(--bottom-hue), 80%, 27%);
+            background-color: hsl(var(--hue-f), 80%, 27%);
             border-radius: 1vh;
             text-align: center;
             line-height: 300%;
             box-shadow: hsl(0, 0%, 0%) 0 0 2px;
             /* will-change: transform, opacity; */
         }
-        #user-update:active{
+
+        #user-update:active {
             transform: scale(0.97);
             opacity: 50%;
         }
 
-        #user-theme-label{
+        #user-theme-label {
             position: absolute;
             left: 10%;
             top: 85%;
@@ -1172,7 +1410,8 @@
             background-color: hsl(0deg 0% 100% / 0%);
             font-size: 2.5vh;
         }
-        #user-dark-button{
+
+        #user-dark-button {
             position: absolute;
             right: 35%;
             top: 85%;
@@ -1184,7 +1423,8 @@
             font-size: 2.5vh;
             text-align: center;
         }
-        #user-light-button{
+
+        #user-light-button {
             position: absolute;
             right: 10%;
             top: 85%;
@@ -1196,19 +1436,23 @@
             font-size: 2.5vh;
             text-align: center;
         }
-        #user-dark-button.active{
-            background-color: hsl(var(--top-hue), 80%, 27%);
-        }
-        #user-light-button.active{
-            background-color: hsl(var(--top-hue), 80%, 27%);
+
+        #user-dark-button.active {
+            background-color: hsl(var(--hue-e), 80%, 27%);
         }
 
-        .ingredient-item{
+        #user-light-button.active {
+            background-color: hsl(var(--hue-e), 80%, 27%);
+        }
+
+        ingredient-item {
+            display: block;
             position: relative;
             height: 10vh;
             margin: 1vh;
         }
-        .ingredient-title{
+
+        .ingredient-name {
             position: absolute;
             width: 40%;
             height: 3vh;
@@ -1217,7 +1461,8 @@
             line-height: 100%;
             font-size: 2.5vh;
         }
-        .ingredient-volume{
+
+        .ingredient-volume {
             position: absolute;
             width: 20%;
             height: 2.5vh;
@@ -1227,7 +1472,8 @@
             font-size: 2.5vh;
             text-align: center;
         }
-        .ingredient-button{
+
+        .ingredient-button {
             position: absolute;
             top: 1vh;
             width: 8vh;
@@ -1238,36 +1484,41 @@
             text-align: center;
             box-shadow: hsl(0deg 0% 0%) 0 0 2px;
         }
-        .ingredient-button:active{
+
+        .ingredient-button:active {
             transform: scale(0.97);
             opacity: 50%;
         }
-        .ingredient-plus{
+
+        .ingredient-plus {
             right: 5%;
-            background-color: hsl(var(--top-hue), 80%, 27%);
+            background-color: hsl(var(--hue-b), 80%, 27%);
         }
-        .ingredient-plus:after{
+
+        .ingredient-plus:after {
             content: "\002B";
             font-size: 6vh;
         }
-        .ingredient-minus{
+
+        .ingredient-minus {
             right: 40%;
-            background-color: hsl(var(--bottom-hue), 80%, 27%);
+            background-color: hsl(var(--hue-e), 80%, 27%);
         }
-        .ingredient-minus:after{
+
+        .ingredient-minus:after {
             content: "\2212";
             font-size: 6vh;
         }
-        
-        .ingredient-empty{
+
+        .ingredient-empty {
             opacity: 40%;
         }
 
-        .ingredient-empty .ingredient-title{
+        .ingredient-empty .ingredient-name {
             text-decoration: line-through;
         }
 
-        #drink-detail-body{
+        .drink-detail-body {
             position: relative;
             transition: transform 200ms;
             height: calc(100% - 12vh);
@@ -1277,27 +1528,35 @@
             transform-origin: 50% 0%;
             will-change: transform;
         }
-        
-        .drink-item{
+
+        drink-item {
+            display: block;
             position: relative;
             background-color: var(--panel-color);
             height: 10vh;
             border-radius: 1vh;
             margin: 1vh 0 1vh 0;
-            
         }
-        .drink-empty{
+
+        .drink-empty {
             opacity: 40%;
         }
-        .drink-empty .drink-title{
+
+        .drink-empty .drink-name {
             text-decoration: line-through;
         }
-        .drink-item.flat{
+
+        .drink-item {
+            position: relative;
+            background-color: var(--panel-color);
+            height: 10vh;
+            border-radius: 1vh;
+            margin: 1vh 0 1vh 0;
             border-radius: 1vh 1vh 0 0;
             margin: 1vh 0 0 0;
         }
 
-        .drink-title{
+        .drink-name {
             position: absolute;
             width: 55%;
             height: 32%;
@@ -1307,7 +1566,7 @@
             font-size: 3vh;
         }
 
-        .close{
+        .close {
             position: absolute;
             width: 4vh;
             height: 4vh;
@@ -1315,12 +1574,13 @@
             right: 5%;
             text-align: center;
         }
-        .close:after{
+
+        .close:after {
             content: "\2573";
             font-size: 2vh;
         }
 
-        .arrow{
+        .arrow {
             position: absolute;
             width: 4vh;
             height: 4vh;
@@ -1329,12 +1589,13 @@
             text-align: center;
             transform: rotateZ(-45deg);
         }
-        .arrow:after{
+
+        .arrow:after {
             content: "\221F";
             font-size: 3vh;
         }
 
-        .ingredient-summary{
+        .ingredient-summary {
             position: absolute;
             width: 25%;
             height: 18%;
@@ -1349,7 +1610,7 @@
             /* will-change: opacity; */
         }
 
-        #ingredient-wrapper{
+        .ingredient-wrapper {
             position: absolute;
             font-size: 2vh;
             height: 25%;
@@ -1357,19 +1618,22 @@
             width: 80%;
             overflow-y: auto;
         }
-        #ingredient-box{
+
+        .ingredient-box {
             position: absolute;
             left: 0%;
             width: 100%;
             overflow-y: hidden;
         }
-        .ingredient-amount{
+
+        .ingredient-amount {
             line-height: 140%;
             font-size: 2.5vh;
             height: 3.5vh;
             overflow-x: hidden;
         }
-        .item-button{
+
+        .item-button {
             position: absolute;
             font-size: 2vh;
             height: 10%;
@@ -1382,23 +1646,23 @@
             box-shadow: hsl(0, 0%, 0%) 0 0 2px;
             /* will-change: transform, opacity; */
         }
-        #tub-button{
+
+        .tub-button {
             left: 5%;
-            background-color: hsl(var(--bottom-hue), 80%, 27%);
+            background-color: hsl(var(--hue-e), 80%, 27%);
         }
-        #queue-button{
-            left: 36%;
-            background-color: hsl(var(--bottom-hue), 80%, 27%);
-        }
-        #basement-button{
+
+        .basement-button {
             right: 5%;
-            background-color: hsl(var(--top-hue), 80%, 27%);
+            background-color: hsl(var(--hue-b), 80%, 27%);
         }
-        .item-button:active{
+
+        .item-button:active {
             transform: scale(0.97);
             opacity: 50%;
         }
-        #status{
+
+        #status {
             background-color: var(--panel-color);
             text-align: center;
             font-size: 3vh;
@@ -1408,7 +1672,8 @@
             bottom: 0;
             box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
         }
-        #status-button{
+
+        #status-button {
             position: absolute;
             font-size: 2.5vh;
             height: 78%;
@@ -1421,22 +1686,25 @@
             text-align: center;
             box-shadow: hsl(0, 0%, 0%) 0 0 2px;
             will-change: opacity;
-            background-color: hsl(var(--top-hue), 80%, 27%);
+            background-color: hsl(var(--hue-a), 80%, 27%);
         }
-        #status-button.pour{
+
+        #status-button.pour {
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(var(--top-hue), 80%, 27%);
+            background-color: hsl(var(--hue-a), 80%, 27%);
         }
-        #status-button.cancel{
-            background-color: hsl(var(--bottom-hue), 80%, 27%);
+
+        #status-button.cancel {
+            background-color: hsl(var(--hue-f), 80%, 27%);
         }
-        #status-button:active{
+
+        #status-button:active {
             transform: scale(0.97);
             opacity: 50%;
         }
 
-        #status-queue{
+        #status-queue {
             position: absolute;
             height: 18%;
             line-height: 100%;
@@ -1446,7 +1714,8 @@
             left: 2%;
             font-size: 2vh;
         }
-        #status-state{
+
+        #status-state {
             position: absolute;
             height: 18%;
             line-height: 100%;
@@ -1456,7 +1725,8 @@
             left: 2%;
             font-size: 2vh;
         }
-        #status-connection{
+
+        #status-connection {
             position: absolute;
             height: 18%;
             line-height: 100%;
@@ -1468,7 +1738,7 @@
             font-weight: bold;
         }
 
-        #status-drink{
+        #status-drink {
             position: absolute;
             height: 18%;
             line-height: 100%;
@@ -1478,7 +1748,8 @@
             left: 34%;
             font-size: 2vh;
         }
-        #status-outlet{
+
+        #status-outlet {
             position: absolute;
             height: 18%;
             line-height: 100%;
@@ -1489,7 +1760,7 @@
             font-size: 2vh;
         }
 
-        #status-bar{
+        #status-bar {
             position: absolute;
             top: 0;
             width: 100%;
@@ -1498,16 +1769,18 @@
             transition: transform 1000ms linear;
             will-change: transform, opacity;
         }
-        .bar-timer{
+
+        .bar-timer {
             animation: flash 200ms 0s infinite;
             animation-direction: alternate;
-            background-color: hsl(var(--top-hue), 85%, 40%);
-        }
-        .bar-progress{
-            background-color: hsl(var(--bottom-hue), 85%, 40%);
+            background-color: hsl(var(--hue-a), 85%, 40%);
         }
 
-        #volume-title{
+        .bar-progress {
+            background-color: hsl(var(--hue-f), 85%, 40%);
+        }
+
+        .volume-label {
             position: absolute;
             top: 30%;
             left: 10%;
@@ -1518,7 +1791,8 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        #alcohol-title{
+
+        .alcohol-label {
             position: absolute;
             top: 35%;
             left: 10%;
@@ -1529,7 +1803,8 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        #abv-title{
+
+        .abv-label {
             position: absolute;
             top: 40%;
             left: 10%;
@@ -1540,7 +1815,8 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        #alcohol-label{
+
+        .alcohol-mult {
             position: absolute;
             top: 50%;
             left: 36%;
@@ -1551,7 +1827,8 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        #nonalcohol-label{
+
+        .nonalcohol-mult {
             position: absolute;
             top: 65%;
             left: 31%;
@@ -1562,7 +1839,8 @@
             overflow: hidden;
             white-space: nowrap;
         }
-        #alcohol-slider{
+
+        .alcohol-slider {
             position: absolute;
             top: 55%;
             left: 5%;
@@ -1572,16 +1850,18 @@
             background-color: hsl(0deg 0% 100% / 5%);
             border-radius: 2vh;
         }
-        #alcohol-slider::-webkit-slider-thumb {
+
+        .alcohol-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsl(var(--top-hue), 80%, 27%);
+            background: hsl(var(--hue-a), 80%, 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
-        #nonalcohol-slider{
+
+        .nonalcohol-slider {
             position: absolute;
             top: 70%;
             left: 5%;
@@ -1591,49 +1871,55 @@
             background-color: hsl(0deg 0% 100% / 5%);
             border-radius: 2vh;
         }
-        #nonalcohol-slider::-webkit-slider-thumb {
+
+        .nonalcohol-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 4vh;
             height: 4vh;
-            background: hsl(var(--top-hue), 80%, 27%);
+            background: hsl(var(--hue-a), 80%, 27%);
             border-radius: 2vh;
             cursor: pointer;
         }
-        
-        .shrunk{
+
+        .shrunk {
             transform: scaleY(0);
         }
-        .transparent{
+
+        .transparent {
             opacity: 0%;
         }
-        .hidden{
+
+        .hidden {
             visibility: hidden;
         }
-        .notouch{
+
+        .notouch {
             pointer-events: none;
         }
-        #drinks-page.noscroll{
+
+        #drinks-page.noscroll {
             overflow-y: hidden;
         }
 
-        #page-view.noscroll{
+        #page-view.noscroll {
             overflow-x: hidden;
         }
 
-        .grey{
+        .grey {
             opacity: 25%;
         }
+
         /* Animation Keyframes*/
         @keyframes flash {
             from {
                 opacity: 100%;
             }
+
             to {
                 opacity: 50%;
             }
         }
-
     </style>
 </head>
 
@@ -1641,10 +1927,32 @@
 
 <body>
     <template id="template-drink-item">
+        <div class="drink-name"></div>
+        <div class="ingredient-summary"></div>
+        <div class="arrow"></div>
+    </template>
+
+    <template id="template-drink-detail">
         <div class="drink-item">
-            <div class="drink-title">Title</div>
-            <div class="ingredient-summary">Ingredients</div>
-            <div class="arrow"></div>
+            <div class="drink-name"></div>
+            <div class="close"></div>
+        </div>
+        <div class="drink-detail-body shrunk">
+            <div class="ingredient-wrapper">
+                <div class="ingredient-box"></div>
+            </div>
+
+            <div class="volume-label">Volume: </div>
+            <div class="alcohol-label">Drinks: </div>
+            <div class="abv-label">ABV: </div>
+
+            <div class="alcohol-mult">Alcohol: </div>
+            <input class="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+            <div class="nonalcohol-mult">Non-alcohol: </div>
+            <input class="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
+
+            <div class="tub-button item-button">Pour Hot Tub</div>
+            <div class="basement-button item-button">Pour Basement</div>
         </div>
     </template>
 
@@ -1653,90 +1961,38 @@
     </template>
 
     <template id="template-ingredient-item">
-        <div class="ingredient-item">
-            <div class="ingredient-title"></div>
-            <div class="ingredient-button ingredient-minus"></div>
-            <div class="ingredient-volume"></div>
-            <div class="ingredient-button ingredient-plus"></div>
-        </div>
+        <div class="ingredient-name"></div>
+        <div class="ingredient-button ingredient-minus"></div>
+        <div class="ingredient-volume"></div>
+        <div class="ingredient-button ingredient-plus"></div>
     </template>
 
     <div id="ruler"></div>
 
     <div id="background">
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
-        <div class="flare"></div>
+
     </div>
+
+    <canvas id="canvas"></canvas>
 
     <div id="header">
         <div id="drinks-tab" class="tab selected">Drinks</div>
         <div id="ingredients-tab" class="tab">Ingredients</div>
         <div id="user-tab" class="tab">User</div>
+        <div id="tab-bar"></div>
     </div>
     <div id="page-view">
         <div id="drinks-page">
             <div id="drink-list">
 
             </div>
-            <div id="drink-detail" class="notouch transparent">
-                <div class="drink-item flat">
-                    <div class="drink-title">Title</div>
-                    <div class="ingredient-summary"></div>
-                    <div class="close"></div>
-                </div>
-                <div id="drink-detail-body" class="shrunk">
-                    <div id="ingredient-wrapper">
-                        <div id="ingredient-box">
-
-                        </div>
-                    </div>
-
-                    <div id="volume-title">Volume: </div>
-                    <div id="alcohol-title">Drinks: </div>
-                    <div id="abv-title">ABV: </div>
-
-                    <div id="alcohol-label">Alcohol: </div>
-                    <input id="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
-                    <div id="nonalcohol-label">Non-alcohol: </div>
-                    <input id="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
-
-                    <div id="tub-button" class="item-button">Pour Hot Tub</div>
-                    <div id="basement-button" class="item-button">Pour Basement</div>
-                </div>
-            </div>
+            <drink-detail id="detail-drinks" class="notouch transparent"></drink-detail>
         </div>
         <div id="ingredients-page">
             <div id="ingredient-list">
 
             </div>
-            <div class="drink-item flat">
-                <div class="drink-title">Custom Drink</div>
-                <div class="ingredient-summary"></div>
-                <div class="close"></div>
-            </div>
-            <div id="drink-detail-body" class="shrunk">
-                <div id="ingredient-wrapper">
-                    <div id="ingredient-box">
-
-                    </div>
-                </div>
-
-                <div id="volume-title">Volume: </div>
-                <div id="alcohol-title">Drinks: </div>
-                <div id="abv-title">ABV: </div>
-
-                <div id="alcohol-label">Alcohol: </div>
-                <input id="alcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
-                <div id="nonalcohol-label">Non-alcohol: </div>
-                <input id="nonalcohol-slider" type="range" min="0" max="2" step="0.25" defaultValue="1">
-
-                <div id="tub-button" class="item-button">Pour Hot Tub</div>
-                <div id="basement-button" class="item-button">Pour Basement</div>
-            </div>
+            <drink-detail id="detail-ingredients" class="notouch transparent"></drink-detail>
         </div>
         <div id="user-page">
             <div id="user-name-label">Name: </div>
@@ -1772,7 +2028,7 @@
         <div id="status-outlet"></div>
 
         <div id="status-button">Pour</div>
-    </div>        
+    </div>
 </body>
 
 </html>
