@@ -100,7 +100,7 @@
                         if (drinkElems[name] == null) {
 
                             drinkElems[name] = new DrinkItem(name, 'drinks');
-                            drinkListElem.append(drinkElems[name]);
+                            lists['drinks'].append(drinkElems[name]);
                         }
 
                         drinkElems[name].updateEmpty();
@@ -110,13 +110,13 @@
                         if (ingredientElems[name] == null) {
 
                             ingredientElems[name] = new IngredientItem(name);
-                            ingredientListElem.append(ingredientElems[name]);
+                            lists['ingredients'].append(ingredientElems[name]);
                         }
 
                         ingredientElems[name].updateEmpty();
                     }
 
-                    drinkElems['custom'].updateEmpty();
+                    drinkElems['Custom Drink'].updateEmpty();
 
                     if (detailElems['drinks'].expanded) {
                         detailElems['drinks'].updateEmpty();
@@ -195,6 +195,13 @@
                     userNameInput.value = msg.user.name;
                     userWeightInput.value = msg.user.weight;
 
+                    if (msg.user.name != "") {
+                        drinkElems['Custom Drink'].nameElem.textContent = msg.user.name + "'s Drink";
+                    } else {
+                        drinkElems['Custom Drink'].nameElem.textContent = msg.user.name + "Custom Drink";
+                    }
+
+
                     userSex = msg.user.sex;
                     if (userSex == "male") {
                         userFemaleButton.classList.remove("active");
@@ -207,8 +214,6 @@
             };
         }
 
-        var customDrink = null;
-
         class DrinkItem extends HTMLElement {
             constructor(name, page) {
                 super();
@@ -216,25 +221,22 @@
                 this.appendChild(templateDrinkItem.content.cloneNode(true));
 
                 this.name = name;
-                if(drinks[name] != null){
+                if (drinks[name] != null) {
                     this.ingredients = drinks[name];
-                }else{
+                } else {
                     this.ingredients = {};
                 }
-                
+
                 this.empty = false;
                 this.page = page;
-
-                let ingredientSummary = "";
-                for (let ingredient in this.ingredients) {
-                    ingredientSummary += ingredient + ", "
-                }
 
                 this.nameElem = this.querySelector(".drink-name");
                 this.nameElem.textContent = this.name;
 
                 this.ingredientsElem = this.querySelector(".ingredient-summary");
-                this.ingredientsElem.textContent = ingredientSummary;
+                this.ingredientsSummary = "";
+
+                this.updateIngredients();
 
                 this.onclick = function () {
                     event.stopPropagation();
@@ -244,18 +246,36 @@
 
             updateEmpty() {
                 let empty = false;
+                let volume = 0;
                 for (let ingredient in this.ingredients) {
+                    volume += this.ingredients[ingredient];
                     if (ingredients[ingredient].empty) {
                         empty = true;
                         break;
                     }
                 }
+                if (volume == 0) {
+                    empty = true;
+                }
+
                 if (empty && !this.empty) {
                     this.classList.add("drink-empty");
                     this.empty = empty;
                 } else if (!empty && this.empty) {
                     this.classList.remove("drink-empty");
                     this.empty = empty;
+                }
+            }
+
+            updateIngredients() {
+                let ingredientSummary = "";
+                for (let ingredient in this.ingredients) {
+                    ingredientSummary += ingredient + ", "
+                }
+
+                if (ingredientSummary != this.ingredientSummary) {
+                    this.ingredientSummary = ingredientSummary
+                    this.ingredientsElem.textContent = this.ingredientSummary;
                 }
             }
 
@@ -270,19 +290,18 @@
                 detailElems[this.page].alcoholSlider.value = 1;
                 detailElems[this.page].nonalcoholSlider.value = 1;
                 detailElems[this.page].updateBody();
-
-                detailElems[this.page].nameElem.textContent = this.name;
-                detailElems[this.page].ingredientBoxElem.style.height = (3.5 * bigVH * Object.keys(this.ingredients).length) + "px";
-
-                let y = -this.getBoundingClientRect().top + drinksPage.getBoundingClientRect().top + bigVH;
-
                 detailElems[this.page].updateEmpty();
+
+                detailElems[this.page].nameElem.textContent = this.nameElem.textContent;
+                detailElems[this.page].ingredientBoxElem.style.height = (3.5 * bigVH * Object.keys(this.ingredients).length) + "px";
 
                 detailElems[this.page].bodyElem.classList.remove("shrunk");
 
-                drinksPage.classList.add("noscroll");
-                drinkListElem.classList.add("notouch", "transparent");
-                this.classList.add("transparent");
+                let y = -this.getBoundingClientRect().top + pages[this.page].getBoundingClientRect().top + bigVH;
+
+                pages[this.page].classList.add("noscroll");
+                lists[this.page].classList.add("notouch", "transparent");
+                this.classList.add("notouch", "transparent");
 
                 detailElems[this.page].style.top = this.offsetTop - bigVH + "px";
                 detailElems[this.page].classList.remove("notouch", "transparent");
@@ -302,6 +321,8 @@
                 this.expanded = false;
                 this.empty = false;
                 this.same = false;
+
+                this.page = this.getAttribute('page');
 
                 this.nameElem = this.querySelector('.drink-name');
                 this.itemElem = this.querySelector('.drink-item');
@@ -339,14 +360,14 @@
                 this.tubButton = this.querySelector('.tub-button');
                 this.basementButton = this.querySelector('.basement-button');
 
-                this.tubButton.onclick = ()=>{
+                this.tubButton.onclick = () => {
                     this.detailClick('hottub');
                 }
-                this.basementButton.onclick = ()=>{
+                this.basementButton.onclick = () => {
                     this.detailClick('basement');
                 }
 
-                this.onclick = ()=>{
+                this.onclick = () => {
                     event.stopPropagation();
                     this.collapseDetail();
                 };
@@ -427,7 +448,7 @@
                     }
                     i++;
                 }
-                
+
                 this.volume.textContent = "total: " + decimal(totalVolume, 2) + " oz";
                 this.alcohol.textContent = "drinks: " + decimal(alcoholVolume / 0.6, 1);
                 if (totalVolume > 0) {
@@ -485,11 +506,11 @@
                 this.classList.add("notouch");
                 this.bodyElem.classList.add("shrunk");
 
-                drinksPage.classList.remove("noscroll");
-                drinkListElem.classList.remove("notouch", "transparent");
+                pages[this.page].classList.remove("noscroll");
+                lists[this.page].classList.remove("notouch", "transparent");
 
                 setTimeout(() => {
-                    drinkElems[name].classList.remove("transparent");
+                    drinkElems[name].classList.remove("notouch", "transparent");
                     this.classList.add("transparent");
                     this.style.top = "0px";
                     this.expanded = false;
@@ -520,7 +541,6 @@
                 this.volume = 0;
 
                 this.nameElem = this.querySelector(".ingredient-name");
-                console.log(this);
                 this.nameElem.textContent = this.name;
 
                 this.plus = this.querySelector(".ingredient-plus");
@@ -531,6 +551,36 @@
 
                 this.plus.onclick = this.ingredientPlus.bind(this);
                 this.minus.onclick = this.ingredientMinus.bind(this);
+
+                // this.plus.addEventListener('touchstart', ()=>{
+                //     this.ingredientPlus();
+                //     clearInterval(this.buttonInterval);
+                //     this.buttonInterval = setInterval(()=>{
+                //         this.ingredientPlus();
+                //     }, 100);
+                // }, { passive: true });
+                // this.plus.addEventListener('touchend', ()=>{
+                //     clearInterval(this.buttonInterval);
+                // }, { passive: true });
+                // this.plus.addEventListener('touchcancel', ()=>{
+                //     clearInterval(this.buttonInterval);
+                // }, { passive: true });
+
+                // this.minus.addEventListener('touchstart', ()=>{
+                //     this.ingredientMinus();
+                //     clearInterval(this.buttonInterval);
+                //     this.buttonInterval = setInterval(()=>{
+                //         this.ingredientMinus();
+                //     }, 100);
+                // }, { passive: true });
+                // this.minus.addEventListener('touchend', ()=>{
+                //     clearInterval(this.buttonInterval);
+                // }, { passive: true });
+                // this.minus.addEventListener('touchcancel', ()=>{
+                //     clearInterval(this.buttonInterval);
+                // }, { passive: true });
+
+                // this.buttonInterval = null;
             }
 
             updateEmpty() {
@@ -551,21 +601,22 @@
                 this.ingredientChange(Math.max(this.volume - 0.1, 0));
             }
 
-            ingredientChange(volume){
+            ingredientChange(volume) {
                 if (!ingredients[this.name].empty) {
-                    this.volume = volume;
-                }else{
+                    this.volume = decimal(volume, 1);
+                } else {
                     this.volume = 0;
                 }
-                this.volumeElem.textContent = decimal(this.volume, 1) + " oz";
+                this.volumeElem.textContent = this.volume + " oz";
 
-                if(this.volume == 0){
-                    delete drinkElems['custom'].ingredients[this.name];
-                }else{
-                    drinkElems['custom'].ingredients[this.name] = this.volume;
+                if (this.volume == 0) {
+                    delete drinkElems['Custom Drink'].ingredients[this.name];
+                } else {
+                    drinkElems['Custom Drink'].ingredients[this.name] = this.volume;
                 }
 
-                drinkElems['custom'].updateEmpty();
+                drinkElems['Custom Drink'].updateEmpty();
+                drinkElems['Custom Drink'].updateIngredients();
             }
 
             updateCustomDrink() {
@@ -579,7 +630,7 @@
         }
         customElements.define('ingredient-item', IngredientItem);
 
-        
+
 
         function statusClick() {
             if (userState == "FRONTLINE") {
@@ -604,16 +655,8 @@
             return Math.round(num * Math.pow(10, place)) / Math.pow(10, place)
         }
 
-        function setDrinksTab() {
-            drinksPage.scrollIntoView({ behavior: "smooth" });
-        }
-
-        function setIngredientsTab() {
-            ingredientsPage.scrollIntoView({ behavior: "smooth" });
-        }
-
-        function setUserTab() {
-            userPage.scrollIntoView({ behavior: "smooth" });
+        function setPage(page) {
+            pages[page].scrollIntoView({ behavior: "smooth" });
         }
 
         function setTheme(x, store) {
@@ -635,13 +678,13 @@
         /////////////////////////////////////////
 
         var drinksTab = document.getElementById("drinks-tab");
-        drinksTab.onclick = setDrinksTab;
+        drinksTab.onclick = () => { setPage('drinks') };
 
         var ingredientsTab = document.getElementById("ingredients-tab");
-        ingredientsTab.onclick = setIngredientsTab;
+        ingredientsTab.onclick = () => { setPage('ingredients') };
 
         var userTab = document.getElementById("user-tab");
-        userTab.onclick = setUserTab;
+        userTab.onclick = () => { setPage('user') };
 
         var pageView = document.getElementById("page-view");
 
@@ -650,10 +693,13 @@
         var drinks = {};
         var ingredients = {};
 
+        var pages = {};
+        var lists = {};
+
         /////////////////////////////////////////
 
-        var drinksPage = document.getElementById("drinks-page");
-        var drinkListElem = document.getElementById("drink-list");
+        pages['drinks'] = document.getElementById("drinks-page");
+        lists['drinks'] = document.getElementById("drink-list");
         var drinkElems = {};
 
         var templateDrinkItem = document.getElementById("template-drink-item");
@@ -666,19 +712,20 @@
         var userState = "";
         var makerState = "";
 
-        drinkElems['custom'] = new DrinkItem('custom', 'ingredients');
-
         /////////////////////////////////////////
 
-        var ingredientsPage = document.getElementById("ingredients-page");
-        var ingredientListElem = document.getElementById("ingredient-list");
+        pages['ingredients'] = document.getElementById("ingredients-page");
+        lists['ingredients'] = document.getElementById("ingredient-list");
         var ingredientElems = {};
 
         var ingredientTemplate = document.getElementById("template-ingredient-item");
 
+        drinkElems['Custom Drink'] = new DrinkItem('Custom Drink', 'ingredients');
+        pages['ingredients'].append(drinkElems['Custom Drink']);
+
         /////////////////////////////////////////
 
-        var userPage = document.getElementById("user-page");
+        pages['user'] = document.getElementById("user-page");
 
         var userNameInput = document.getElementById("user-name-input");
         var userWeightInput = document.getElementById("user-weight-input");
@@ -988,6 +1035,9 @@
     </script>
 
     <style>
+        html{
+            background-color: red;
+        }
         :root {
             --panel-color: hsla(0, 0%, 100%, 10%);
             --hue-a: 170;
@@ -997,7 +1047,7 @@
             --hue-e: 290;
             --hue-f: 320;
             --vh: 1vh;
-            --flare-size: 20vw;
+            background-color: red;
         }
 
         #ruler {
@@ -1007,6 +1057,7 @@
         }
 
         body {
+            background-color: red;
             color-scheme: dark;
             height: calc(var(--vh) * 100);
             margin: 0;
@@ -1023,87 +1074,6 @@
             left: 0;
             position: fixed;
             background-color: black;
-        }
-
-        #background {
-            top: 0;
-            left: 0;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            position: fixed;
-            background-color: hsl(320, 100%, 20%);
-        }
-
-        .flare {
-            position: absolute;
-            /* clip-path: inset(150% -50% -250% -50%); */
-            top: 0;
-            left: 0;
-            opacity: 75%;
-            width: var(--flare-size);
-            height: var(--flare-size);
-            border-radius: 100%;
-            will-change: transform;
-        }
-
-        @keyframes nod {
-            0% {
-                transform: translateY(0vh);
-            }
-
-            100% {
-                transform: translateY(-100vh);
-            }
-        }
-
-        @keyframes shake {
-            0% {
-                transform: translateX(0vw);
-            }
-
-            100% {
-                transform: translateX(-100vw);
-            }
-        }
-
-        @keyframes wander {
-            0% {
-                transform: translate(0%, 0%);
-            }
-
-            10% {
-                transform: translate(0%, 0%);
-            }
-
-            20% {
-                transform: translate(0%, 0%);
-            }
-
-            30% {
-                transform: translate(0%, 0%);
-            }
-
-            40% {
-                transform: translate(0%, 0%);
-            }
-
-            40% {
-                transform: translate(0%, 0%);
-            }
-
-            40% {
-                transform: translate(0%, 0%);
-            }
-
-            40% {
-                transform: translate(0%, 0%);
-            }
-
-            40% {
-                transform: translate(0%, 0%);
-            }
         }
 
         #header {
@@ -1191,8 +1161,7 @@
             top: 0%;
             left: 0%;
             width: 100%;
-            padding: 0 1vh 0 1vh;
-            box-sizing: border-box;
+            padding: 0;
             transition: opacity 200ms linear;
             will-change: opacity;
         }
@@ -1226,8 +1195,8 @@
             top: 0%;
             left: 0%;
             width: 100%;
-            padding: 0 1vh 0 1vh;
-            box-sizing: border-box;
+            height: calc(100% - 11vh);
+            overflow-y: auto;
             transition: opacity 200ms linear;
             will-change: opacity;
         }
@@ -1535,7 +1504,11 @@
             background-color: var(--panel-color);
             height: 10vh;
             border-radius: 1vh;
-            margin: 1vh 0 1vh 0;
+            margin: 1vh;
+        }
+
+        #ingredients-page>drink-item {
+            top: calc(100% - 12vh);
         }
 
         .drink-empty {
@@ -1564,6 +1537,8 @@
             left: 5%;
             line-height: 100%;
             font-size: 3vh;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .close {
@@ -1977,7 +1952,7 @@
 
     <div id="header">
         <div id="drinks-tab" class="tab selected">Drinks</div>
-        <div id="ingredients-tab" class="tab">Ingredients</div>
+        <div id="ingredients-tab" class="tab">Custom</div>
         <div id="user-tab" class="tab">User</div>
         <div id="tab-bar"></div>
     </div>
@@ -1986,13 +1961,11 @@
             <div id="drink-list">
 
             </div>
-            <drink-detail id="detail-drinks" class="notouch transparent"></drink-detail>
+            <drink-detail page="drinks" id="detail-drinks" class="notouch transparent"></drink-detail>
         </div>
         <div id="ingredients-page">
-            <div id="ingredient-list">
-
-            </div>
-            <drink-detail id="detail-ingredients" class="notouch transparent"></drink-detail>
+            <div id="ingredient-list"></div>
+            <drink-detail page="ingredients" id="detail-ingredients" class="notouch transparent"></drink-detail>
         </div>
         <div id="user-page">
             <div id="user-name-label">Name: </div>
