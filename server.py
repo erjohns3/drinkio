@@ -170,11 +170,11 @@ async def set_state(new_state):
 
     await broadcast_status()
 
-    # if light_task:
-    #     light_task.cancel()
-    # light_task = asyncio.create_task(light())
+    if light_task:
+        light_task.cancel()
+    light_task = asyncio.create_task(light())
 
-    # asyncio.create_task(buzzer(old_state, new_state))
+    asyncio.create_task(buzzer(old_state, new_state))
 
     #video(old_state, new_state)
 
@@ -667,8 +667,8 @@ async def pour_cycle(drink_name, ingredient_list, outlet):
 
     print("pour drink:", flush=True)
     print(ingredient_list, flush=True)
-    #await pour_drink(ingredient_list, outlet)
-    await asyncio.sleep(10)
+    await pour_drink(ingredient_list, outlet)
+    #await asyncio.sleep(10)
     print("drink done", flush=True)
     song.stop()
 
@@ -709,6 +709,14 @@ async def pour_cycle(drink_name, ingredient_list, outlet):
 
 #################################################
 
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        http.server.SimpleHTTPRequestHandler.end_headers(self)
+        
+
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
@@ -716,6 +724,7 @@ def http_server(testing=False):
     httpd = http.server.ThreadingHTTPServer(("", PORT), Handler)
     print("serving at port " + str(PORT), flush=True)
     httpd.serve_forever()
+
 
 
 #################################################

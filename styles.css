@@ -1,0 +1,881 @@
+:root {
+    --color-background: hsla(0, 0%, 0%);
+    --color-panel: hsla(0, 0%, 100%, 10%);
+    --color-pos: hsla(0, 0%, 100%, 10%);
+    --color-neg: hsla(0, 0%, 100%, 10%);
+    --color-a: hsla(0, 0%, 100%, 10%);
+    --color-b: hsla(0, 0%, 100%, 10%);
+    --color-c: hsla(0, 0%, 100%, 10%);
+
+    --vh: 1vh;
+}
+
+#ruler {
+    position: absolute;
+    height: 50vh;
+    visibility: hidden;
+}
+
+body {
+    color-scheme: dark;
+    height: calc(var(--vh) * 100);
+    margin: 0;
+    padding: 0;
+    touch-action: manipulation;
+    user-select: none;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0;
+    color: white;
+}
+
+#canvas {
+    top: 0;
+    left: 0;
+    position: fixed;
+    background-color: var(--color-background);
+}
+
+#header {
+    height: 8%;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
+}
+
+.tab {
+    position: absolute;
+    background-color: var(--color-panel);
+    box-sizing: border-box;
+    font-size: 3vh;
+    height: 100%;
+    top: 0;
+    width: calc(100%/3);
+    line-height: 250%;
+    overflow: hidden;
+    text-align: center;
+}
+
+.tab:active {
+    opacity: 50%;
+}
+
+.tab.selected {
+    font-weight: bold;
+}
+
+#tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 0.5vh;
+    width: calc(100%/3);
+    background-color: var(--color-a);
+    will-change: transform;
+}
+
+#drinks-tab {
+    left: 0%;
+}
+
+#ingredients-tab {
+    left: calc(100%/3);
+}
+
+#user-tab {
+    right: 0%;
+}
+
+#page-view {
+    height: 82%;
+    width: 100%;
+    position: absolute;
+    /* opacity: 0; */
+    top: 8%;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+#page-view::-webkit-scrollbar {
+    display: none;
+}
+
+#drinks-page {
+    height: 100%;
+    width: 100%;
+    top: 0%;
+    left: 0%;
+    position: absolute;
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+#drink-list {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    padding: 0;
+    transition: opacity 200ms linear;
+    will-change: opacity;
+}
+
+drink-detail {
+    display: block;
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    height: 100%;
+    width: 100%;
+    padding: 0 1vh 0 1vh;
+    box-sizing: border-box;
+    transition: transform 200ms;
+    will-change: transform, opacity;
+}
+
+#ingredients-page {
+    height: 100%;
+    width: 100%;
+    top: 0%;
+    left: 100%;
+    position: absolute;
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+#ingredient-list {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: calc(100% - 11vh);
+    overflow-y: auto;
+    transition: opacity 200ms linear;
+    will-change: opacity;
+}
+
+#user-page {
+    height: 100%;
+    width: 100%;
+    top: 0%;
+    left: 200%;
+    position: absolute;
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+#user-name-label {
+    position: absolute;
+    left: 10%;
+    top: 8%;
+    width: 30%;
+    height: 6vh;
+    line-height: 6vh;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-name-input {
+    position: absolute;
+    right: 10%;
+    top: 8%;
+    width: 45%;
+    height: 6vh;
+    background-color: var(--color-panel);
+    border: none;
+    font-size: 2.5vh;
+    border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+    border-radius: 1vh;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+#user-weight-label {
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 30%;
+    height: 6vh;
+    line-height: 6vh;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-weight-input {
+    position: absolute;
+    right: 10%;
+    top: 20%;
+    width: 45%;
+    height: 6vh;
+    background-color: var(--color-panel);
+    border: none;
+    font-size: 2.5vh;
+    border-bottom: solid 0.2vh hsl(0deg 0% 100% / 50%);
+    border-radius: 1vh;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+#user-sex-label {
+    position: absolute;
+    left: 10%;
+    top: 32%;
+    width: 30%;
+    height: 6vh;
+    line-height: 6vh;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-male-button {
+    position: absolute;
+    right: 35%;
+    top: 32%;
+    width: 20%;
+    height: 6vh;
+    border-radius: 1vh;
+    background-color: var(--color-panel);
+    line-height: 6vh;
+    font-size: 2.5vh;
+    text-align: center;
+}
+
+#user-female-button {
+    position: absolute;
+    right: 10%;
+    top: 32%;
+    width: 20%;
+    height: 6vh;
+    border-radius: 1vh;
+    background-color: var(--color-panel);
+    line-height: 6vh;
+    font-size: 2.5vh;
+    text-align: center;
+}
+
+#user-male-button.active {
+    background-color: var(--color-a);
+}
+
+#user-female-button.active {
+    background-color: var(--color-a);
+}
+
+#user-male-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+#user-female-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+#user-drinks-label {
+    position: absolute;
+    left: 10%;
+    top: 48%;
+    width: 30%;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-drinks-value {
+    position: absolute;
+    right: 10%;
+    top: 48%;
+    width: 45%;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-bac-label {
+    position: absolute;
+    left: 10%;
+    top: 54%;
+    width: 30%;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-bac-value {
+    position: absolute;
+    right: 10%;
+    top: 54%;
+    width: 45%;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-update {
+    position: absolute;
+    left: 30%;
+    top: 64%;
+    width: 40%;
+    height: 10%;
+    font-size: 2.5vh;
+    background-color: var(--color-pos);
+    border-radius: 1vh;
+    text-align: center;
+    line-height: 300%;
+    box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+    /* will-change: transform, opacity; */
+}
+
+#user-update:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+#user-theme-label {
+    position: absolute;
+    left: 10%;
+    top: 85%;
+    width: 30%;
+    height: 6vh;
+    line-height: 6vh;
+    background-color: hsl(0deg 0% 100% / 0%);
+    font-size: 2.5vh;
+}
+
+#user-theme-list {
+    position: absolute;
+    left: 45%;
+    top: 85%;
+    width: 45%;
+}
+
+theme-button {
+    display: block;
+    position: relative;
+    height: 6vh;
+    width: 100%;
+    margin: 0vh 0vh 2vh 0vh;
+    border-radius: 1vh;
+    line-height: 6vh;
+    font-size: 2.5vh;
+    text-align: center;
+    background-color: var(--color-panel);
+}
+
+theme-button.active {
+    background-color: var(--color-a);
+}
+
+theme-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+/*
+theme-button{
+    display: block;
+    position: relative;
+    height: 6vh;
+    width: 100%;
+    margin: 0vh 0vh 2vh 0vh;
+    border-radius: 1vh;
+    box-sizing: border-box;
+    line-height: calc(6vh - 2px);
+    font-size: 2.5vh;
+    text-align: center;
+    border: solid 2px black;
+}
+
+theme-button.active{
+    border-color: white;
+}
+*/
+
+ingredient-item {
+    display: block;
+    position: relative;
+    height: 10vh;
+    margin: 1vh;
+}
+
+.ingredient-name {
+    position: absolute;
+    width: 40%;
+    height: 3vh;
+    top: 3.5vh;
+    left: 5%;
+    line-height: 100%;
+    font-size: 2.5vh;
+}
+
+.ingredient-volume {
+    position: absolute;
+    width: 20%;
+    height: 2.5vh;
+    top: 3.75vh;
+    left: 60%;
+    line-height: 100%;
+    font-size: 2.5vh;
+    text-align: center;
+}
+
+.ingredient-button {
+    position: absolute;
+    top: 1vh;
+    width: 8vh;
+    height: 8vh;
+    line-height: 8vh;
+    font-size: 0vh;
+    border-radius: 1vh;
+    text-align: center;
+    box-shadow: hsl(0deg 0% 0%) 0 0 2px;
+}
+
+.ingredient-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+.ingredient-plus {
+    right: 5%;
+    background-color: var(--color-pos);
+}
+
+.ingredient-plus:after {
+    content: "\002B";
+    font-size: 6vh;
+}
+
+.ingredient-minus {
+    right: 40%;
+    background-color: var(--color-neg);
+}
+
+.ingredient-minus:after {
+    content: "\2212";
+    font-size: 6vh;
+}
+
+.ingredient-empty {
+    opacity: 40%;
+}
+
+.ingredient-empty .ingredient-name {
+    text-decoration: line-through;
+}
+
+.drink-detail-body {
+    position: relative;
+    transition: transform 200ms;
+    height: calc(100% - 12vh);
+    background-color: var(--color-panel);
+    margin: 0;
+    border-radius: 0vh 0vh 1vh 1vh;
+    transform-origin: 50% 0%;
+    will-change: transform;
+}
+
+drink-item {
+    display: block;
+    position: relative;
+    background-color: var(--color-panel);
+    height: 10vh;
+    border-radius: 1vh;
+    margin: 1vh;
+}
+
+#ingredients-page>drink-item {
+    top: calc(100% - 12vh);
+}
+
+.drink-empty {
+    opacity: 40%;
+}
+
+.drink-empty .drink-name {
+    text-decoration: line-through;
+}
+
+.drink-item {
+    position: relative;
+    background-color: var(--color-panel);
+    height: 10vh;
+    border-radius: 1vh;
+    margin: 1vh 0 1vh 0;
+    border-radius: 1vh 1vh 0 0;
+    margin: 1vh 0 0 0;
+}
+
+.drink-name {
+    position: absolute;
+    width: 55%;
+    height: 32%;
+    top: 34%;
+    left: 5%;
+    line-height: 100%;
+    font-size: 3vh;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.close {
+    position: absolute;
+    width: 4vh;
+    height: 4vh;
+    top: 34%;
+    right: 5%;
+    text-align: center;
+}
+
+.close:after {
+    content: "\2573";
+    font-size: 2vh;
+}
+
+.arrow {
+    position: absolute;
+    width: 4vh;
+    height: 4vh;
+    top: 25%;
+    right: 5%;
+    text-align: center;
+    transform: rotateZ(-45deg);
+}
+
+.arrow:after {
+    content: "\221F";
+    font-size: 3vh;
+}
+
+.ingredient-summary {
+    position: absolute;
+    width: 25%;
+    height: 18%;
+    top: 41%;
+    left: 60%;
+    line-height: 100%;
+    font-size: 1.7vh;
+    text-overflow: clip;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: transform 200ms;
+    /* will-change: opacity; */
+}
+
+.ingredient-wrapper {
+    position: absolute;
+    font-size: 2vh;
+    height: 25%;
+    left: 10%;
+    width: 80%;
+    overflow-y: auto;
+}
+
+.ingredient-box {
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    overflow-y: hidden;
+}
+
+.ingredient-amount {
+    line-height: 140%;
+    font-size: 2.5vh;
+    height: 3.5vh;
+    overflow-x: hidden;
+}
+
+.item-button {
+    position: absolute;
+    font-size: 2vh;
+    height: 10%;
+    bottom: 5%;
+    line-height: 340%;
+    width: 42%;
+    overflow: hidden;
+    border-radius: 1vh;
+    text-align: center;
+    box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+    /* will-change: transform, opacity; */
+}
+
+.tub-button {
+    left: 5%;
+    background-color: var(--color-b);
+}
+
+.basement-button {
+    right: 5%;
+    background-color: var(--color-c);
+}
+
+.item-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+#status {
+    background-color: var(--color-panel);
+    text-align: center;
+    font-size: 3vh;
+    height: 10%;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    box-shadow: 0 0 16px 2px hsla(0, 0%, 0%, 0.5);
+}
+
+#status-button {
+    position: absolute;
+    font-size: 2.5vh;
+    height: 78%;
+    top: 11%;
+    right: 2%;
+    width: 30%;
+    line-height: 280%;
+    overflow: hidden;
+    border-radius: 1vh;
+    text-align: center;
+    box-shadow: hsl(0, 0%, 0%) 0 0 2px;
+    will-change: opacity;
+    background-color: var(--color-pos);
+}
+
+#status-button.pour {
+    animation: flash 200ms 0s infinite;
+    animation-direction: alternate;
+    background-color: var(--color-pos);
+}
+
+#status-button.cancel {
+    background-color: var(--color-neg);
+}
+
+#status-button:active {
+    transform: scale(0.97);
+    opacity: 50%;
+}
+
+#status-queue {
+    position: absolute;
+    height: 18%;
+    line-height: 100%;
+    width: 25%;
+    text-align: left;
+    top: 10%;
+    left: 2%;
+    font-size: 2vh;
+}
+
+#status-state {
+    position: absolute;
+    height: 18%;
+    line-height: 100%;
+    width: 25%;
+    text-align: left;
+    bottom: 41%;
+    left: 2%;
+    font-size: 2vh;
+}
+
+#status-connection {
+    position: absolute;
+    height: 18%;
+    line-height: 100%;
+    width: 25%;
+    text-align: left;
+    bottom: 10%;
+    left: 2%;
+    font-size: 2vh;
+    font-weight: bold;
+}
+
+#status-drink {
+    position: absolute;
+    height: 18%;
+    line-height: 100%;
+    width: 34%;
+    text-align: left;
+    top: 23%;
+    left: 34%;
+    font-size: 2vh;
+}
+
+#status-outlet {
+    position: absolute;
+    height: 18%;
+    line-height: 100%;
+    width: 34%;
+    text-align: left;
+    bottom: 23%;
+    left: 34%;
+    font-size: 2vh;
+}
+
+#status-bar {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 5%;
+    transform-origin: 0% 50%;
+    transition: transform 1000ms linear;
+    will-change: transform, opacity;
+}
+
+.bar-timer {
+    animation: flash 200ms 0s infinite;
+    animation-direction: alternate;
+    background-color: var(--color-pos);
+}
+
+.bar-progress {
+    background-color: var(--color-a);
+}
+
+.volume-label {
+    position: absolute;
+    top: 30%;
+    left: 10%;
+    width: 35%;
+    height: 4%;
+    line-height: 140%;
+    font-size: 2.5vh;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.alcohol-label {
+    position: absolute;
+    top: 35%;
+    left: 10%;
+    width: 35%;
+    height: 4%;
+    line-height: 140%;
+    font-size: 2.5vh;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.abv-label {
+    position: absolute;
+    top: 40%;
+    left: 10%;
+    width: 35%;
+    height: 4%;
+    line-height: 140%;
+    font-size: 2.5vh;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.alcohol-mult {
+    position: absolute;
+    top: 50%;
+    left: 36%;
+    width: 28%;
+    height: 4%;
+    line-height: 140%;
+    font-size: 2.5vh;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.nonalcohol-mult {
+    position: absolute;
+    top: 65%;
+    left: 31%;
+    width: 38%;
+    height: 4%;
+    line-height: 140%;
+    font-size: 2.5vh;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.alcohol-slider {
+    position: absolute;
+    top: 55%;
+    left: 5%;
+    width: 90%;
+    height: 4vh;
+    appearance: none;
+    background-color: hsl(0deg 0% 100% / 5%);
+    border-radius: 2vh;
+}
+
+.alcohol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 4vh;
+    height: 4vh;
+    background: var(--color-pos);
+    border-radius: 2vh;
+    cursor: pointer;
+}
+
+.nonalcohol-slider {
+    position: absolute;
+    top: 70%;
+    left: 5%;
+    width: 90%;
+    height: 4vh;
+    appearance: none;
+    background-color: hsl(0deg 0% 100% / 5%);
+    border-radius: 2vh;
+}
+
+.nonalcohol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 4vh;
+    height: 4vh;
+    background: var(--color-pos);
+    border-radius: 2vh;
+    cursor: pointer;
+}
+
+.shrunk {
+    transform: scaleY(0);
+}
+
+.transparent {
+    opacity: 0%;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.notouch {
+    pointer-events: none;
+}
+
+#drinks-page.noscroll {
+    overflow-y: hidden;
+}
+
+#page-view.noscroll {
+    overflow-x: hidden;
+}
+
+.grey {
+    opacity: 25%;
+}
+
+/* Animation Keyframes*/
+@keyframes flash {
+    from {
+        opacity: 100%;
+    }
+
+    to {
+        opacity: 50%;
+    }
+}

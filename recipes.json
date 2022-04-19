@@ -1,42 +1,43 @@
 {
 	"Vodka Cranberry": {
-		"vodka": 2,
-		"cranberry juice": 4
+		"cranberry juice": 4,
+		"vodka": 2
 	},
 	"Screwdriver": {
-		"vodka": 1.7,
-		"orange juice": 3.4
+		"orange juice": 3.4,
+		"vodka": 1.7
 	},
 	"Margarita": {
+		"lime juice": 0.7,
+		"simple syrup": 0.7,
 		"tequila": 1.2,
-		"triple sec": 0.7,
-		"lime juice": 0.7
+		"triple sec": 0.7
 	},
 	"Mojito": {
-		"white rum": 1.5,
 		"lime juice": 1.0,
-		"mint syrup": 2.0 
+		"mint syrup": 2.0, 
+		"white rum": 1.5
 	},
 	"Cosmopolitan": {
-		"vodka": 1.4,
-		"triple sec": 0.5,
+		"cranberry juice": 1.0,
 		"lime juice": 0.5,
-		"cranberry juice": 1.0
+		"triple sec": 0.5,
+		"vodka": 1.4
 	},
 	"Long Island": {
-		"tequila": 0.5,
-		"vodka": 0.5,
-		"white rum": 0.5,
-		"triple sec": 0.5,
-		"gin": 0.5,
 		"lemon juice": 0.8,
 		"simple syrup": 1.0,
-		"coke": 0.5
+		"coke": 0.5,
+		"triple sec": 0.5,
+		"gin": 0.5,
+		"tequila": 0.5,
+		"vodka": 0.5,
+		"white rum": 0.5
 	},
 	"Whiskey Sour": {
-		"whiskey": 1.5,
 		"lemon juice": 1.0,
-		"simple syrup": 0.5
+		"simple syrup": 0.5,
+		"whiskey": 1.5
 	},
 	"Whiskey Highball": {
 		"whiskey": 1.5,
@@ -66,25 +67,25 @@
 		"lemon juice": 0.5
 	},
 	"Mai-tai": {
-		"white rum": 1.4,
-		"dark rum": 0.7,
-		"triple sec": 0.5,
 		"simple syrup": 0.5,
-		"lime juice": 0.3
+		"lime juice": 0.3,
+		"triple sec": 0.5,
+		"white rum": 1.4,
+		"dark rum": 0.7
 	},
 	"Sex On The Beach": {
-		"vodka": 1.4,
-		"peach schnapps": 0.7,
 		"cranberry juice": 1.4,
-		"orange juice": 1.4
+		"orange juice": 1.4,
+		"peach schnapps": 0.7,
+		"vodka": 1.4
 	},
 	"Vodka Sprite": {
-		"vodka": 3,
-		"sprite": 3
+		"sprite": 3,
+		"vodka": 3
 	},
 	"Rum and Coke": {
-		"dark rum": 3,
-		"coke": 3
+		"coke": 3,
+		"dark rum": 3
 	},
 	"Gin and Tonic": {
 		"gin": 2,
@@ -106,9 +107,9 @@
 		"lemon juice": 0.7
 	},
 	"Cuba Libre": {
-		"white rum": 1.7,
 		"coke": 4.1,
-		"lime juice": 0.3
+		"lime juice": 0.3,
+		"white rum": 1.7
 	},
 	"Dry Martini": {
 		"gin": 2.0,
@@ -121,14 +122,14 @@
 		"lemon juice": 0.7
 	},
 	"Kamikaze": {
-		"vodka": 1.0,
+		"lime juice": 1.0,
 		"triple sec": 1.0,
-		"lime juice": 1.0
+		"vodka": 1.0
 	},
 	"White Lady": {
-		"gin": 1.4,
+		"lemon juice": 0.7,
 		"triple sec": 1.0,
-		"lemon juice": 0.7
+		"gin": 1.4
 	},
 	"Gin Fizz": {
 		"gin": 1.5,
@@ -186,8 +187,8 @@
 		"brandy": 2 
 	},
 	"Eric Special": {
-		"fireball": 2,
-		"coke": 4
+		"coke": 4,
+		"fireball": 2
 	},
 	"Matt Special": {
 		"tequila": 1.5,
@@ -195,18 +196,18 @@
 		"lime juice": 0.5
 	},
 	"McCabe Special": {
-		"gin": 1.4,
-		"triple sec": 1.0,
 		"lemon juice": 0.5,
 		"lime juice": 0.5,
-		"cranberry juice": 2.5
+		"cranberry juice": 2.5,
+		"triple sec": 1.0,
+		"gin": 1.4
 	},
 	"The Richard": {
-		"white rum": 2.1,
-		"triple sec": 1.5,
 		"lemon juice": 0.3,
 		"lime juice": 0.3,
-		"cranberry juice": 1.3
+		"cranberry juice": 1.3,
+		"triple sec": 1.5,
+		"white rum": 2.1
 	},
 	"Vodka": {
 		"vodka": 1.5

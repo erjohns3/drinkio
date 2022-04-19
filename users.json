@@ -23,7 +23,7 @@
   "0.7201843472197305": {
     "name": "",
     "weight": 0.0,
-    "sex": "",
+    "sex": "male",
     "drinks": [],
     "admin": false
   },
@@ -52,6 +52,41 @@
     "name": "",
     "weight": 0,
     "sex": "",
+    "drinks": [],
+    "admin": false
+  },
+  "1f995db9-a36f-d9f7-a6ba-b9fd8d3d8a46": {
+    "name": "Eric",
+    "weight": 0.0,
+    "sex": "",
+    "drinks": [],
+    "admin": false
+  },
+  "514a516-54e3-ae5b-2461-81c858645473": {
+    "name": "Eric",
+    "weight": 165.0,
+    "sex": "male",
+    "drinks": [],
+    "admin": false
+  },
+  "f99ba7d7-3ef2-db3-33a7-3d5ddb3c128": {
+    "name": "Eric",
+    "weight": 165.0,
+    "sex": "male",
+    "drinks": [],
+    "admin": false
+  },
+  "aae58dd4-6f67-34ce-cc42-be5ee094a35c": {
+    "name": "Andrew",
+    "weight": 0.0,
+    "sex": "",
+    "drinks": [],
+    "admin": false
+  },
+  "eeeea71b-39cd-99a9-9831-d09669136169": {
+    "name": "",
+    "weight": 0.0,
+    "sex": "female",
     "drinks": [],
     "admin": false
   }

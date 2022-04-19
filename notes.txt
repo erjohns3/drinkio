@@ -1,0 +1,69 @@
+Create admin page:
+    Ingredient empty status/control.
+    Emergency stop, stops pump, servos, lights, everything. Doesn't do cleaning cycle
+    theramin using ultrasonic, sound comes out of all user phones
+
+Remove ingredients tab from standard page (done)
+
+Add warning when user can't pour drinks because of off network blocking
+
+Add custom tab to standard page:
+    make custom drinks
+    list of all ingredients with slider 
+    search bar
+    clear button
+    pour, queue buttons from normal expanded drink menu at bottom.
+    publish for review button at bottom to save to review file on server
+
+Improve User page:
+    add list of all drinks ordered that night
+    each list entry has toggle button for counting or not in case you ordered for someone else
+    add manual entry for counting shots and beers nor oredered through drink maker
+
+What caused crashing on 2/13/22:
+    happened 2-3 times in 30 minutes
+    weights with decimals or e could crash it. fixed
+    DDOS from random web scrapers
+    bug in server
+    seemed to only happen when tilt servo went up
+    maybe current spike, fix by lowering speed and turning off pump during tilt up
+
+Drink search:
+    seach bar at top
+    match drinks by ingredients and name
+
+Dark theme:
+    base translucent background are black instead of white (done)
+    set css property, no page reloading or new css file needed (done)
+    saved in cookie (done)
+    theme options in user page (done)
+
+Color Schemes:
+    set color palette presets
+    saved in cookie
+    user page
+
+Misc UI:
+    state color on phone matches led color on station
+    sounds/vibrations when state changes for user
+
+
+Mechanical Improvements:
+    newer tubes are slightly thinner so they don't seal as well with the magnet rubber washers
+    remove conductivity sensor
+    rotate ball valve to not bend up for easier flow
+    put flow meter in downward section just before the pummp
+    is 2mm actually still too big, can air sneak past
+    is 1mm too weak, reinforce by putting it inside of 2mm or 4mm tubing
+    decreasing tue size increase pressure on the pump
+
+Mechanical Overhauls:
+    swap pan servo with stepper
+    swap all tubing with smaller tubing
+    remove connectors to reduce air pockets
+
+Too many moving elements seem to cause rendering issues on mobile, reduce flare count
+
+drink page will grow longer than list to fit drink detail element when it's near bottom (done)
+
+users that are blocked from not being on the network should show blocked for the connection status

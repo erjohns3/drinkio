@@ -10,14 +10,9 @@
     "abv": 0
   },
   "tequila": {
-    "port": 8,
+    "port": 9,
     "empty": false,
     "abv": 0.4
-  },
-  "amaretto": {
-    "port": 9,
-    "empty": true,
-    "abv": 0.22
   },
   "kahlua": {
     "port": 10,
@@ -148,5 +143,10 @@
     "port": 36,
     "empty": false,
     "abv": 0.05
+  },
+  "amaretto": {
+    "port": 36,
+    "empty": true,
+    "abv": 0.22
   }
 }
