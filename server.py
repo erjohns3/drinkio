@@ -119,8 +119,8 @@ PUMP_FREQ = 320
 PUMP_CAL = 1043.17710018 / PUMP_FREQ
 
 FLOW_PIN = 17
-FLOW_PERIOD = 0.005
-FLOW_TIMEOUT = 15
+FLOW_PERIOD = 0.05
+FLOW_TIMEOUT = 1
 
 TILT_UP = 400000
 TILT_DOWN = 485000
@@ -142,6 +142,11 @@ ECHO_PIN = 24
 trigger_start = 0
 cup = True
 
+flow_ticks = [0]*5
+flow_level = [0]*len(flow_ticks)
+flow_index = 0
+flow_prev = pi.get_current_tick()
+
 dirty = False
 
 def echo(pin, level, tick):
@@ -155,6 +160,33 @@ def echo(pin, level, tick):
             cup = True
         else:
             cup = False
+
+
+def flow(pin, level, tick):
+    global flow_index
+    global flow_prev
+
+    if flow_level[flow_index] < 2:
+        flow_ticks[flow_index] = pigpio.tickDiff(flow_prev, tick)
+    else:
+        flow_ticks[flow_index] += pigpio.tickDiff(flow_prev, tick)
+
+    flow_level[flow_index] = level
+    flow_prev = tick
+
+    if level < 2:
+        flow_index = (flow_index + 1) % len(flow_ticks)
+
+
+def get_flow():
+    num = 0
+    for tick in flow_ticks:
+        num += tick
+    num /= len(flow_ticks)
+
+    print(f'flow times: '{num})
+
+    return num < 200000
 
 ##########################################
 
@@ -346,12 +378,22 @@ def speak(text):
 
 def setup_pigpio():
     global pi
+    global pump_pulse
+
     pi = pigpio.pi()
     if not pi.connected:
         exit()
 
-    pi.set_PWM_frequency(PUMP_PIN, PUMP_FREQ)
-    pi.set_PWM_dutycycle(PUMP_PIN, 0)
+    pulse_len = int(1000000/PUMP_FREQ/2)
+    pi.wave_add_generic([
+        pigpio.pulse(1<<PUMP_PIN, 0, pulse_len),
+        pigpio.pulse(0, 1<<PUMP_PIN, pulse_len)
+    ])
+
+    pump_pulse = pi.wave_create()
+
+    pi.set_mode(PUMP_PIN, pigpio.OUTPUT)
+    pi.write(PUMP_PIN, 0)
 
     pi.set_mode(ENABLE_PIN, pigpio.OUTPUT)
     pi.write(ENABLE_PIN, 1)
@@ -361,6 +403,8 @@ def setup_pigpio():
 
     pi.set_mode(FLOW_PIN, pigpio.INPUT)
     pi.set_pull_up_down(FLOW_PIN, pigpio.PUD_OFF)
+    pi.callback(FLOW_PIN, pigpio.RISING_EDGE, flow)
+    pi.set_watchdog(FLOW_PIN, int(FLOW_TIMEOUT*1000))
 
     pi.set_mode(ECHO_PIN, pigpio.INPUT)
     pi.set_pull_up_down(ECHO_PIN, pigpio.PUD_OFF)
@@ -390,7 +434,9 @@ def signal_handler(sig, frame):
     if pi is None:
         print('signal_handler skipped for testing', flush=True)
     else:
-        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        pi.wave_tx_stop()
+        pi.write(PUMP_PIN, 0)
+
         pi.write(ENABLE_PIN, 1)
 
         pi.write(VALVE_PIN, 1)
@@ -509,7 +555,8 @@ async def check_cancel():
         
         await asyncio.sleep(1)
 
-        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        pi.wave_tx_stop()
+        pi.write(PUMP_PIN, 0)
         pi.write(ENABLE_PIN, 1)
         
         return True
@@ -573,9 +620,11 @@ async def pour_drink(drink, outlet):
             await broadcast_status()
         state_lock.release()
 
-        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        pi.wave_tx_stop()
+        pi.write(PUMP_PIN, 0)
 
         flow_time = (drink[ingredient] + 0.581) / 0.256
+        flow_pulse = int(flow_time * PUMP_FREQ)
         print("pump time: {} - {}".format(drink[ingredient], flow_time), flush=True)
 
         print("tilt down", flush=True)
@@ -585,37 +634,28 @@ async def pour_drink(drink, outlet):
             pi.hardware_PWM(TILT_PIN, 333, int(tilt_curr))
             await asyncio.sleep(TILT_PERIOD)
 
-        pi.set_PWM_dutycycle(PUMP_PIN, 50)
-        flow_start = time.time()
-        elapsed = 0
         dirty = True
 
-        while True:
+        pi.wave_chain([
+            255, 0, 
+            pump_pulse,
+            255, 1, flow_pulse & 255, flow_pulse >> 8
+        ])
+
+        while pi.wave_tx_busy():
             if await check_cancel(): return
-
-            #flow = pi.read(FLOW_PIN) == 1
-            # if flow and not flow_start:
-            #     flow_start = time.time()
-            #     print("flowing: " + str(elapsed))
-
-            if time.time() >= flow_start + flow_time:
-                break
-            
-            # if (elapsed > FLOW_TIMEOUT and not flow_start) or (not flow and flow_start):
-            #     print("ingredient empty")
-            #     config_lock.acquire()
-            #     ingredients[ingredient]["empty"] = True
-            #     save_ingredients()
-            #     config_lock.release()
-            #     state_lock.acquire()
-            #     await broadcast_config()
-            #     state_lock.release()
-            #     break
-
-            elapsed = elapsed + FLOW_PERIOD
             await asyncio.sleep(FLOW_PERIOD)
 
-        pi.set_PWM_dutycycle(PUMP_PIN, 0)
+        if not get_flow():
+            print("ingredient empty")
+            config_lock.acquire()
+            ingredients[ingredient]["empty"] = True
+            save_ingredients()
+            config_lock.release()
+            state_lock.acquire()
+            await broadcast_config()
+            state_lock.release()
+            break
 
         while tilt_curr != TILT_UP:
             tilt_curr = max(tilt_curr - (TILT_UP_SPEED * TILT_PERIOD), TILT_UP)
@@ -624,7 +664,11 @@ async def pour_drink(drink, outlet):
 
         print("tilt up done", flush=True)
 
-        pi.set_PWM_dutycycle(PUMP_PIN, 50)
+        pi.wave_chain([
+            255, 0, 
+            pump_pulse,
+            255, 3
+        ])
 
         state_lock.acquire()
         if state == State.POURING:
@@ -635,7 +679,8 @@ async def pour_drink(drink, outlet):
         ingredient_index += 1
 
     await asyncio.sleep(clear_time[outlet])
-    pi.set_PWM_dutycycle(PUMP_PIN, 0)
+    pi.wave_tx_stop()
+    pi.write(PUMP_PIN, 0)
     pi.write(ENABLE_PIN, 1)
 
     state_lock.acquire()
